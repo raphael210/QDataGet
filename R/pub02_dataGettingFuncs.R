@@ -2353,11 +2353,12 @@ getQuote <- function(stocks, begT=as.Date("1990-12-19"), endT=Sys.Date(),
 #' @examples
 #' # get index quote
 #' indexs <- c("EI000001","EI000300")
-#' begT <- as.Date("2007-01-01")
-#' endT <- as.Date("2013-02-01")
+#' begT <- as.Date("2015-01-01")
+#' endT <- as.Date("2016-08-01")
 #' variables <- c("close","pct_chg")
-#' re <- getIndexQuote(indexs,begT,endT,variables,datasrc="local")
-getIndexQuote <- function(stocks, 
+#' re2 <- getIndexQuote(indexs,begT,endT,variables,datasrc="local")
+#' re <- getIndexQuote(indexs,begT,endT,variables,datasrc="jy")
+getIndexQuote <- function(indexs, 
                           begT=as.Date("1990-12-19"), endT=Sys.Date(), 
                           variables = select.list(CT_TechVars(datasrc=datasrc,secuCate="EI",tableName="QT_IndexQuote")[["varName"]],graphics=TRUE,multiple=TRUE), 
                           melt=FALSE,
@@ -2369,8 +2370,8 @@ getIndexQuote <- function(stocks,
     stop(paste("No fields matched in table 'QT_IndexQuote' in datasrc",QT(datasrc),"!"))
   }  
   
-  subfun <- function(stocks,melt){
-    stocks_char <- paste("(",paste(QT(stocks),collapse=","),")",sep="")    
+  subfun <- function(indexs,melt){
+    stocks_char <- paste("(",paste(QT(indexs),collapse=","),")",sep="")    
     vars <- paste(vars$func,"as",QT(vars$varName), collapse=", ")      
     querychar <- paste("select ID as stockID,TradingDay as date,",vars,"from QT_IndexQuote where ID in", stocks_char, "and TradingDay >=", begT, "and TradingDay <=" ,endT) 
     
@@ -2378,6 +2379,16 @@ getIndexQuote <- function(stocks,
       qt <- read.db.odbc(db.quant(),querychar)
     } else if(datasrc=="local"){      
       qt <- read.db.dbi(db.local(),querychar)
+    }else if(datasrc=="jy"){
+      stocks_char <- paste("(",paste(QT(substr(indexs,3,8)),collapse=","),")",sep="")  
+      begT <- intdate2r(begT)
+      endT <- intdate2r(endT)
+      querychar <- paste("SELECT 'EI'+s.SecuCode 'stockID',CONVERT(varchar,TradingDay,112) 'date',",
+                  vars," FROM QT_IndexQuote q,SecuMain s
+                  where q.InnerCode=s.InnerCode and s.SecuCode in",stocks_char,
+                  " and q.TradingDay>=",QT(begT)," and q.TradingDay<=",QT(endT))
+      qt <- sqlQuery(db.jy(),querychar)
+      qt <- plyr::arrange(qt,stockID,date)
     }
     
     qt$date <- intdate2r(qt$date)
@@ -2386,7 +2397,7 @@ getIndexQuote <- function(stocks,
     }
     return(qt)
   }    
-  re <- subfun(stocks,melt)   
+  re <- subfun(indexs,melt)   
   return(re)  
 }
 

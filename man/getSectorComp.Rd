@@ -8,7 +8,7 @@ getSectorComp(sectorID, endT = Sys.Date(), drop = TRUE,
   datasrc = defaultDataSRC())
 }
 \arguments{
-\item{sectorID}{ID of the sector. eg. "ES09440000" for "financial service" sector of SHENWAN. Get details with \code{CT_industryList()}}
+\item{sectorID}{ID of the sector. eg. "ES09440000" for "financial service" the 1st level sector of SHENWAN; "ES09440100" for "bank"  the 2nd level sector of SHENWAN.  Get details with \code{CT_industryList()}}
 
 \item{endT}{a vector of class \code{Date}. IF missing, then get the latest components.}
 

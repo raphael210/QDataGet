@@ -2265,7 +2265,7 @@ getQuote_ts <- function(stocks,begT,endT,variables,cycle="cy_day()",rate=0,rated
 #' getQuote
 #' 
 #' get Quote series of stocks, indexs, futures in certain period
-#' @aliases getQuote getIndexQuote getIFquote
+#' @aliases getQuote getIFquote
 #' @param stocks a vector of charactor
 #' @param begT an object of class "Date"
 #' @param endT an object of class "Date"
@@ -2348,15 +2348,23 @@ getQuote <- function(stocks, begT=as.Date("1990-12-19"), endT=Sys.Date(),
   return(rslt)  
 }
 
-#' @rdname getQuote
+
+#' getIndexQuote
+#' 
+#' get Quote series of indexs in certain period
+#' @param indexs a vector of charactor
+#' @param begT an object of class "Date"
+#' @param endT an object of class "Date"
+#' @param variables a vector of charactor. Call funtion \code{CT_TechVars(secuCate="EQ")} to get all available variables of equity, funtion \code{CT_TechVars(secuCate="EI")} of equity index, and funtion \code{CT_TechVars(secuCate="IF")} of index future.
+#' @param melt a logical. If FALSE(default), the style of result is "stockID+date~variable";If TRUE, the quote data will be melted(see the examples for details).
+#' @return the quote data, a data frame object with cols:stockID,date and the elements the param \code{variable} containing. If melt is TRUE, data frame with cols:stockID,date,variable,value
 #' @export
 #' @examples
-#' # get index quote
 #' indexs <- c("EI000001","EI000300")
 #' begT <- as.Date("2015-01-01")
 #' endT <- as.Date("2016-08-01")
 #' variables <- c("close","pct_chg")
-#' re2 <- getIndexQuote(indexs,begT,endT,variables,datasrc="local")
+#' re <- getIndexQuote(indexs,begT,endT,variables,datasrc="local")
 #' re <- getIndexQuote(indexs,begT,endT,variables,datasrc="jy")
 getIndexQuote <- function(indexs, 
                           begT=as.Date("1990-12-19"), endT=Sys.Date(), 

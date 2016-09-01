@@ -2,7 +2,6 @@
 % Please edit documentation in R/pub02_dataGettingFuncs.R
 \name{getQuote}
 \alias{getIFquote}
-\alias{getIndexQuote}
 \alias{getQuote}
 \title{getQuote}
 \usage{
@@ -12,11 +11,6 @@ getQuote(stocks, begT = as.Date("1990-12-19"), endT = Sys.Date(),
   melt = FALSE, split = if (length(stocks) > splitNbin) TRUE else FALSE,
   splitNbin = 300, tableName = "QT_DailyQuote",
   datasrc = defaultDataSRC())
-
-getIndexQuote(stocks, begT = as.Date("1990-12-19"), endT = Sys.Date(),
-  variables = select.list(CT_TechVars(datasrc = datasrc, secuCate = "EI",
-  tableName = "QT_IndexQuote")[["varName"]], graphics = TRUE, multiple = TRUE),
-  melt = FALSE, datasrc = defaultDataSRC())
 }
 \arguments{
 \item{stocks}{a vector of charactor}
@@ -48,12 +42,6 @@ re <- getQuote(stocks,begT,endT,variables,melt=TRUE,datasrc="local")
 stocks <- getIndexComp("EI000300")
 system.time(uu2 <- getQuote(stocks,begT,endT,variables,datasrc="local",split=FALSE))
 system.time(uu1 <- getQuote(stocks,begT,endT,variables,datasrc="local",split=TRUE))
-# get index quote
-indexs <- c("EI000001","EI000300")
-begT <- as.Date("2007-01-01")
-endT <- as.Date("2013-02-01")
-variables <- c("close","pct_chg")
-re <- getIndexQuote(indexs,begT,endT,variables,datasrc="local")
 }
 \author{
 Ruifei.Yin

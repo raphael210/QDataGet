@@ -2417,7 +2417,7 @@ getQuote_ts <- function(stocks,begT,endT,variables,cycle="cy_day()",rate=0,rated
 #' getQuote
 #' 
 #' get Quote series of stocks, indexs, futures in certain period
-#' @aliases getQuote getIFquote
+#' @aliases getQuote getIndexQuote getIFquote
 #' @param stocks a vector of charactor
 #' @param begT an object of class "Date"
 #' @param endT an object of class "Date"
@@ -2501,24 +2501,18 @@ getQuote <- function(stocks, begT=as.Date("1990-12-19"), endT=Sys.Date(),
 }
 
 
-#' getIndexQuote
-#' 
-#' get Quote series of indexs in certain period
-#' @param indexs a vector of charactor
-#' @param begT an object of class "Date"
-#' @param endT an object of class "Date"
-#' @param variables a vector of charactor. Call funtion \code{CT_TechVars(secuCate="EQ")} to get all available variables of equity, funtion \code{CT_TechVars(secuCate="EI")} of equity index, and funtion \code{CT_TechVars(secuCate="IF")} of index future.
-#' @param melt a logical. If FALSE(default), the style of result is "stockID+date~variable";If TRUE, the quote data will be melted(see the examples for details).
-#' @return the quote data, a data frame object with cols:stockID,date and the elements the param \code{variable} containing. If melt is TRUE, data frame with cols:stockID,date,variable,value
+
+#' @rdname getQuote
 #' @export
 #' @examples
+#' # get index quote
 #' indexs <- c("EI000001","EI000300")
 #' begT <- as.Date("2015-01-01")
 #' endT <- as.Date("2016-08-01")
 #' variables <- c("close","pct_chg")
 #' re <- getIndexQuote(indexs,begT,endT,variables,datasrc="local")
 #' re <- getIndexQuote(indexs,begT,endT,variables,datasrc="jy")
-getIndexQuote <- function(indexs, 
+getIndexQuote <- function(stocks, 
                           begT=as.Date("1990-12-19"), endT=Sys.Date(), 
                           variables = select.list(CT_TechVars(datasrc=datasrc,secuCate="EI",tableName="QT_IndexQuote")[["varName"]],graphics=TRUE,multiple=TRUE), 
                           melt=FALSE,
@@ -2530,8 +2524,8 @@ getIndexQuote <- function(indexs,
     stop(paste("No fields matched in table 'QT_IndexQuote' in datasrc",QT(datasrc),"!"))
   }  
   
-  subfun <- function(indexs,melt){
-    stocks_char <- paste("(",paste(QT(indexs),collapse=","),")",sep="")    
+  subfun <- function(stocks,melt){
+    stocks_char <- paste("(",paste(QT(stocks),collapse=","),")",sep="")    
     vars <- paste(vars$func,"as",QT(vars$varName), collapse=", ")      
     querychar <- paste("select ID as stockID,TradingDay as date,",vars,"from QT_IndexQuote where ID in", stocks_char, "and TradingDay >=", begT, "and TradingDay <=" ,endT) 
     
@@ -2540,7 +2534,7 @@ getIndexQuote <- function(indexs,
     } else if(datasrc=="local"){      
       qt <- read.db.dbi(db.local(),querychar)
     }else if(datasrc=="jy"){
-      stocks_char <- paste("(",paste(QT(substr(indexs,3,8)),collapse=","),")",sep="")  
+      stocks_char <- paste("(",paste(QT(substr(stocks,3,8)),collapse=","),")",sep="")  
       begT <- intdate2r(begT)
       endT <- intdate2r(endT)
       querychar <- paste("SELECT 'EI'+s.SecuCode 'stockID',CONVERT(varchar,TradingDay,112) 'date',",
@@ -2557,7 +2551,7 @@ getIndexQuote <- function(indexs,
     }
     return(qt)
   }    
-  re <- subfun(indexs,melt)   
+  re <- subfun(stocks,melt)   
   return(re)  
 }
 

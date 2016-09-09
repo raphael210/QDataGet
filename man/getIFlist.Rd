@@ -4,7 +4,8 @@
 \alias{getIFlist}
 \title{getIFlist}
 \usage{
-getIFlist(begM = as.yearmon("2010-05"), endM = as.yearmon(Sys.Date()))
+getIFlist(begM = zoo::as.yearmon("2010-05"),
+  endM = zoo::as.yearmon(Sys.Date()))
 }
 \arguments{
 \item{begM}{beginning month,a yearmon object.}

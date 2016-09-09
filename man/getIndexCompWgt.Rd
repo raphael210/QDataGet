@@ -18,9 +18,9 @@ a dataframe, with cols: "date", "stockID","wgt".
 get the components and wgts of the specific index on certain day.
 }
 \examples{
-tmp <- getIndexCompWgtNew("EI000300") # get the latest components
-tmp <- getIndexCompWgtNew("EI000300",as.Date("2012-12-31")) # get the components on single day
-tmp <- getIndexCompWgtNew("EI000300",as.Date(c("2011-12-31","2012-12-31"))) # get the components on multi-days
+tmp <- getIndexCompWgt("EI000300") # get the latest components
+tmp <- getIndexCompWgt("EI000300",as.Date("2012-12-31")) # get the components on single day
+tmp <- getIndexCompWgt("EI000300",as.Date(c("2011-12-31","2012-12-31"))) # get the components on multi-days
 }
 \seealso{
 Other getComps functions: \code{\link{getComps}},

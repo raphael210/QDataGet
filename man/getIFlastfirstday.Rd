@@ -4,8 +4,8 @@
 \alias{getIFlastfirstday}
 \title{getIFlastfirstday}
 \usage{
-getIFlastfirstday(begM = as.yearmon("2010-05"),
-  endM = as.yearmon(Sys.Date()))
+getIFlastfirstday(begM = zoo::as.yearmon("2010-05"),
+  endM = zoo::as.yearmon(Sys.Date()))
 }
 \arguments{
 \item{begM}{beginning month,a yearmon object.}

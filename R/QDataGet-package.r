@@ -2,9 +2,11 @@
 #'
 #' @name QDataGet
 #' @docType package
-#' @import QUtility RODBC DBI RSQLite dplyr
-#' @importFrom zoo as.Date index coredata rollapply as.zoo
+#' @import QUtility 
+#' @importFrom zoo zoo as.zoo
 #' @importFrom xts as.xts xts 
-#' @importFrom reshape2 acast dcast melt
-#' @importFrom plyr ddply ldply laply
+#' @importFrom lubridate %m+% %m-%
+#' @importFrom DBI dbDriver dbGetQuery dbSendQuery dbClearResult dbWriteTable dbRemoveTable dbConnect dbDisconnect dbListFields dbListTables
+#' @importFrom RODBC odbcConnect odbcClose odbcCloseAll sqlQuery sqlDrop sqlSave
+
 NULL

@@ -19,7 +19,7 @@ getIndexQuote(stocks, begT = as.Date("1990-12-19"), endT = Sys.Date(),
   melt = FALSE, datasrc = defaultDataSRC())
 }
 \arguments{
-\item{stocks}{a vector of charactor}
+\item{stocks}{a charactor vector of stockID or indexID.}
 
 \item{begT}{an object of class "Date"}
 

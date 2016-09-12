@@ -37,9 +37,9 @@ tsDisconnect <- function(){
 #' tsRemoteExecute("return close();",list(StockID="SZ000002",CurrentDate=rdate2ts(as.Date("2014-11-11"))))
 #' # use ldply/laply/llply to transform the result from list to comfortable form
 #' ll <- tsRemoteExecute("return Array(('a':1,'b':4),('a':2,'b':5),('a':3,'b':6));")
-#' ldply(ll,unlist)
-#' laply(ll,unlist)
-#' llply(ll,unlist)
+#' plyr::ldply(ll,unlist)
+#' plyr::laply(ll,unlist)
+#' plyr::llply(ll,unlist)
 tsRemoteExecute <- function(funchar,syspars=NULL){
   a <- .External("tslRemoteExecute",funchar,syspars)
   suscess <- a[[1]]

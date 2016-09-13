@@ -403,7 +403,7 @@ lcdb.add.LC_indexComponent <- function(indexID){
     
     qr <- "select 'EQ'+s.SecuCode 'SecuID',st.SpecialTradeType,
     ct.MS,convert(varchar(8),st.SpecialTradeTime,112) 'SpecialTradeTime'
-    from jydb.dbo.LC_SpecialTrade st,jydb.dbo.SecuMain s,jydb.dbo.CT_SystemConst ct
+    from JYDB.dbo.LC_SpecialTrade st,JYDB.dbo.SecuMain s,JYDB.dbo.CT_SystemConst ct
     where st.InnerCode=s.InnerCode and SecuCategory=1
     and st.SpecialTradeType=ct.DM and ct.LB=1185 and st.SpecialTradeType in(1,2,5,6)
     order by s.SecuCode"

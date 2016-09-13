@@ -860,7 +860,7 @@ lcfs.add <- function(factorFun,
                ) ")
   dbSendQuery(con,qr2)
   
-  # add 1 colume to table 'QT_FactorScore' , looping day by day
+  # add 1 colume to table 'QT_FactorScore' , looping by 'splitNbin'
   tryCatch(dbSendQuery(con,paste("ALTER TABLE QT_FactorScore ADD COLUMN ",factorID,"float(0, 4)")),
            error=function(e) { print("RS-DBI driver: (error in statement: duplicate column name)") })
   loopT <- dbGetQuery(con,"select distinct tradingday from QT_FactorScore order by tradingday")[[1]]

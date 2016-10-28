@@ -449,6 +449,7 @@ lcdb.add.LC_indexComponent <- function(indexID){
     tmp <- tmp[,c("IndexID","SecuID","InDate","OutDate","Flag","UpdateTime")]
     
     indexComp <- rbind(indexComp,tmp)
+    indexComp <- indexComp[substr(indexComp$SecuID,1,3) %in% c('EQ0','EQ3','EQ6'),]
     con <- db.local()
     dbWriteTable(con,"SecuMain",indexInfo,overwrite=FALSE,append=TRUE,row.names=FALSE)
     dbWriteTable(con,"LC_IndexComponent",indexComp,overwrite=FALSE,append=TRUE,row.names=FALSE)
@@ -485,6 +486,7 @@ lcdb.add.LC_indexComponent <- function(indexID){
                 QT(substr(indexID,3,8))," LEFT join JYDB.dbo.SecuMain s2
                 on l.SecuInnerCode=s2.InnerCode")
     indexComp <- sqlQuery(con,qr)
+    indexComp <- indexComp[substr(indexComp$SecuID,1,3) %in% c('EQ0','EQ3','EQ6'),]
     odbcCloseAll()
     
     con <- db.local()
@@ -2703,7 +2705,7 @@ getIndexQuote <- function(stocks,
                   vars," FROM QT_IndexQuote q,SecuMain s
                   where q.InnerCode=s.InnerCode and s.SecuCode in",stocks_char,
                   " and q.TradingDay>=",QT(begT)," and q.TradingDay<=",QT(endT))
-      qt <- sqlQuery(db.jy(),querychar)
+      qt <- read.db.odbc(db.jy(),querychar)
       qt <- dplyr::arrange(qt,stockID,date)
     }
     

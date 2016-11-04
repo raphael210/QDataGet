@@ -28,7 +28,8 @@ tradeCode2stockID(c("000001","000300"),secuCate=4)
 Ruifei.Yin
 }
 \seealso{
-Other SecuMain functions: \code{\link{stockID2name}},
+Other SecuMain functions: \code{\link{SecuCategory}},
+  \code{\link{SecuMarket}}, \code{\link{stockID2name}},
   \code{\link{stockID2stockID}},
   \code{\link{stockID2tradeCode}},
   \code{\link{stockName2ID}}

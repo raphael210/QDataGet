@@ -11,6 +11,7 @@ CT_sectorSTD
 }
 \examples{
 CT_sectorSTD(DM=9)
+CT_sectorSTD(DM=c(3,9))
 CT_sectorSTD(MS="xxx")
 CT_sectorSTD()
 }

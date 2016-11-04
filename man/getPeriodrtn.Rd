@@ -2,10 +2,17 @@
 % Please edit documentation in R/pub02_dataGettingFuncs.R
 \name{getPeriodrtn}
 \alias{getPeriodrtn}
+\alias{getPeriodrtn_EI}
+\alias{getPeriodrtn_FU}
 \title{getPeriodrtn}
 \usage{
 getPeriodrtn(SP, stockID, begT, endT, tradeType = c("close", "nextavg",
   "nextopen"), exclude.SP = FALSE, datasrc = defaultDataSRC())
+
+getPeriodrtn_EI(SP, stockID, begT, endT, exclude.SP = FALSE,
+  datasrc = defaultDataSRC())
+
+getPeriodrtn_FU(SP, stockID, begT, endT, exclude.SP = FALSE, datasrc = "ts")
 }
 \arguments{
 \item{SP}{a \bold{SP} object ('stock*period'): a data frame with cols: "stockID","begT","endT"(with class of Date).}
@@ -44,6 +51,10 @@ system.time(re1 <- getPeriodrtn(SP,"nextavg",datasrc="local")) # 16.7
 #-- with combination of vector stockID, begT and endT
 getPeriodrtn(stockID="EQ000001",begT=as.Date("2012-01-01"), endT=as.Date("2012-01-01")+c(10,20,30))
 getPeriodrtn(stockID=c("EQ000001","EQ000002","EQ000004"),begT=as.Date("2012-01-01"), endT=as.Date("2013-01-01"))
+# -- getPeriodrtn_EI
+getPeriodrtn_EI(stockID="EI000300",begT=as.Date("2012-01-01"), endT=as.Date("2012-01-01")+c(10,20,30))
+# -- getPeriodrtn_FU
+getPeriodrtn_FU(stockID="FUIF00",begT=as.Date("2012-01-01"), endT=as.Date("2012-01-01")+c(10,20,30))
 }
 \author{
 Ruifei.Yin

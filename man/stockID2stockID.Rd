@@ -27,7 +27,8 @@ stockID2stockID(c("SH000001","SH000300"),to="jy",from="ts")
 Ruifei.Yin
 }
 \seealso{
-Other SecuMain functions: \code{\link{stockID2name}},
+Other SecuMain functions: \code{\link{SecuCategory}},
+  \code{\link{SecuMarket}}, \code{\link{stockID2name}},
   \code{\link{stockID2tradeCode}},
   \code{\link{stockName2ID}},
   \code{\link{tradeCode2stockID}}

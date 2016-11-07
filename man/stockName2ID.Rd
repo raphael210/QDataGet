@@ -6,6 +6,9 @@
 \usage{
 stockName2ID(name, datasrc = defaultDataSRC())
 }
+\arguments{
+\item{name}{a characoter vector}
+}
 \value{
 a dataframe with cols: 'SecuAbbr', 'ID'
 }
@@ -16,7 +19,8 @@ stockName2ID
 stockName2ID("ST")
 }
 \seealso{
-Other SecuMain functions: \code{\link{stockID2name}},
+Other SecuMain functions: \code{\link{SecuCategory}},
+  \code{\link{SecuMarket}}, \code{\link{stockID2name}},
   \code{\link{stockID2stockID}},
   \code{\link{stockID2tradeCode}},
   \code{\link{tradeCode2stockID}}

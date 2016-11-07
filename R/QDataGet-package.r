@@ -2,7 +2,7 @@
 #'
 #' @name QDataGet
 #' @docType package
-#' @import QUtility RSQLite
+#' @import QUtility  RSQLite
 #' @importFrom zoo zoo as.zoo
 #' @importFrom xts as.xts xts 
 #' @importFrom lubridate %m+% %m-%

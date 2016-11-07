@@ -4,7 +4,7 @@
 \alias{trday.offset}
 \title{trday.offset}
 \usage{
-trday.offset(datelist, by = months(1), stockID = NULL)
+trday.offset(datelist, by = months(1), dir = 1L, stockID = NULL)
 }
 \arguments{
 \item{datelist}{a vector of class Date}

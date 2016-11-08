@@ -408,14 +408,14 @@ lcdb.update.LC_PerformanceGrowth <- function(){
 #' lcdb.add.LC_IndexComponent(indexID="EI000985")
 #' @export
 lcdb.add.LC_IndexComponent <- function(indexID){
-  #check whether the index in local db
   if(indexID=='EI000985'){
-    con <- db.local()
-    qr <- paste("select * from SecuMain where ID="
-                ,QT(indexID),sep="")
-    re <- dbGetQuery(con,qr)
-    dbDisconnect(con)
-    if(nrow(re)>0) return("Already in local database!")
+    #check whether the index in local db
+    # con <- db.local()
+    # qr <- paste("select * from SecuMain where ID="
+    #             ,QT(indexID),sep="")
+    # re <- dbGetQuery(con,qr)
+    # dbDisconnect(con)
+    # if(nrow(re)>0) return("Already in local database!")
     
     #part 1 update local SecuMain
     con <- db.jy()
@@ -502,6 +502,8 @@ lcdb.add.LC_IndexComponent <- function(indexID){
     
     indexComp <- rbind(indexComp,tmp)
     con <- db.local()
+    dbSendQuery(con,"delete from SecuMain where ID='EI000985'")
+    dbSendQuery(con,"delete from LC_IndexComponent where IndexID='EI000985'")
     dbWriteTable(con,"SecuMain",indexInfo,overwrite=FALSE,append=TRUE,row.names=FALSE)
     dbWriteTable(con,"LC_IndexComponent",indexComp,overwrite=FALSE,append=TRUE,row.names=FALSE)
     dbDisconnect(con)

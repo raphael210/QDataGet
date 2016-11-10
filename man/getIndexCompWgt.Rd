@@ -19,7 +19,7 @@ get the components and wgts of the specific index on certain day.
 }
 \examples{
 tmp <- getIndexCompWgt("EI000300") # get the latest components
-tmp <- getIndexCompWgt("EI000300",as.Date("2012-12-31")) # get the components on single day
+tmp <- getIndexCompWgt("EI000985",as.Date("2012-12-31")) # get the components on single day
 tmp <- getIndexCompWgt("EI000300",as.Date(c("2011-12-31","2012-12-31"))) # get the components on multi-days
 }
 \seealso{

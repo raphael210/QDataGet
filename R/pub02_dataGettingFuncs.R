@@ -441,6 +441,7 @@ lcdb.add.LC_IndexComponent <- function(indexID){
     order by s1.SecuCode,l.InDate"
     re <- sqlQuery(con,qr,stringsAsFactors=F)
     indexComp <- re[re$IndexID=='EI000985',c("IndexID","SecuID","InDate","OutDate","Flag","UpdateTime")]
+    indexComp <- indexComp[substr(indexComp$SecuID,1,3) %in% c('EQ0','EQ3','EQ6'),]
     
     if(TRUE){ # -- 801003
       tmp <- re[re$IndexID=='EI801003' & re$InDate<20110802,]
@@ -683,6 +684,261 @@ lcdb.fix.swindustry <- function(){
   dbDisconnect(con)
   # return('Done!')
 }
+
+
+
+
+#' lcdb.init.IndexQuote_000985E
+#'
+#' @examples
+#' lcdb.init.IndexQuote_000985E()
+#' @export
+lcdb.init.IndexQuote_000985E <- function(){
+  con <- db.local()
+  qr <- "select ID,DailyReturn from QT_IndexQuote where ID='EI000985E'"
+  re <- dbGetQuery(con,qr)
+  if(nrow(re)>0){
+    return('Already in database!')
+  }else{
+    qr <- "select max(TradingDay) from QT_IndexQuote"
+    endT <- dbGetQuery(con,qr)[[1]]
+    endT <- intdate2r(endT)
+    begT <- as.Date('2005-01-04')
+    dates <- getRebDates(begT,endT)
+    TS <- getTS(dates,indexID = 'EI000985')
+    
+    index <- data.frame()
+    for(i in 1:(length(dates)-1)){
+      tmp.dates <- getRebDates(dates[i],dates[i+1],rebFreq = 'day')
+      tmp.dates <- tmp.dates[-length(tmp.dates)]
+      cat('calculating',rdate2int(min(tmp.dates)),"~",rdate2int(max(tmp.dates)),'...\n')
+      qr <- paste("select TradingDay,ID,DailyReturn from QT_DailyQuote
+                  where TradingDay>=",rdate2int(min(tmp.dates))," and TradingDay<=",rdate2int(max(tmp.dates)))
+      quotedf <- dbGetQuery(con,qr)
+      quotedf$TradingDay <- intdate2r(quotedf$TradingDay)
+      tmp.TS <- TS[TS$date==dates[i],]
+      quotedf <- quotedf[quotedf$ID %in% tmp.TS$stockID,]
+      
+      tmp <- quotedf %>% group_by(TradingDay) %>%
+        summarise(DailyReturn = mean(DailyReturn, na.rm = TRUE))
+      index <- rbind(index,tmp)
+    }
+    
+    tmp <- xts::xts(index$DailyReturn,order.by = index$TradingDay)
+    tmp <- WealthIndex(tmp)
+    close <- data.frame(TradingDay=zoo::index(tmp),close=zoo::coredata(tmp)*1000,row.names =NULL)
+    colnames(close) <- c('TradingDay','ClosePrice')
+    index <- merge(index,close,by='TradingDay')
+    index <- transform(index,TradingDay=rdate2int(TradingDay),
+                       InnerCode=c(1000985),
+                       PrevClosePrice=c(NA,index$ClosePrice[-(nrow(index))]),
+                       OpenPrice=c(NA),
+                       HighPrice=c(NA),
+                       LowPrice=c(NA),
+                       TurnoverVolume=c(NA),
+                       TurnoverValue=c(NA),
+                       TurnoverDeals=c(NA),
+                       ChangePCT=DailyReturn*100,
+                       NegotiableMV=c(NA),
+                       UpdateTime=c(Sys.Date()),
+                       ID=c('EI000985E'))
+    index <- index[,c("InnerCode","TradingDay","PrevClosePrice","OpenPrice","HighPrice",
+                      "LowPrice","ClosePrice","TurnoverVolume","TurnoverValue","TurnoverDeals",
+                      "ChangePCT","NegotiableMV","UpdateTime","DailyReturn","ID")]
+    dbWriteTable(con,'QT_IndexQuote',index,overwrite=F,append=T,row.names=F)
+  }
+  dbDisconnect(con)
+  return('Done!')
+}
+
+
+#' lcdb.update.IndexQuote_000985E
+#'
+#' @examples
+#' lcdb.update.IndexQuote_000985E()
+#' @export
+lcdb.update.IndexQuote_000985E <- function(){
+  con <- db.local()
+  
+  qr <- "select max(TradingDay) from QT_DailyQuote"
+  endT <- dbGetQuery(con,qr)[[1]]
+  endT <- intdate2r(endT)
+  qr <- "select max(TradingDay) from QT_IndexQuote where ID='EI000985E'"
+  begT <- dbGetQuery(con,qr)[[1]]
+  qr <- paste("select * from QT_IndexQuote where ID='EI000985E' and TradingDay=",begT)
+  tmpdata <- dbGetQuery(con,qr)
+  begT <- intdate2r(begT)
+  begT <- trday.nearby(begT,by=-1)
+  
+  if(begT>endT){
+    return('Done!')
+  }else{
+    TS <- getTS(begT,indexID = 'EI000985')
+    
+    tmp.dates <- getRebDates(begT,endT,rebFreq = 'day')
+    
+    cat('calculating',rdate2int(min(tmp.dates)),"~",rdate2int(max(tmp.dates)),'...\n')
+    qr <- paste("select TradingDay,ID,DailyReturn from QT_DailyQuote
+                where TradingDay>=",rdate2int(min(tmp.dates))," and TradingDay<=",rdate2int(max(tmp.dates)))
+    quotedf <- dbGetQuery(con,qr)
+    quotedf$TradingDay <- intdate2r(quotedf$TradingDay)
+    quotedf <- quotedf[quotedf$ID %in% TS$stockID,]
+    
+    index <- quotedf %>% group_by(TradingDay) %>%
+      summarise(DailyReturn = mean(DailyReturn, na.rm = TRUE))
+    
+    
+    tmp <- xts::xts(index$DailyReturn,order.by = index$TradingDay)
+    tmp <- WealthIndex(tmp)
+    close <- data.frame(TradingDay=zoo::index(tmp),close=zoo::coredata(tmp)*tmpdata$ClosePrice,row.names =NULL)
+    colnames(close) <- c('TradingDay','ClosePrice')
+    index <- merge(index,close,by='TradingDay')
+    index <- transform(index,TradingDay=rdate2int(TradingDay),
+                       InnerCode=c(1000985),
+                       PrevClosePrice=c(NA,index$ClosePrice[-(nrow(index))]),
+                       OpenPrice=c(NA),
+                       HighPrice=c(NA),
+                       LowPrice=c(NA),
+                       TurnoverVolume=c(NA),
+                       TurnoverValue=c(NA),
+                       TurnoverDeals=c(NA),
+                       ChangePCT=DailyReturn*100,
+                       NegotiableMV=c(NA),
+                       UpdateTime=c(Sys.Date()),
+                       ID=c('EI000985E'))
+    index <- index[,c("InnerCode","TradingDay","PrevClosePrice","OpenPrice","HighPrice",
+                      "LowPrice","ClosePrice","TurnoverVolume","TurnoverValue","TurnoverDeals",
+                      "ChangePCT","NegotiableMV","UpdateTime","DailyReturn","ID")]
+    index$PrevClosePrice[1] <- tmpdata$ClosePrice
+    dbWriteTable(con,'QT_IndexQuote',index,overwrite=F,append=T,row.names=F)
+  }
+  
+  dbDisconnect(con)
+  return('Done!')
+  
+}
+
+
+
+
+
+#' fill.indexquote000985
+#'
+#'
+#' @examples
+#' library(WindR)
+#' fill.indexquote000985()
+#' @export
+fill.indexquote000985 <- function(windCode='000985.CSI'){
+  
+  con <- db.local()
+  indexCode <- paste('EI',substr(windCode,1,6),sep = '')
+  qr <- paste("select ID,DailyReturn from QT_IndexQuote where ID=",QT(indexCode))
+  re <- dbGetQuery(con,qr)
+  if(nrow(re)>0){
+    return('Already in database!')
+  }else{
+    qr <- "select max(TradingDay) from QT_IndexQuote"
+    endT <- dbGetQuery(con,qr)[[1]]
+    endT <- intdate2r(endT)
+    WindR::w.start(showmenu = F)
+    index<-w.wsd(windCode,"pre_close,open,high,low,close,volume,amt,dealnum,pct_chg","2005-01-04",endT)[[2]]
+    colnames(index) <- c("TradingDay","PrevClosePrice","OpenPrice","HighPrice", "LowPrice",
+                         "ClosePrice","TurnoverVolume","TurnoverValue","TurnoverDeals","ChangePCT")
+    
+    #get innercode
+    qr <- paste("SELECT InnerCode FROM SecuMain
+                where SecuCode=",QT(substr(windCode,1,6))," and SecuCategory=4")
+    innercode <- queryAndClose.odbc(db.jy(),qr)[[1]]
+    
+    
+    index <- transform(index,TradingDay=rdate2int(TradingDay),
+                       InnerCode=c(innercode),
+                       DailyReturn=ChangePCT/100,
+                       NegotiableMV=c(NA),
+                       UpdateTime=c(Sys.Date()),
+                       ID=c(indexCode))
+    index <- index[,c("InnerCode","TradingDay","PrevClosePrice","OpenPrice","HighPrice",
+                      "LowPrice","ClosePrice","TurnoverVolume","TurnoverValue","TurnoverDeals",
+                      "ChangePCT","NegotiableMV","UpdateTime","DailyReturn","ID")]
+    dbWriteTable(con,'QT_IndexQuote',index,overwrite=F,append=T,row.names=F)
+  }
+  
+  dbDisconnect(con)
+  return('Done!')
+}
+
+
+
+#' lcdb.build.QT_FreeShares
+#'
+#'
+#' @examples
+#' lcdb.build.QT_FreeShares(filename="D:/sqlitedb/FREE_SHARES.csv")
+#' @export
+lcdb.build.QT_FreeShares <- function(filename="D:/sqlitedb/FREE_SHARES.csv"){
+  re <- read.csv(filename,stringsAsFactors = F)
+  con <- db.local()
+  dbWriteTable(con,'QT_FreeShares',re,overwrite=T,append=F,row.names=F)
+  dbDisconnect(con)
+  return('Done!')
+}
+
+
+
+#' lcdb.update.QT_FreeShares
+#'
+#'
+#' @examples
+#' library(WindR)
+#' lcdb.update.QT_FreeShares()
+#' @export
+lcdb.update.QT_FreeShares <- function(){
+  con <- db.local()
+  re <- dbReadTable(con,'QT_FreeShares')
+  
+  begT <- intdate2r(max(re$date))
+  begT <- trday.nearby(begT,-1)
+  endT <- trday.nearest(Sys.Date()-1)
+  if(trday.nearby(begT,-5)>endT){
+    return('Done!')
+  }else{
+    dates <- getRebDates(begT,endT,rebFreq = 'week')
+    lcdb.add.LC_IndexComponent('EI801003')
+    TS <- getTS(dates,indexID = 'EI801003')
+    TS$stockID <- stockID2stockID(TS$stockID,'local','wind')
+    float_shares <- data.frame()
+    WindR::w.start(showmenu = F)
+    for(i in dates){
+      i <- as.Date(i,origin = '1970-01-01')
+      tmp <-WindR::w.wss(TS[TS$date==i,'stockID'],'free_float_shares',tradeDate=i)[[2]]
+      tmp$date <- c(i)
+      float_shares <- rbind(float_shares,tmp)
+    }
+    colnames(float_shares) <- c("stockID","freeShares","date")
+    float_shares$freeShares <- float_shares$freeShares/100000000
+    float_shares$date <- rdate2int(float_shares$date)
+    float_shares$stockID <- stockID2stockID(float_shares$stockID,'wind','local')
+    float_shares <- float_shares[,c( "date","stockID","freeShares")]
+    alldata <- rbind(re,float_shares)
+    alldata <- alldata %>% group_by(stockID,freeShares) %>% summarise(date=min(date))
+    alldata <- alldata[,c("date","stockID","freeShares")]
+    alldata <- arrange(alldata,date,stockID)
+    alldata <- as.data.frame(alldata)
+    dbWriteTable(con,'QT_FreeShares',alldata,overwrite=T,append=F,row.names=F)
+    dbDisconnect(con)
+    return('Done!')
+  }
+}
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1707,7 +1963,7 @@ getIndexComp <- function(indexID, endT=Sys.Date(), drop=TRUE, datasrc=defaultDat
 #' @family getComps functions
 #' @examples 
 #' tmp <- getIndexCompWgt("EI000300") # get the latest components
-#' tmp <- getIndexCompWgt("EI000300",as.Date("2012-12-31")) # get the components on single day
+#' tmp <- getIndexCompWgt("EI000985",as.Date("2012-12-31")) # get the components on single day
 #' tmp <- getIndexCompWgt("EI000300",as.Date(c("2011-12-31","2012-12-31"))) # get the components on multi-days
 getIndexCompWgt <- function(indexID="EI000300",endT,datasrc=defaultDataSRC()){
   
@@ -1737,6 +1993,10 @@ getIndexCompWgt <- function(indexID="EI000300",endT,datasrc=defaultDataSRC()){
       odbcClose(con)
     }
     
+    if(nrow(re)==0){
+      return(0)
+    }
+    
     if(min(endT)<min(re$EndDate)){
       return(0)
     } else{
@@ -1746,7 +2006,13 @@ getIndexCompWgt <- function(indexID="EI000300",endT,datasrc=defaultDataSRC()){
     }
   }
   daymat <- trday.nearbyinDB(indexID,endT,datasrc)
-  if(is.numeric(daymat)) stop("date out of range")
+  if(is.numeric(daymat)){
+    TS <- getTS(endT,indexID)
+    TSF <- gf.free_float_sharesMV(TS)
+    re <- plyr::ddply(TSF,"date",transform,wgt=factorscore/sum(factorscore,na.rm=TRUE))
+    re <- re[,c("date","stockID","wgt" )]
+    return(re)
+  }
   endT <- daymat$newday
   
   

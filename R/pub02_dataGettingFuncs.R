@@ -872,7 +872,7 @@ lcdb.init.QT_DailyQuote2 <- function(){
 #' system.time(lcfs.add(factorFun="gf.F_rank_chg",factorPar="lag=60,con_type=\"1,2\"", factorDir=1, factorID="F000009"))
 lcfs.add <- function(factorFun, 
                      factorPar="", 
-                     factorDir = 1,
+                     factorDir,
                      factorID,                      
                      factorName = default.factorName_inner(factorFun,factorPar,factorDir),                      
                      factorType = "", 
@@ -956,7 +956,7 @@ lcfs.add <- function(factorFun,
 #' gf_lcfs
 #' @export
 gf_lcfs <- function(TS,factorID){
-  re <- TS.getTech(TS,variables=factorID,tableName="QT_FactorScore")
+  re <- TS.getTech(TS,variables=factorID,tableName="QT_FactorScore",datasrc = "local")
   re <- renameCol(re,factorID,"factorscore")
   return(re)
 }
@@ -2533,6 +2533,9 @@ TS.getTech <- function(TS, variables, exclude.TS=FALSE,
   } else if (datasrc=="local"){
     con <- db.local()
     dbWriteTable(con,name="yrf_tmp",value=tmpdat,row.names = FALSE,overwrite = TRUE)
+    if(tableName %in% c("QT_DailyQuote2","QT_FactorScore")){
+      dbSendQuery(con, 'CREATE INDEX [IX_yrf_tmp] ON [yrf_tmp]([date],[stockID]);')
+    }
     re <- dbGetQuery(con,qr)
     dbDisconnect(con)
   }  

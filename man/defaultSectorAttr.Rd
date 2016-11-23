@@ -19,5 +19,9 @@ defaultSectorAttr()
 options(sectorAttr=list(std=3,level=2))
 # -- reget
 defaultSectorAttr()
+# -- combined sectorAttr
+factorList1 <- buildFactorList(factorFun = "gf.mkt_cap", factorStd = "norm", factorNA = "na")
+options(sectorAttr= list(std=list(factorList1,33),level=list(5,1)))
+defaultSectorAttr()
 }
 

@@ -9,6 +9,7 @@
 \alias{index}
 \alias{indexID}
 \alias{indexID.}
+\alias{lcdb.add.ezindustry}
 \alias{lcdb.fix.swindustry}
 \alias{lcdb.update}
 \alias{lcdb.update.CT_IndustryList}
@@ -32,7 +33,7 @@
 \alias{vector}
 \title{update the local database}
 \usage{
-lcdb.update()
+lcdb.update(begT, endT)
 
 lcdb.update.SecuMain()
 
@@ -62,6 +63,8 @@ lcdb.update.LC_PerformanceGrowth()
 
 lcdb.fix.swindustry()
 
+lcdb.add.ezindustry()
+
 lcfs.update(endT = Sys.Date())
 }
 \arguments{
@@ -70,6 +73,8 @@ lcfs.update(endT = Sys.Date())
 \item{endT}{a numeric date. if missing, 99999999.}
 }
 \value{
+nothing.
+
 nothing.
 }
 \description{
@@ -83,8 +88,11 @@ lcdb.update.LC_IndexComponentsWeight(20060101,20060330) # update all the indexs 
 lcdb.update.LC_IndexComponentsWeight(19000101,99999999,"EI000905") # update all the data of given index
 lcdb.update.LC_IndexComponentsWeight(20060101,20060330,"EI000905")
 lcdb.fix.swindustry()
+lcdb.add.ezindustry()
 }
 \author{
 Andrew Dow
+
+Qian Han
 }
 

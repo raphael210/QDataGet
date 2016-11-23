@@ -41,6 +41,9 @@ getSectorID(stockID=c("EQ000001","EQ000002","EQ000004"), endT=as.Date("2010-01-0
 # - get 'ZHONGXIN' sector
 getSectorID(stockID=c("EQ000001","EQ000002","EQ000004"), endT=as.Date("2010-01-01"), sectorAttr=list(3,1), ret="name")
 getSectorID(stockID=c("EQ000001","EQ000002","EQ000004"), endT=as.Date("2010-01-01"), sectorAttr=list(3,2), ret="name")
+# -- combined sectorAttr
+factorList1 <- buildFactorList(factorFun = "gf.mkt_cap", factorStd = "norm", factorNA = "na")
+test <- getSectorID(TS, sectorAttr= list(std=list(factorList1,33),level=list(5,1)))
 }
 \author{
 Ruifei.Yin

@@ -4,7 +4,7 @@
 \alias{lcdb.update.IndexQuote_000985E}
 \title{lcdb.update.IndexQuote_000985E}
 \usage{
-lcdb.update.IndexQuote_000985E()
+lcdb.update.IndexQuote_000985E(begT, endT)
 }
 \description{
 lcdb.update.IndexQuote_000985E

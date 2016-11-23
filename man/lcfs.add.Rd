@@ -4,7 +4,7 @@
 \alias{lcfs.add}
 \title{lcfs.add}
 \usage{
-lcfs.add(factorFun, factorPar = "", factorDir = 1, factorID,
+lcfs.add(factorFun, factorPar = "", factorDir, factorID,
   factorName = default.factorName_inner(factorFun, factorPar, factorDir),
   factorType = "", factorDesc = "", begT = as.Date("1990-01-01"),
   endT = Sys.Date(), splitNbin = "month")

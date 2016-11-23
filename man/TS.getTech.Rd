@@ -4,7 +4,7 @@
 \alias{TS.getTech}
 \title{TS.getTech}
 \usage{
-TS.getTech(TS, variables, exclude.TS = FALSE, tableName = "QT_DailyQuote",
+TS.getTech(TS, variables, exclude.TS = FALSE, tableName = "QT_DailyQuote2",
   datasrc = defaultDataSRC())
 }
 \description{

@@ -4,7 +4,7 @@
 \alias{memory.load}
 \title{memory.load}
 \usage{
-memory.load(reload = FALSE, datasrc = defaultDataSRC())
+memory.load(reload = FALSE)
 }
 \arguments{
 \item{reload}{a logic. If reload the memory data?}
@@ -13,7 +13,7 @@ memory.load(reload = FALSE, datasrc = defaultDataSRC())
 return NULL, but load some data into memory.
 }
 \description{
-load frequently used data into memory, including \code{.tradingdays}, \code{.QT_UnTradingDay}, ...
+load frequently used data into memory, including \code{.tradingdays}, \code{.QT_sus_res}, ...
 }
 \author{
 Ruifei.Yin

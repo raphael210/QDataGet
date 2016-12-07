@@ -4,7 +4,8 @@
 \alias{trday.is}
 \title{trday.is}
 \usage{
-trday.is(datelist, stockID = NULL)
+trday.is(datelist, stockID = NULL, TS, drop = if (missing(TS)) TRUE else
+  FALSE)
 }
 \arguments{
 \item{datelist}{a vector of class Date}
@@ -21,6 +22,7 @@ Identify if the date is trading day or not
 datelist <- seq(from=as.Date("2013-01-21"),to=as.Date("2013-01-30"),by="day")
 trday.is(datelist)
 trday.is(datelist,stockID="EQ000527")
+trday.is(TS=TS)
 }
 \author{
 Ruifei.Yin

@@ -4,12 +4,13 @@
 \alias{trday.nearest}
 \title{trday.nearest}
 \usage{
-trday.nearest(datelist, dir = 1L, stockID = NULL)
+trday.nearest(datelist, dir = -1L, stockID = NULL, TS, drop = if
+  (missing(TS)) TRUE else FALSE)
 }
 \arguments{
 \item{datelist}{a vector of class Date}
 
-\item{dir}{a integer. Indicating forward or backward to find, if \code{datelist} is not tradingday. 1 for forward, -1 for backward.}
+\item{dir}{a integer. Indicating forward or backward to find, if \code{datelist} is not tradingday. -1 for forward, 1 for backward.}
 
 \item{stockID}{a character string or null. If null, the market trading days, other wise the trading days of specific stock.}
 }
@@ -22,8 +23,8 @@ get the nearest tradingday.
 \examples{
 datelist <- as.Date(c("2012-07-21","2012-07-22","2012-07-23","2013-01-30"))
 trday.nearest(datelist)
-trday.nearest(datelist, dir = -1)
-trday.nearest(datelist, dir = -1, stockID="EQ000527")
+trday.nearest(datelist, dir = 1)
+trday.nearest(datelist, dir = 1, stockID="EQ000527")
 }
 \author{
 Ruifei.Yin

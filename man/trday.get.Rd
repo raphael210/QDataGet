@@ -5,7 +5,7 @@
 \title{trday.get}
 \usage{
 trday.get(begT = as.Date("1990-12-19"), endT = Sys.Date(), stockID = NULL,
-  datasrc = defaultDataSRC())
+  datasrc = "memory")
 }
 \arguments{
 \item{begT}{a Date object.The default is as.Date("1990-12-19")}

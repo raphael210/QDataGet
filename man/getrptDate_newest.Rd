@@ -5,7 +5,7 @@
 \title{getrptDate_newest}
 \usage{
 getrptDate_newest(TS, stockID, endT = Sys.Date(), mult = c("last", "first",
-  "all"), exclude.TS = FALSE, datasrc = defaultDataSRC())
+  "all"), drop = FALSE, datasrc = defaultDataSRC())
 }
 \arguments{
 \item{TS}{a \bold{TS} object}
@@ -16,10 +16,10 @@ getrptDate_newest(TS, stockID, endT = Sys.Date(), mult = c("last", "first",
 
 \item{mult}{a character string. Could be one of "last","first","all". IF a listed company publish more than one financial reports, which one should be returned? the newest one(the default value), the earliest one or all of them?}
 
-\item{exclude.TS}{a logical. Shoud the \code{TS} be inculded in the result?}
+\item{drop}{a logical. Shoud the \code{TS} be exculded in the result?}
 }
 \value{
-a data.frame,with the same cols of TS,added by "\code{rptDate}". Or a vector if \code{exclude.TS} is TRUE.
+a data.frame,with the same cols of TS,added by "\code{rptDate}". Or a vector if \code{drop} is TRUE.
 }
 \description{
 get the newest rptDate  of the stocks on specific dates.

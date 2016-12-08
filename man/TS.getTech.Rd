@@ -4,8 +4,9 @@
 \alias{TS.getTech}
 \title{TS.getTech}
 \usage{
-TS.getTech(TS, variables, exclude.TS = FALSE, tableName = "QT_DailyQuote2",
-  datasrc = defaultDataSRC())
+TS.getTech(TS, variables = select.list(CT_TechVars(datasrc = datasrc, secuCate
+  = "EQ", tableName = tableName)[["varName"]], graphics = TRUE, multiple =
+  TRUE), tableName = "QT_DailyQuote2", datasrc = defaultDataSRC())
 }
 \description{
 TS.getTech

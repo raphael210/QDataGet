@@ -7,12 +7,12 @@
 \title{getPeriodrtn}
 \usage{
 getPeriodrtn(SP, stockID, begT, endT, tradeType = c("close", "nextavg",
-  "nextopen"), exclude.SP = FALSE, datasrc = defaultDataSRC())
+  "nextopen"), drop = FALSE, datasrc = defaultDataSRC())
 
-getPeriodrtn_EI(SP, stockID, begT, endT, exclude.SP = FALSE,
+getPeriodrtn_EI(SP, stockID, begT, endT, drop = FALSE,
   datasrc = defaultDataSRC())
 
-getPeriodrtn_FU(SP, stockID, begT, endT, exclude.SP = FALSE, datasrc = "ts")
+getPeriodrtn_FU(SP, stockID, begT, endT, drop = FALSE, datasrc = "ts")
 }
 \arguments{
 \item{SP}{a \bold{SP} object ('stock*period'): a data frame with cols: "stockID","begT","endT"(with class of Date).}
@@ -25,10 +25,10 @@ getPeriodrtn_FU(SP, stockID, begT, endT, exclude.SP = FALSE, datasrc = "ts")
 
 \item{tradeType}{a character string("close","nextavg","nextopen"),indicating the trading type.}
 
-\item{exclude.SP}{a logical. If the \code{SP} shoud be inculded in the result?}
+\item{drop}{a logical. If the \code{SP} shoud be exculded in the result?}
 }
 \value{
-a data frame, with cols of SP and "periodrtn". Or a vector if \code{exclude.SP} is TRUE.
+a data frame, with cols of SP and "periodrtn". Or a vector if \code{drop} is TRUE.
 }
 \description{
 get the period return of the stocks
@@ -45,8 +45,8 @@ TS <- renameCol(TS,"date","begT")
 SP <- data.frame(TS,endT=trday.offset(TS$begT,months(1)))
 system.time(re <- getPeriodrtn(SP,datasrc="ts"))  # 8.40
 system.time(re1 <- getPeriodrtn(SP,datasrc="local"))  # 1.94
-system.time(re <- getPeriodrtn(SP,"nextavg",datasrc="ts")) # 10.80
-system.time(re1 <- getPeriodrtn(SP,"nextavg",datasrc="local")) # 16.7
+system.time(re <- getPeriodrtn(SP,tradeType = "nextavg",datasrc="ts")) # 10.80
+system.time(re1 <- getPeriodrtn(SP,tradeType = "nextavg",datasrc="local")) # 16.7
 
 #-- with combination of vector stockID, begT and endT
 getPeriodrtn(stockID="EQ000001",begT=as.Date("2012-01-01"), endT=as.Date("2012-01-01")+c(10,20,30))

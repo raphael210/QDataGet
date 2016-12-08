@@ -4,14 +4,14 @@
 \alias{TS.getTech_ts}
 \title{TS.getTech_ts}
 \usage{
-TS.getTech_ts(TS, funchar, varname = "factorscore")
+TS.getTech_ts(TS, funchar, varname = funchar)
 }
 \arguments{
 \item{TS}{a \bold{TS} object}
 
 \item{funchar}{a character,the tinysoft function with the arguments. e.g \code{"BBIBOLL_v(11,6)"}}
 
-\item{varname}{character string, giving the name of the factor}
+\item{varname}{character string, giving the name of the returned variables}
 }
 \value{
 A \bold{TSF} object

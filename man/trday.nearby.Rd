@@ -4,12 +4,13 @@
 \alias{trday.nearby}
 \title{trday.nearby}
 \usage{
-trday.nearby(datelist, by = 1, stockID = NULL)
+trday.nearby(datelist, by, stockID = NULL, dir = if (by > 0) 1L else -1L,
+  TS, drop = if (missing(TS)) TRUE else FALSE)
 }
 \arguments{
 \item{datelist}{a vector of class Date}
 
-\item{by}{a integer giving the lagging days.If positive,get the earlyer tradingday,if negetive,get the later tradingday.}
+\item{by}{a integer giving the lagging days.If negetive,get the earlyer tradingday,if positive,get the later tradingday.}
 
 \item{stockID}{a character string or null. If null, the market trading days, other wise the trading days of specific stock.}
 }
@@ -21,9 +22,9 @@ get the nearby tradingday by shifting forward or backward.If the argument dateli
 }
 \examples{
 (datelist <- as.Date(c("2012-07-21","2012-07-22","2012-07-23","2013-01-30")))
-trday.nearby(datelist,20) # the tradingday 20 days earlyer than datelist
-trday.nearby(datelist,-20) # the tradingday 20 days later than datelist 
-trday.nearby(datelist,-20,stockID="EQ000527") 
+trday.nearby(datelist,-20) # the tradingday 20 days earlyer than datelist
+trday.nearby(datelist,20) # the tradingday 20 days later than datelist 
+trday.nearby(datelist,20,stockID="EQ000527") 
 }
 \author{
 Ruifei.Yin

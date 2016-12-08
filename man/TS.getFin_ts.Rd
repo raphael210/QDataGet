@@ -4,14 +4,14 @@
 \alias{TS.getFin_ts}
 \title{TS.getFin_ts}
 \usage{
-TS.getFin_ts(TS, funchar, varname = "factorscore")
+TS.getFin_ts(TS, funchar, varname = funchar)
 }
 \arguments{
 \item{TS}{a \bold{TS} object}
 
 \item{funchar}{character string, giving a tinysoft expression to get the financtial indicators of the stock. The expression can be made simply by replaceing the specified reportdate in the stock-data-expert expression by \code{'Rdate'}. e.g. change \code{Last12MData(20091231,46002)} to \code{Last12MData(Rdate,46002)}.}
 
-\item{varname}{character string, giving the name of the factor}
+\item{varname}{character string, giving the name of the returned variables}
 }
 \value{
 A \bold{TSF} object,a dataframe, containing at least cols:\bold{date}(with class of Date),\bold{stockID},\bold{varname},\bold{Rdate}

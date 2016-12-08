@@ -5,8 +5,8 @@
 \title{getSectorID}
 \usage{
 getSectorID(TS, stockID, endT = Sys.Date(),
-  sectorAttr = defaultSectorAttr(), ret = c("ID", "name"),
-  exclude.TS = FALSE, datasrc = defaultDataSRC())
+  sectorAttr = defaultSectorAttr(), ret = c("ID", "name"), drop = FALSE,
+  datasrc = defaultDataSRC())
 }
 \arguments{
 \item{TS}{a \bold{TS} object}
@@ -19,10 +19,10 @@ getSectorID(TS, stockID, endT = Sys.Date(),
 
 \item{ret}{a charactor string,could be one of "ID" or "name",indicating sectorID or sectorName returned.}
 
-\item{exclude.TS}{a logical. Shoud the \code{TS} be inculded in the result?}
+\item{drop}{a logical. Shoud the \code{TS} be exculded in the result?}
 }
 \value{
-a data.frame,with the same cols of TS,added by "\code{sector}". Or a vector if \code{exclude.TS} is TRUE. You can get more sector infomation by \code{\link{CT_industryList}}
+a data.frame,with the same cols of TS,added by "\code{sector}". Or a vector if \code{drop} is TRUE. You can get more sector infomation by \code{\link{CT_industryList}}
 }
 \description{
 get the sectorID of the stocks on specific dates.

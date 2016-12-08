@@ -37,7 +37,7 @@ Write data into the local sqlite database, returning NULL.
 add/update a factorscore column in local sqlite table \code{"QT_DailyQuote"}. On the same time, correspondingly, add/update a record into table \code{"CT_FactorLists"} and table \code{"CT_TechVars"}.
 }
 \examples{
-system.time(lcfs.add(factorFun="gf.F_rank_chg",factorPar="lag=60,con_type=\\"1,2\\"", factorDir=1, factorID="F000009"))
+system.time(lcfs.add(factorFun="gf.F_rank_chg",factorPar="lag=60,con_type=\\"1,2\\"", factorDir=1, factorID="F000999"))
 }
 \author{
 Ruifei.Yin

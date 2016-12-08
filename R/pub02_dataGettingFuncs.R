@@ -835,7 +835,7 @@ lcdb.update.IndexQuote_000985E <- function(begT,endT){
   
   if(TRUE){
     if(missing(begT)){
-      begT <- dbGetQuery(con,"select max(TradingDay) from QT_IndexQuote2 where ID='EI000985E'")[[1]]
+      begT <- dbGetQuery(con,"select max(TradingDay) from QT_IndexQuote where ID='EI000985E'")[[1]]
     }
     if(missing(endT)){
       endT <- dbGetQuery(con,"select max(TradingDay) from QT_DailyQuote")[[1]]

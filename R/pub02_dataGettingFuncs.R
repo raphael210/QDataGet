@@ -2356,6 +2356,12 @@ getIndexCompWgt <- function(indexID="EI000300",endT,datasrc=defaultDataSRC()){
       dbDisconnect(con)
     } else if (datasrc=="jy"){
       con <- db.jy()
+      indexID <- stockID2stockID(indexID,to="jy",from="local")  
+      qr <- paste(
+        "SELECT DISTINCT convert(varchar,EndDate,112) 'EndDate'
+        FROM LC_IndexComponentsWeight 
+        where IndexCode=",QT(indexID),"order by EndDate"
+      )
       re <- sqlQuery(con,query=qr)
       odbcClose(con)
     }

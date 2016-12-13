@@ -895,7 +895,7 @@ lcdb.update.IndexQuote_000985E <- function(begT,endT){
                       "LowPrice","ClosePrice","TurnoverVolume","TurnoverValue","TurnoverDeals",
                       "ChangePCT","NegotiableMV","UpdateTime","DailyReturn","ID")]
     index$PrevClosePrice[1] <- init_data$ClosePrice
-    dbGetQuery(con,paste("delte from QT_IndexQuote where ID='EI000985E' and TradingDay >=",rdate2int(begT),"and TradingDay <=",rdateint(endT)))
+    dbGetQuery(con,paste("delete from QT_IndexQuote where ID='EI000985E' and TradingDay >=",rdate2int(begT),"and TradingDay <=",rdate2int(endT)))
     dbWriteTable(con,'QT_IndexQuote',index,overwrite=F,append=T,row.names=F)
   }
   

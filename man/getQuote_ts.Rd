@@ -4,8 +4,8 @@
 \alias{getQuote_ts}
 \title{getQuote_ts}
 \usage{
-getQuote_ts(stocks, begT, endT, variables, cycle = "cy_day()", rate = 0,
-  rateday = 0, melt = FALSE, split = if (length(stocks) > splitNbin) TRUE
+getQuote_ts(stocks, begT, endT, variables, Cycle = "cy_day()", Rate = 0,
+  RateDay = 0, melt = FALSE, split = if (length(stocks) > splitNbin) TRUE
   else FALSE, splitNbin = 50)
 }
 \arguments{
@@ -17,11 +17,11 @@ getQuote_ts(stocks, begT, endT, variables, cycle = "cy_day()", rate = 0,
 
 \item{variables}{a vector of charactor,elements of which could be stockID,stockName,date,price,open,high,low,vol,amount,yclose,sectional_yclose,cjbs,...}
 
-\item{cycle}{a charactor string,eg."cy_day()","cy_30m()","cy_month()",...}
+\item{Cycle}{a charactor string,eg."cy_day()","cy_30m()","cy_month()",...}
 
-\item{rate}{a integer,giving the type of rights adjustment, could be one of 0(no adjustment),1(geometric adjustment),2(simple adjustment),3}
+\item{Rate}{a integer,giving the type of rights adjustment, could be one of 0(no adjustment),1(geometric adjustment),2(simple adjustment),3}
 
-\item{rateday}{a integer,giving the base date of right adjustment,could be one of 0(the last trading day),-1(the IPO date),or a tinysoft date integer(eg.\code{rdate2ts(as.Date("2010-01-02"))})}
+\item{RateDay}{a integer,giving the base date of right adjustment,could be one of 0(the last trading day),-1(the IPO date),or a tinysoft date integer(eg.\code{rdate2ts(as.Date("2010-01-02"))})}
 
 \item{melt}{a logical. If FALSE(default), the style of result is "stockID+date~variable";If TRUE, the quote data will be melted(see the examples for details).}
 }

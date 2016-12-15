@@ -4,8 +4,7 @@
 \alias{trday.nearest}
 \title{trday.nearest}
 \usage{
-trday.nearest(datelist, dir = -1L, stockID = NULL, TS, drop = if
-  (missing(TS)) TRUE else FALSE)
+trday.nearest(datelist, dir = -1L, stockID = NULL, TS, drop)
 }
 \arguments{
 \item{datelist}{a vector of class Date}

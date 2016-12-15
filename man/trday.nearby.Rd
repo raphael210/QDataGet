@@ -5,7 +5,7 @@
 \title{trday.nearby}
 \usage{
 trday.nearby(datelist, by, stockID = NULL, dir = if (by > 0) 1L else -1L,
-  TS, drop = if (missing(TS)) TRUE else FALSE)
+  TS, drop)
 }
 \arguments{
 \item{datelist}{a vector of class Date}

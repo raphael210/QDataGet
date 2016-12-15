@@ -4,12 +4,12 @@
 \alias{TS.getFin_ts}
 \title{TS.getFin_ts}
 \usage{
-TS.getFin_ts(TS, funchar, varname = funchar)
+TS.getFin_ts(TS, funchar, varname = funchar, Rate = 1, RateDay = 0)
 }
 \arguments{
 \item{TS}{a \bold{TS} object}
 
-\item{funchar}{character string, giving a tinysoft expression to get the financtial indicators of the stock. The expression can be made simply by replaceing the specified reportdate in the stock-data-expert expression by \code{'Rdate'}. e.g. change \code{Last12MData(20091231,46002)} to \code{Last12MData(Rdate,46002)}.}
+\item{funchar}{a vector of character string, giving a tinysoft expression to get the financtial indicators of the stock. The expression can be made simply by replaceing the specified reportdate in the stock-data-expert expression by \code{'Rdate'}. e.g. change \code{Last12MData(20091231,46002)} to \code{Last12MData(Rdate,46002)}.}
 
 \item{varname}{character string, giving the name of the returned variables}
 }
@@ -30,6 +30,8 @@ TS <- getTS(getRebDates(as.Date('2011-03-17'),as.Date('2012-04-17')),'EI000300')
 TSF <- TS.getFin_ts(TS,"ReportOfAll(9900416,Rdate)")
 TSF2 <- TS.getFin_ts(TS,"GrowthOfNReport(@LastQuarterData(DefaultRepID(),9900003,0),Rdate,3,1)")
 TSF3 <- TS.getFin_ts(TS,"StockAveHsl2(20)+reportofall(9900003,Rdate)")
+funchar <- c("ReportOfAll(9900416,Rdate)","StockAveHsl2(20)+reportofall(9900003,Rdate)")
+TSF4 <- TS.getFin_ts(TS, funchar)
 }
 \author{
 Ruifei.Yin

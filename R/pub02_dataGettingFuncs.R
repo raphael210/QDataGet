@@ -1772,14 +1772,16 @@ trday.get <- function(begT=as.Date("1990-12-19"),endT=Sys.Date(),
 #' trday.is(datelist,stockID="EQ000527")
 #' trday.is(TS=TS)
 trday.is <- function(datelist,stockID=NULL,TS,
-                     drop=if(missing(TS)) TRUE else FALSE){
+                     drop){
   if (missing(TS) && missing(datelist)) {
     stop("Param TS and combination of stockID and datelist should at least have one!")
   }
   if (!missing(TS) && !missing(datelist)) {
     stop("Param TS and combination of stockID and datelist should only have one!")
   }
-  
+  if(missing(drop)){
+    drop <- if(missing(TS)) TRUE else FALSE
+  }
   if(is.null(stockID) & missing(TS)){ # the market tradingday
     mindt <- min(datelist)
     maxdt <- max(datelist)
@@ -1822,12 +1824,15 @@ trday.is <- function(datelist,stockID=NULL,TS,
 #' trday.nearest(datelist, dir = 1)
 #' trday.nearest(datelist, dir = 1, stockID="EQ000527")
 trday.nearest <- function(datelist, dir=-1L, stockID=NULL, TS,
-                          drop=if(missing(TS)) TRUE else FALSE){ 
+                          drop){ 
   if (missing(TS) && missing(datelist)) {
     stop("Param TS and combination of stockID and datelist should at least have one!")
   }
   if (!missing(TS) && !missing(datelist)) {
     stop("Param TS and combination of stockID and datelist should only have one!")
+  }
+  if(missing(drop)){
+    drop <- if(missing(TS)) TRUE else FALSE
   }
   
   if(is.null(stockID) & missing(TS)){ # the market tradingday
@@ -1888,12 +1893,15 @@ trday.nearest <- function(datelist, dir=-1L, stockID=NULL, TS,
 trday.nearby <- function(datelist,by, stockID=NULL,
                          dir=if(by>0) 1L else -1L,
                          TS,
-                         drop=if(missing(TS)) TRUE else FALSE){
+                         drop){
   if (missing(TS) && missing(datelist)) {
     stop("Param TS and combination of stockID and datelist should at least have one!")
   }
   if (!missing(TS) && !missing(datelist)) {
     stop("Param TS and combination of stockID and datelist should only have one!")
+  }
+  if(missing(drop)){
+    drop <- if(missing(TS)) TRUE else FALSE
   }
   
   if(is.null(stockID) & missing(TS)){ # the market tradingday
@@ -1941,12 +1949,15 @@ trday.nearby <- function(datelist,by, stockID=NULL,
 trday.offset <- function(datelist,by=months(1),stockID=NULL,
                          dir=if(Sys.time()+by > Sys.time()) 1L else -1L, 
                          TS,
-                         drop=if(missing(TS)) TRUE else FALSE){
+                         drop){
   if (missing(TS) && missing(datelist)) {
     stop("Param TS and combination of stockID and datelist should at least have one!")
   }
   if (!missing(TS) && !missing(datelist)) {
     stop("Param TS and combination of stockID and datelist should only have one!")
+  }
+  if(missing(drop)){
+    drop <- if(missing(TS)) TRUE else FALSE
   }
   
   if(is.null(stockID) & missing(TS)){ # the market tradingday
@@ -2534,8 +2545,9 @@ plateID2name <- function(plateID){
 #' getSectorID(stockID=c("EQ000001","EQ000002","EQ000004"), endT=as.Date("2010-01-01"), sectorAttr=list(3,1), ret="name")
 #' getSectorID(stockID=c("EQ000001","EQ000002","EQ000004"), endT=as.Date("2010-01-01"), sectorAttr=list(3,2), ret="name")
 #' # -- combined sectorAttr
-#' factorList1 <- buildFactorList(factorFun = "gf.mkt_cap", factorStd = "norm", factorNA = "na")
-#' test <- getSectorID(TS, sectorAttr= list(std=list(factorList1,33),level=list(5,1)))
+#' factorList1 <- buildFactorList(factorFun = "gf.mkt_cap", factorNA = "median")
+#' test <- getSectorID(TS, sectorAttr= list(std=list(factorList1),level=list(5))) # cut by mkt_cap, group_1 is the max-mkt_cap-group,etc.
+#' test2 <- getSectorID(TS, sectorAttr= list(std=list(factorList1,33),level=list(5,1)))
 getSectorID <- function(TS, stockID, endT=Sys.Date(),
                         sectorAttr=defaultSectorAttr(),ret=c("ID","name"),
                         drop=FALSE,
@@ -2935,7 +2947,7 @@ getIFcontinuousCode <- function(begT=as.Date("2010-04-16"),endT=Sys.Date()){
 #' rtn <- getIFrtn("IF00",begT,endT)
 #' rtn.adj <- getIFrtn("IF00",begT,endT,adj=TRUE)
 getIFrtn <- function(code,begT,endT,adj=FALSE){
-  qt <- getQuote_ts(code,begT,endT,variables=c("price","yclose"),cycle="cy_15m()")
+  qt <- getQuote_ts(code,begT,endT,variables=c("price","yclose"),Cycle="cy_15m()")
   rtn <- qt$price/qt$yclose-1
   time <- qt$date
   time.adj<- time
@@ -3054,7 +3066,207 @@ getrptDate_newestYear <- function(TS,stockID,endT){
 # ===============    Others      =========
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
 
+#' is_suspend
+#'
+#' @param nearby a integer vector. default is 1L, which means remove the suspending of the next tradingday. see detail in \code{\link{trday.nearby}}.
+#' @author Ruifei.yin
+#' @examples
+#' RebDates <- getRebDates(as.Date('2013-03-17'),as.Date('2016-04-17'),'month')
+#' TS <- getTS(RebDates,'EI000985')
+#' re <- is_suspend(TS) #  Suspend of nextday
+#' re1 <- is_suspend(TS,nearby=c(0,1))#  Suspend of today and nextday
+#' @export
+is_suspend <- function(TS,nearby=0,
+                       datelist,stockID, 
+                       drop,
+                       datasrc=defaultDataSRC()){
+  if (missing(TS) && missing(datelist)) {
+    stop("Param TS and combination of stockID and datelist should at least have one!")
+  }
+  if (!missing(TS) && !missing(datelist)) {
+    stop("Param TS and combination of stockID and datelist should only have one!")
+  }
+  if(missing(drop)){
+    drop <- if(missing(TS)) TRUE else FALSE
+  }
+  
+  if (missing(TS)){
+    TS <- expand.grid(date=datelist, stockID=stockID)
+  }
+  
+  check.TS(TS)
+  if(datasrc=='ts'){
+    sus <- rep(FALSE,nrow(TS))
+    for (by in nearby){
+      TS_ <- data.frame(date=trday.nearby(TS$date,by), stockID=TS$stockID)
+      TS_ <- getTech_ts(TS_, funchar="istradeday4()",varname="trading")
+      sus_ <- (!TS_$trading == 1) & TS_$date<=Sys.Date()
+      sus <- sus|sus_
+    }
+  } else {
+    sus <- rep(FALSE,nrow(TS))
+    for (by in nearby){
+      TS_ <- data.frame(date=trday.nearby(TS$date,by), stockID=TS$stockID)
+      istradingday <- trday.is(TS=TS_, drop = TRUE)
+      sus_ <- (!istradingday) 
+      sus <- sus|sus_
+    }
+  }
+  TS <- data.frame(TS,sus=ifelse(is.na(sus), FALSE, sus))
+  
+  
+  if(drop){
+    return(TS$sus)
+  }else{
+    return(TS)
+  }
+}
 
+
+#' is_priceLimit
+#'
+#' @param nearby a integer vector. default is 1L, which means remove the suspending of the next tradingday. see detail in \code{\link{trday.nearby}}.
+#' @param lim a vector of length 2.
+#' @author Ruifei.yin
+#' @examples
+#' RebDates <- getRebDates(as.Date('2013-03-17'),as.Date('2016-04-17'),'month')
+#' TS <- getTS(RebDates,'EI000985')
+#' re <- is_priceLimit(TS)
+#' re1 <- is_priceLimit(TS,nearby=-1:1)
+#' re2 <- is_priceLimit(TS,lim=c(-Inf,10)) #  limit-up
+#' @export
+is_priceLimit <- function(TS,nearby=0,lim=c(-10, 10),
+                          datelist,stockID, 
+                          drop,
+                          datasrc=defaultDataSRC()){
+  
+  if (missing(TS) && missing(datelist)) {
+    stop("Param TS and combination of stockID and datelist should at least have one!")
+  }
+  if (!missing(TS) && !missing(datelist)) {
+    stop("Param TS and combination of stockID and datelist should only have one!")
+  }
+  if(missing(drop)){
+    drop <- if(missing(TS)) TRUE else FALSE
+  }
+  
+  if (missing(TS)){
+    TS <- expand.grid(date=datelist, stockID=stockID)
+  }
+  
+  check.TS(TS)
+  if(datasrc=='ts'){
+    overlim <- rep(FALSE,nrow(TS))
+    for (by in nearby){
+      TS_ <- data.frame(date=trday.nearby(TS$date,by), stockID=TS$stockID)
+      TS_ <- getTech_ts(TS_, funchar=c("StockPrevClose3()","close()"),varname=c("pre_close","close"))
+      in_lim <- TS_$close > round(TS_$pre_close*(1+lim[1]/100),2) & TS_$close < round(TS_$pre_close*(1+lim[2]/100),2)
+      overlim_ <- (!in_lim)  & TS_$date<=Sys.Date()
+      overlim <- overlim|overlim_
+    }
+  } else {
+    overlim <- rep(FALSE,nrow(TS))
+    for (by in nearby){
+      TS_ <- data.frame(date=trday.nearby(TS$date,by), stockID=TS$stockID)
+      TS_ <- getTech(TS_,variables=c("pre_close","close") ,datasrc = datasrc)
+      in_lim <- TS_$close > round(TS_$pre_close*(1+lim[1]/100),2) & TS_$close < round(TS_$pre_close*(1+lim[2]/100),2)
+      overlim_ <- (!in_lim) 
+      overlim <- overlim|overlim_
+    }
+  }
+  TS <- data.frame(TS,overlim=ifelse(is.na(overlim), FALSE, overlim)) # if NA, set to FALSE
+  
+  if(drop){
+    return(TS$overlim)
+  }else{
+    return(TS)
+  }
+}
+
+#' @export
+getTech <- function(TS, 
+                    variables = select.list(CT_TechVars(datasrc=datasrc,secuCate="EQ",tableName=tableName)[["varName"]],graphics=TRUE,multiple=TRUE), 
+                    tableName="QT_DailyQuote2",
+                    datelist,stockID, 
+                    drop,
+                    datasrc=defaultDataSRC()){
+  if (missing(TS) && missing(datelist)) {
+    stop("Param TS and combination of stockID and datelist should at least have one!")
+  }
+  if (!missing(TS) && !missing(datelist)) {
+    stop("Param TS and combination of stockID and datelist should only have one!")
+  }
+  
+  if (missing(TS)){
+    TS <- expand.grid(date=datelist, stockID=stockID)
+    missing_TS <- TRUE
+  } else {
+    missing_TS <- FALSE
+  }
+  
+  re <- TS.getTech(TS=TS,variables = variables,tableName = tableName,datasrc = datasrc)
+  
+  if(missing(drop)){
+    drop <- if(missing_TS&length(variables)==1) TRUE else FALSE
+  }
+  if(drop){
+    return(re[,variables])
+  }else{
+    return(re)
+  }
+}
+
+#' @export
+getTech_ts <- function(TS,funchar,varname=funchar, Rate=1, RateDay=0,
+                       datelist,stockID, 
+                       drop){
+  if (missing(TS) && missing(datelist)) {
+    stop("Param TS and combination of stockID and datelist should at least have one!")
+  }
+  if (!missing(TS) && !missing(datelist)) {
+    stop("Param TS and combination of stockID and datelist should only have one!")
+  }
+  if(missing(drop)){
+    drop <- if(missing(TS)&length(funchar)==1) TRUE else FALSE
+  }
+  if (missing(TS)){
+    TS <- expand.grid(date=datelist, stockID=stockID)
+  }
+  
+  result <- TS.getTech_ts(TS=TS,funchar = funchar,varname = varname,Rate = Rate,RateDay = RateDay)
+  
+  if(drop){
+    return(result[,varname])
+  }else{
+    return(result)
+  }
+}
+
+#' @export
+getFin_ts <- function(TS,funchar,varname=funchar,Rate=1,RateDay=0,
+                      datelist,stockID, 
+                      drop){
+  if (missing(TS) && missing(datelist)) {
+    stop("Param TS and combination of stockID and datelist should at least have one!")
+  }
+  if (!missing(TS) && !missing(datelist)) {
+    stop("Param TS and combination of stockID and datelist should only have one!")
+  }
+  if(missing(drop)){
+    drop <- if(missing(TS)&length(funchar)==1) TRUE else FALSE
+  }
+  if (missing(TS)){
+    TS <- expand.grid(date=datelist, stockID=stockID)
+  }
+  
+  result <- TS.getFin_ts(TS=TS,funchar = funchar,varname = varname,Rate = Rate,RateDay = RateDay)
+  
+  if(drop){
+    return(result[,varname])
+  }else{
+    return(result)
+  }  
+}
 
 
 #' TS.getFin_rptTS
@@ -3179,8 +3391,6 @@ rptTS.getFin_ts <- function(rptTS, funchar, ...){
 
 
 
-
-
 #' TS.getTech
 #' @export 
 TS.getTech <- function(TS, 
@@ -3224,7 +3434,7 @@ TS.getTech <- function(TS,
 #'
 #' get technical factors throug a tinysoft expression, which could be a simple expresion, e.g 'close()','StockZf2(20)','BBIBOLL_v(11,6)',..,or more complicated expression, e.g. 'close()/open()', 'StockZf2(10)-StockZf2(20)'...
 #' @param TS a \bold{TS} object
-#' @param funchar a character,the tinysoft function with the arguments. e.g \code{"BBIBOLL_v(11,6)"}
+#' @param funchar a vector of character,the tinysoft function with the arguments. e.g \code{"BBIBOLL_v(11,6)"}
 #' @param varname character string, giving the name of the returned variables
 #' @return A \bold{TSF} object
 #' @note Note that the tinysoft function must contain ONLY two(no more!) system parameters: pn_stock() and pn_date() ,which is specifyed by the two fields in the TS respectively.
@@ -3237,39 +3447,57 @@ TS.getTech <- function(TS,
 #'  funchar <- paste('BBIBOLL_v(',p1,',',p2,')',sep='')
 #'  TSF <- TS.getTech_ts(TS,funchar)
 #'  TSF <- TS.getTech_ts(TS, funchar="StockAveHsl2(20)/StockAveHsl2(60)", varname="avgTurnover_1M3M")
-TS.getTech_ts <- function(TS,funchar,varname=funchar){
-  #       funchar <- 'BBIBOLL_v(11,6)'  
+#'  funchar <- c('BBIBOLL_v(11,6)','StockAveHsl2(20)/StockAveHsl2(60)')
+#'  TSF2 <- TS.getTech_ts(TS, funchar)
+TS.getTech_ts <- function(TS,funchar,varname=funchar, Rate=1, RateDay=0){
   check.TS(TS)
   TS$stockID <- stockID2stockID(TS$stockID,from="local",to="ts")
   tmpfile <- TS
   tmpfile$date <- as.character(tmpfile$date)
+  
   tmpcsv <- tempfile(fileext=".csv")
   tmpcsv2 <- stringr::str_replace_all(tmpcsv,'\\\\',"\\\\\\\\")
   write.csv(tmpfile,tmpcsv,row.names=FALSE,quote=FALSE)
-  # fct <- tsRemoteCallFunc('getfactor_tech_general',list(tmpcsv,funchar))
-  qrstr <- paste('oV:=BackUpSystemParameters();
-                 SetSysParam(pn_cycle(),cy_day());
-                 rdo2 importfile(ftcsv(),"","',tmpcsv2,'",timestockframe);
-                 factorexp:=&"',funchar,'";
-                 result:=array();
-                 for i:=0 to length(timestockframe)-1 do
-                 begin
-                 SetSysParam(pn_stock(),timestockframe[i]["stockID"]);
-                 SetSysParam(pn_date(),strtodate(timestockframe[i]["date"]));
-                 factorvalue:=eval(factorexp);
-                 result[i]:=factorvalue;
-                 end;
-                 RestoreSystemParameters(oV);
-                 return result;
-                 ', sep = "")
+  
+  subqr <- ""
+  for( i in 1:length(funchar)){
+    subqr <- paste0(subqr, '  factorexp[',i-1,'] := &"',funchar[i],'";  ')
+  }
+  subqr2 <- ""
+  if(!is.null(Rate)){
+    subqr2 <- paste0(subqr2, ' SetSysParam(pn_rate(), ',Rate,'); ')
+  }
+  if(!is.null(RateDay)){
+    subqr2 <- paste0(subqr2, ' SetSysParam(pn_rateday(), ',RateDay,'); ')
+  }
+  len.funchar <- length(funchar)-1
+  
+  qrstr <- paste0('oV:=BackUpSystemParameters();
+                  SetSysParam(pn_cycle(),cy_day());
+                  ',subqr2,'
+                  rdo2 importfile(ftcsv(),"","',tmpcsv2,'",timestockframe);
+                  factorexp := array();
+                  ',subqr,'
+                  result:=array();
+                  for i:=0 to length(timestockframe)-1 do
+                  begin
+                  SetSysParam(pn_stock(),timestockframe[i]["stockID"]);
+                  SetSysParam(pn_date(),strtodate(timestockframe[i]["date"]));
+                  for j:= 0 to ',len.funchar,' do
+                  begin
+                  factorvalue:=eval(factorexp[j]);
+                  result[i][j]:=factorvalue;
+                  end;
+                  end;
+                  RestoreSystemParameters(oV);
+                  return result;')
   fct <- tsRemoteExecute(qrstr)
-  fct <- plyr::laply(fct,as.array)
+  fct <- plyr::ldply(fct, unlist)
+  colnames(fct) <- varname 
   result <- cbind(TS,fct)
-  result <- renameCol(result,"fct",varname)
   result$stockID <- stockID2stockID(result$stockID,from="ts",to="local")
   return(result)  
 }
-
 
 
 
@@ -3280,7 +3508,7 @@ TS.getTech_ts <- function(TS,funchar,varname=funchar){
 #'
 #' Note that the tinysoft function must contain ONLY two system parameters(no more!):pn_stock() and pn_date() ,which is supplyed from the two fields in the TS respectively.Also,the function must contain a expression of 'Rdate:=NewReportDateOfEndT2(sp_time())' to get the newest Rdate of sp_time.
 #' @param TS a \bold{TS} object
-#' @param funchar character string, giving a tinysoft expression to get the financtial indicators of the stock. The expression can be made simply by replaceing the specified reportdate in the stock-data-expert expression by \code{'Rdate'}. e.g. change \code{Last12MData(20091231,46002)} to \code{Last12MData(Rdate,46002)}.
+#' @param funchar a vector of character string, giving a tinysoft expression to get the financtial indicators of the stock. The expression can be made simply by replaceing the specified reportdate in the stock-data-expert expression by \code{'Rdate'}. e.g. change \code{Last12MData(20091231,46002)} to \code{Last12MData(Rdate,46002)}.
 #' @param varname character string, giving the name of the returned variables
 #' @return A \bold{TSF} object,a dataframe, containing at least cols:\bold{date}(with class of Date),\bold{stockID},\bold{varname},\bold{Rdate} 
 #' @note Note that the tinysoft function must contain ONLY two system parameters(no more!):pn_stock() and pn_date() ,which is supplyed from the two fields in the TS respectively. Also,the function must contain a expression of 'Rdate:=NewReportDateOfEndT2(sp_time())' to get the newest Rdate of sp_time.
@@ -3291,8 +3519,9 @@ TS.getTech_ts <- function(TS,funchar,varname=funchar){
 #' TSF <- TS.getFin_ts(TS,"ReportOfAll(9900416,Rdate)")
 #' TSF2 <- TS.getFin_ts(TS,"GrowthOfNReport(@@LastQuarterData(DefaultRepID(),9900003,0),Rdate,3,1)")
 #' TSF3 <- TS.getFin_ts(TS,"StockAveHsl2(20)+reportofall(9900003,Rdate)")
-TS.getFin_ts <- function(TS,funchar,varname=funchar){
-  #     funchar <- "ReportOfAll(9900416,Rdate)"
+#' funchar <- c("ReportOfAll(9900416,Rdate)","StockAveHsl2(20)+reportofall(9900003,Rdate)")
+#' TSF4 <- TS.getFin_ts(TS, funchar)
+TS.getFin_ts <- function(TS,funchar,varname=funchar,Rate=1,RateDay=0){
   check.TS(TS)
   TS$stockID <- stockID2stockID(TS$stockID,from="local",to="ts")
   tmpfile <- TS
@@ -3300,33 +3529,48 @@ TS.getFin_ts <- function(TS,funchar,varname=funchar){
   tmpcsv <- tempfile(fileext=".csv")
   tmpcsv2 <- stringr::str_replace_all(tmpcsv,'\\\\',"\\\\\\\\")
   write.csv(tmpfile,tmpcsv,row.names=FALSE,quote=FALSE)
-  qrstr <- paste('oV:=BackUpSystemParameters();
-                 SetSysParam(pn_cycle(),cy_day());
-                 rdo2 importfile(ftcsv(),"","',tmpcsv2,'",timestockframe);
-                 factorexp:="',funchar,'";
-                 factorexp:=&factorexp;
-                 result:=array(); 
-                 for i:=0 to length(timestockframe)-1 do
-                 begin 
-                 SetSysParam(pn_stock(),timestockframe[i]["stockID"]); 
-                 SetSysParam(pn_date(),strtodate(timestockframe[i]["date"])); 
-                 Rdate:=NewReportDateOfEndT2(sp_time()); 
-                 factorvalue:=eval(factorexp); 
-                 result[i]["factorscore"]:=factorvalue; 
-                 result[i]["Rdate"]:=Rdate; 
-                 end; 
-                 RestoreSystemParameters(oV); 
-                 return result;', sep = "")
+  
+  subqr <- ""
+  for( i in 1:length(funchar)){
+    subqr <- paste0(subqr, '  factorexp[',i-1,'] := &"',funchar[i],'";  ')
+  }
+  subqr2 <- ""
+  if(!is.null(Rate)){
+    subqr2 <- paste0(subqr2, ' SetSysParam(pn_rate(), ',Rate,'); ')
+  }
+  if(!is.null(RateDay)){
+    subqr2 <- paste0(subqr2, ' SetSysParam(pn_rateday(), ',RateDay,'); ')
+  }
+  len.funchar <- length(funchar)-1
+  
+  qrstr <- paste0('oV:=BackUpSystemParameters();
+                  SetSysParam(pn_cycle(),cy_day());  
+                  ',subqr2,'  
+                  rdo2 importfile(ftcsv(),"","',tmpcsv2,'",timestockframe);
+                  factorexp := array();  
+                  ',subqr,'
+                  result:=array(); 
+                  for i:=0 to length(timestockframe)-1 do
+                  begin 
+                  SetSysParam(pn_stock(),timestockframe[i]["stockID"]); 
+                  SetSysParam(pn_date(),strtodate(timestockframe[i]["date"]));
+                  Rdate:=NewReportDateOfEndT2(sp_time()); 
+                  for j:=0 to ',len.funchar,' do
+                  begin 
+                  factorvalue:=eval(factorexp[j]); 
+                  result[i][j]:=factorvalue; 
+                  end; 
+                  result[i]["Rdate"]:=Rdate; 
+                  end; 
+                  RestoreSystemParameters(oV); 
+                  return result;')
   fct <- tsRemoteExecute(qrstr)
-  # fct <- tsRemoteCallFunc('getfactor_fin_general',list(tmpcsv,funchar))
   fct <- plyr::ldply(fct,as.data.frame)
+  colnames(fct) <- c(varname, "RDate")
   result <- cbind(TS,fct)
-  result <- renameCol(result,"factorscore",varname)
   result$stockID <- stockID2stockID(result$stockID,from="ts",to="local")
   return(result)  
 }
-
-
 
 
 
@@ -3340,9 +3584,9 @@ TS.getFin_ts <- function(TS,funchar,varname=funchar){
 #' @param begT an object of class "Date"
 #' @param endT an object of class "Date"
 #' @param variables a vector of charactor,elements of which could be stockID,stockName,date,price,open,high,low,vol,amount,yclose,sectional_yclose,cjbs,...
-#' @param cycle a charactor string,eg."cy_day()","cy_30m()","cy_month()",...
-#' @param rate a integer,giving the type of rights adjustment, could be one of 0(no adjustment),1(geometric adjustment),2(simple adjustment),3 
-#' @param rateday a integer,giving the base date of right adjustment,could be one of 0(the last trading day),-1(the IPO date),or a tinysoft date integer(eg.\code{rdate2ts(as.Date("2010-01-02"))})
+#' @param Cycle a charactor string,eg."cy_day()","cy_30m()","cy_month()",...
+#' @param Rate a integer,giving the type of rights adjustment, could be one of 0(no adjustment),1(geometric adjustment),2(simple adjustment),3 
+#' @param RateDay a integer,giving the base date of right adjustment,could be one of 0(the last trading day),-1(the IPO date),or a tinysoft date integer(eg.\code{rdate2ts(as.Date("2010-01-02"))})
 #' @param melt a logical. If FALSE(default), the style of result is "stockID+date~variable";If TRUE, the quote data will be melted(see the examples for details).
 #' @param split
 #' @param splitNbin
@@ -3356,22 +3600,22 @@ TS.getFin_ts <- function(TS,funchar,varname=funchar){
 #' variables <- c("price","open")
 #' qt.asis <- getQuote_ts(stocks,begT,endT,variables)
 #' qt.melt <- getQuote_ts(stocks,begT,endT,variables,melt=TRUE)
-getQuote_ts <- function(stocks,begT,endT,variables,cycle="cy_day()",rate=0,rateday=0,melt=FALSE,
+getQuote_ts <- function(stocks,begT,endT,variables,Cycle="cy_day()",Rate=0,RateDay=0,melt=FALSE,
                         split = if(length(stocks) > splitNbin) TRUE else FALSE,
                         splitNbin = 50){
   #     stocks <- c("SZ002001","SZ002002")
   #     begT <- as.Date("2008-01-01")
   #     endT <- as.Date("2011-02-01")
   #     variables <- c("price","yclose")
-  #     cycle="cy_day()"
-  #     rate=0
-  #     rateday=0     
-  subfun <- function(stocks,begT,endT,variables,cycle,rate,rateday,melt){
+  #     Cycle="cy_day()"
+  #     Rate=0
+  #     RateDay=0     
+  subfun <- function(stocks,begT,endT,variables,Cycle,Rate,RateDay,melt){
     stockID <- paste(stocks,collapse=",")
     begT <- rdate2ts(begT)
     endT <- rdate2ts(endT)
     variables <- paste('["',variables,'"]',sep="",collapse=",")  
-    qt <- tsRemoteCallFunc("getQuote",list(stockID,begT,endT,variables,cycle,rate,rateday))
+    qt <- tsRemoteCallFunc("getQuote",list(stockID,begT,endT,variables,Cycle,Rate,RateDay))
     qt <- plyr::ldply(qt,as.data.frame)
     qt$date <- as.POSIXct(qt$date,tz="")
     if(melt){
@@ -3380,7 +3624,7 @@ getQuote_ts <- function(stocks,begT,endT,variables,cycle="cy_day()",rate=0,rated
     return(qt)
   }
   if(!split){
-    re <- subfun(stocks,begT,endT,variables,cycle,rate,rateday,melt)
+    re <- subfun(stocks,begT,endT,variables,Cycle,Rate,RateDay,melt)
   } else {    
     Ngroup <- length(stocks) %/% splitNbin +1  
     Ngroup <-  if(Ngroup>1) Ngroup else Ngroup+1
@@ -3391,7 +3635,7 @@ getQuote_ts <- function(stocks,begT,endT,variables,cycle="cy_day()",rate=0,rated
       substocks <- stocks[bby==i]
       cat("Dealing with ",i," of ",Ngroup,"groups ... \n")
       gc()
-      qt <- subfun(substocks,begT,endT,variables,cycle,rate,rateday,melt)
+      qt <- subfun(substocks,begT,endT,variables,Cycle,Rate,RateDay,melt)
       if(i==1L){
         re <- qt
       } else {
@@ -3790,7 +4034,7 @@ getPeriodrtn_FU <- function(SP, stockID, begT, endT, drop=FALSE,
 #' @rdname getfactor
 #' @export
 gf_lcfs <- function(TS,factorID){
-  re <- TS.getTech(TS,variables=factorID,tableName="QT_FactorScore",datasrc = "local")
+  re <- getTech(TS,variables=factorID,tableName="QT_FactorScore",datasrc = "local")
   re <- renameCol(re,factorID,"factorscore")
   return(re)
 }
@@ -3823,7 +4067,7 @@ gf.free_float_shares <- function(TS){
 #' @export
 gf.free_float_sharesMV <- function(TS){
   ffs <- gf.free_float_shares(TS)
-  close <- TS.getTech(TS,variables='close')
+  close <- getTech(TS,variables='close')
   re <- merge(ffs,close,by=c('date','stockID'))
   re$factorscore <- re$factorscore*re$close
   re <- re[,c("date","stockID","factorscore")]

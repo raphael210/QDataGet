@@ -4,12 +4,12 @@
 \alias{TS.getTech_ts}
 \title{TS.getTech_ts}
 \usage{
-TS.getTech_ts(TS, funchar, varname = funchar)
+TS.getTech_ts(TS, funchar, varname = funchar, Rate = 1, RateDay = 0)
 }
 \arguments{
 \item{TS}{a \bold{TS} object}
 
-\item{funchar}{a character,the tinysoft function with the arguments. e.g \code{"BBIBOLL_v(11,6)"}}
+\item{funchar}{a vector of character,the tinysoft function with the arguments. e.g \code{"BBIBOLL_v(11,6)"}}
 
 \item{varname}{character string, giving the name of the returned variables}
 }
@@ -29,6 +29,8 @@ TS <- getTS(getRebDates(as.Date('2011-03-17'),as.Date('2012-04-17')),'EI000300')
  funchar <- paste('BBIBOLL_v(',p1,',',p2,')',sep='')
  TSF <- TS.getTech_ts(TS,funchar)
  TSF <- TS.getTech_ts(TS, funchar="StockAveHsl2(20)/StockAveHsl2(60)", varname="avgTurnover_1M3M")
+ funchar <- c('BBIBOLL_v(11,6)','StockAveHsl2(20)/StockAveHsl2(60)')
+ TSF2 <- TS.getTech_ts(TS, funchar)
 }
 \author{
 Ruifei.Yin

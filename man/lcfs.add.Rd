@@ -5,7 +5,7 @@
 \title{lcfs.add}
 \usage{
 lcfs.add(factorFun, factorPar = "", factorDir, factorID,
-  factorName = default.factorName_inner(factorFun, factorPar, factorDir),
+  factorName = inner_default.factorName(factorFun, factorPar, factorDir),
   factorType = "", factorDesc = "", begT = as.Date("1990-01-01"),
   endT = Sys.Date(), splitNbin = "month")
 }
@@ -14,7 +14,7 @@ lcfs.add(factorFun, factorPar = "", factorDir, factorID,
 
 \item{factorPar}{a character string, containing the parameters of the \code{factorFun}. Note that unlike in \code{\link{getTSF}}, here the factorPar could not be a list, because it need to be written into database.}
 
-\item{factorDir}{a integer,should be 1 or -1 (1 for the positive factor,-1 for the negative one). \bold{Note that} the \code{factorDir} here is only used to write a record into table \code{"CT_FactorLists"}, not used when getting \code{TSF}. So that the factorscore in table \code{"QT_DailyQuote"} is kept \bold{"raw", without adding the dirrection infomation}.}
+\item{factorDir}{a integer,should be 1 or -1 (1 for the positive factor,-1 for the negative one). \bold{Note that} the \code{factorDir} here is only used to write a record into table \code{"CT_FactorLists"}, not used when getting \code{TSF}. So that the factorscore in table \code{"QT_FactorScore"} is kept \bold{"raw", without adding the dirrection infomation}.}
 
 \item{factorID}{a character string}
 
@@ -34,7 +34,7 @@ lcfs.add(factorFun, factorPar = "", factorDir, factorID,
 Write data into the local sqlite database, returning NULL.
 }
 \description{
-add/update a factorscore column in local sqlite table \code{"QT_DailyQuote"}. On the same time, correspondingly, add/update a record into table \code{"CT_FactorLists"} and table \code{"CT_TechVars"}.
+add/update a factorscore column in local sqlite table \code{"QT_FactorScore"}. On the same time, correspondingly, add/update a record into table \code{"CT_FactorLists"} and table \code{"CT_TechVars"}.
 }
 \examples{
 system.time(lcfs.add(factorFun="gf.F_rank_chg",factorPar="lag=60,con_type=\\"1,2\\"", factorDir=1, factorID="F000999"))

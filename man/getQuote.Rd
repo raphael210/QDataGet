@@ -10,7 +10,7 @@ getQuote(stocks, begT = as.Date("1990-12-19"), endT = Sys.Date(),
   variables = select.list(CT_TechVars(datasrc = datasrc, secuCate = "EQ",
   tableName = tableName)[["varName"]], graphics = TRUE, multiple = TRUE),
   melt = FALSE, split = if (length(stocks) > splitNbin) TRUE else FALSE,
-  splitNbin = 300, tableName = "QT_DailyQuote",
+  splitNbin = 300, tableName = "QT_DailyQuote2",
   datasrc = defaultDataSRC())
 
 getIndexQuote(stocks, begT = as.Date("1990-12-19"), endT = Sys.Date(),

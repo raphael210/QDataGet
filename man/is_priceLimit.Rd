@@ -4,16 +4,18 @@
 \alias{is_priceLimit}
 \title{is_priceLimit}
 \usage{
-is_priceLimit(TS, nearby = 0, lim = c(-10, 10), datelist, stockID, drop,
-  datasrc = defaultDataSRC())
+is_priceLimit(TS, nearby = 0, lim = c(-10, 10), priceType = c("close",
+  "open"), datelist, stockID, drop, datasrc = defaultDataSRC())
 }
 \arguments{
-\item{nearby}{a integer vector. default is 1L, which means remove the suspending of the next tradingday. see detail in \code{\link{trday.nearby}}.}
+\item{nearby}{a integer vector. 0 means today, 1 means next tradingday. default is 0L. see detail in \code{\link{trday.nearby}}.}
 
 \item{lim}{a vector of length 2.}
+
+\item{priceType}{"close" or "open".}
 }
 \description{
-is_priceLimit
+if over-price-limit
 }
 \examples{
 RebDates <- getRebDates(as.Date('2013-03-17'),as.Date('2016-04-17'),'month')
@@ -21,6 +23,7 @@ TS <- getTS(RebDates,'EI000985')
 re <- is_priceLimit(TS)
 re1 <- is_priceLimit(TS,nearby=-1:1)
 re2 <- is_priceLimit(TS,lim=c(-Inf,10)) #  limit-up
+is_priceLimit(stockID = "EQ300576",datelist = as.Date("2016-12-22"),priceType = "open") #  open-price over limit
 }
 \author{
 Ruifei.yin

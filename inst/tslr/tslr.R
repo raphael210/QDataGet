@@ -3,25 +3,35 @@
 # ====================  Tinysoft Connection functions ====================
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx =====================
 
+tsLoad <- function(os = R.Version()$arch){
+  libpath <- .libPaths()[1]
+  if(os == "i386"){
+    dyn.load(paste(libpath,"/QDataGet/tslr/i386/tslr.dll",sep = ""))
+  }else if(os == "x86_64"){
+    dyn.load(paste(libpath,"/QDataGet/tslr/x64/tslr.dll",sep = ""))
+  }
+}
+
 #' tsConnect
 #'
 #' connect and login Tinysoft server
 #' @author ruifei.yin
 #' @export
-tsConnect <- function(user="gtrycs",psw="gtrycs888888",os="win32"){
-  libpath <- .libPaths()[1]
-  match.arg(arg = os,choices = c("win32","win64"))
-  if(os == "win32"){
-    dyn.load(paste(libpath,"/QDataGet/tslr/i386/tslr.dll",sep = ""))
-  }else if(os == "win64"){
-    dyn.load(paste(libpath,"/QDataGet/tslr/x64/tslr.dll",sep = ""))
-  }
+tsConnect <- function(user="gtrycs",psw="gtrycs888888"){
+  # libpath <- .libPaths()[1]
+  # match.arg(arg = os,choices = c("win32","win64"))
+  # if(os == "win32"){
+  #   dyn.load(paste(libpath,"/QDataGet/tslr/i386/tslr.dll",sep = ""))
+  # }else if(os == "win64"){
+  #   dyn.load(paste(libpath,"/QDataGet/tslr/x64/tslr.dll",sep = ""))
+  # }
   a <- .External("tslConnectServer","tsl.tinysoft.com.cn",443,NULL) # connect the server. return 0 if connect successfully.
   b <- .External("tslLoginServer",user,psw) # login the server
   # c <- .External("tslSetComputeBitsOption",0)# compute automatically
   f <- .External("tslLogined")# return 1 if logined already
   if (f!=1L) stop(paste("Tinysoft Login failed! Error message is:",f)) else cat("Tinysoft logined.")
 }
+
 #' @rdname tsConnect
 #' @export
 tsLogined <- function(){

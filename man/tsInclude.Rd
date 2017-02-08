@@ -2,9 +2,12 @@
 % Please edit documentation in R/pub02_dataGettingFuncs.R
 \name{tsInclude}
 \alias{tsInclude}
+\alias{tsRequire}
 \title{tsInclude}
 \usage{
-tsInclude()
+tsInclude(os = R.Version()$arch)
+
+tsRequire()
 }
 \arguments{
 \item{funchar}{a charactor string of tinysoft script}
@@ -12,6 +15,11 @@ tsInclude()
 \item{pars}{a list of funchar's parametres}
 
 \item{syspars}{a list of tinysoft system parametres.(including:StockID CurrentDate Cycle bRate RateDay Precision)}
+}
+\value{
+tsInclude: include and load the external dll;
+
+tsRequre: test if tinysoft connected, if not, connect it.
 }
 \description{
 Series of functions of connect/login Tinysoft server, and remote call funcions of Tinysoft.

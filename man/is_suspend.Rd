@@ -8,7 +8,7 @@ is_suspend(TS, nearby = 0, datelist, stockID, drop,
   datasrc = defaultDataSRC())
 }
 \arguments{
-\item{nearby}{a integer vector. default is 1L, which means remove the suspending of the next tradingday. see detail in \code{\link{trday.nearby}}.}
+\item{nearby}{a integer vector. 0 means today, 1 means next tradingday. default is 0L. see detail in \code{\link{trday.nearby}}.}
 }
 \description{
 is_suspend

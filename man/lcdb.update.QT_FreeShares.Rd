@@ -2,15 +2,14 @@
 % Please edit documentation in R/pub02_dataGettingFuncs.R
 \name{lcdb.update.QT_FreeShares}
 \alias{lcdb.update.QT_FreeShares}
-\title{lcdb.update.QT_FreeShares}
+\title{lcdb.build.QT_FreeShares}
 \usage{
 lcdb.update.QT_FreeShares()
 }
 \description{
-lcdb.update.QT_FreeShares
+lcdb.build.QT_FreeShares
 }
 \examples{
-library(WindR)
-lcdb.update.QT_FreeShares()
+lcdb.build.QT_FreeShares(filename="D:/sqlitedb/FREE_SHARES.csv")
 }
 

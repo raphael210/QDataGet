@@ -21,11 +21,11 @@
 \alias{lcdb.update.LC_RptDate}
 \alias{lcdb.update.QT_DailyQuote}
 \alias{lcdb.update.QT_DailyQuote2}
+\alias{lcdb.update.QT_FactorScore}
 \alias{lcdb.update.QT_IndexQuote}
 \alias{lcdb.update.QT_TradingDay}
 \alias{lcdb.update.QT_UnTradingDay}
 \alias{lcdb.update.SecuMain}
-\alias{lcfs.update}
 \alias{missing,}
 \alias{of}
 \alias{server}
@@ -65,7 +65,7 @@ lcdb.fix.swindustry()
 
 lcdb.fix.ezindustry()
 
-lcfs.update(endT = Sys.Date())
+lcdb.update.QT_FactorScore(endT = Sys.Date())
 }
 \arguments{
 \item{begT}{a numeric date. if missing, '\code{max(EndDate)}' in the lcdb.}

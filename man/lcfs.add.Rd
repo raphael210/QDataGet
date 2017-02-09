@@ -6,8 +6,7 @@
 \usage{
 lcfs.add(factorFun, factorPar = "", factorDir, factorID,
   factorName = inner_default.factorName(factorFun, factorPar, factorDir),
-  factorType = "", factorDesc = "", begT = as.Date("1990-01-01"),
-  endT = Sys.Date(), splitNbin = "month")
+  factorType = "", factorDesc = "", splitNbin = "month")
 }
 \arguments{
 \item{factorFun}{a character string naming the function to get the factor scores}
@@ -24,10 +23,6 @@ lcfs.add(factorFun, factorPar = "", factorDir, factorID,
 
 \item{factorDesc}{a character string}
 
-\item{begT}{the begin date of the adding/updating}
-
-\item{endT}{the end date of the adding/updating}
-
 \item{splitNbin}{a character of interval specification(see \code{\link{cut.Date}} for detail). Specify the time interval when looping of getting the \code{TSF} object.}
 }
 \value{
@@ -43,6 +38,6 @@ system.time(lcfs.add(factorFun="gf.F_rank_chg",factorPar="lag=60,con_type=\\"1,2
 Ruifei.Yin
 }
 \seealso{
-\code{\link{getTSF}},\code{\link{modelPar.factor}}, \code{\link{lcfs.update}}
+\code{\link{getTSF}},\code{\link{modelPar.factor}}, \code{\link{lcdb.update.QT_FactorScore}}
 }
 

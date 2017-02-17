@@ -890,7 +890,7 @@ lcdb.update.IndexQuote_000985E <- function(begT,endT){
     tmp.dates <- trday.get(begT,endT)
     
     cat('calculating',rdate2int(min(tmp.dates)),"~",rdate2int(max(tmp.dates)),'...\n')
-    qr <- paste("select TradingDay,ID,DailyReturn from QT_DailyQuote
+    qr <- paste("select TradingDay,ID,DailyReturn from QT_DailyQuote2
                 where TradingDay>=",rdate2int(min(tmp.dates))," and TradingDay<=",rdate2int(max(tmp.dates)))
     quotedf <- dbGetQuery(con,qr)
     quotedf$TradingDay <- intdate2r(quotedf$TradingDay)

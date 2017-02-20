@@ -1346,11 +1346,11 @@ lcfs.add <- function(factorFun,
                'QT_FactorScore'
                ) ")
   dbGetQuery(con,qr2)
-  dbDisconnect(con)
   
   # add 1 colume to table 'QT_FactorScore' 
   tryCatch(dbGetQuery(con,paste("ALTER TABLE QT_FactorScore ADD COLUMN ",factorID,"float(0, 4)")),
            error=function(e) { print("RS-DBI driver: (error in statement: duplicate column name)") })
+  dbDisconnect(con)
   
   # update
   lcfs.update(factorID = factorID,splitNbin = splitNbin)
@@ -1540,14 +1540,27 @@ tsInclude <- function(os = R.Version()$arch){
   tsLoad(os)
 }
 
+#' @rdname tsInclude
+#' @export
+tsLoad <- function(os = R.Version()$arch){
+  libpath <- .libPaths()[1]
+  if(os == "i386"){
+    dyn.load(paste(libpath,"/QDataGet/tslr/i386/tslr.dll",sep = ""))
+  }else if(os == "x86_64"){
+    dyn.load(paste(libpath,"/QDataGet/tslr/x64/tslr.dll",sep = ""))
+  }
+}
 
 #' @export
 #' @rdname tsInclude
 tsRequire <- function(){
   if(!exists("tsLogined")){
     tsInclude()
-    tsConnect()
-  } else if(tsLogined()==0){
+  }
+  if(!is.loaded("tslConnectServer")){
+    tsLoad()
+  }
+  if(tsLogined()==0){
     tsConnect()
   }
 }
@@ -2715,6 +2728,42 @@ getSectorID <- function(TS, stockID, endT=Sys.Date(),
   }
 }
 
+
+#' sectorID2indexID
+#' @export
+#' @examples 
+#' sctID <- getSectorID(stockID = "EQ000001",drop=TRUE)
+#' sectorID2indexID(sctID)
+sectorID2indexID <- function(sectorID){
+  tmpdat2 <- queryAndClose.odbc(db.jy(),
+                                "select A.*, B.SecuCode
+                                from JYDB.dbo.LC_CorrIndexIndustry A,
+                                JYDB.dbo.SecuMain B
+                                where A.IndexCode = B.InnerCode")
+  tmpdat2 <- subset(tmpdat2, IndustryStandard == 24 )
+  tmpdat2 <- subset(tmpdat2, substr(SecuCode,1,3) == "801")
+  tmpdat2 <- tmpdat2[,c("IndustryCode", "SecuCode")]
+  tmpdat2 <- renameCol(tmpdat2, "IndustryCode", "sector")
+  tmpdat2$sector <- paste0("ES33",tmpdat2$sector)
+  # output
+  sectorID_df <- data.frame("sector" = sectorID)
+  re <- merge.x(sectorID_df, tmpdat2, by = "sector")
+  re$SecuCode <- paste0("EI",re$SecuCode)
+  return(re$SecuCode)
+}
+
+#' stockID2indexID
+#' @export
+#' @examples 
+#' stockID2indexID(stockID = "EQ000001")
+stockID2indexID <- function(TS, stockID, withsector = F){
+  re <- getSectorID(TS = TS, stockID = stockID)
+  re$indexID <- sectorID2indexID(re$sector)
+  if(!withsector){
+    re <- dplyr::select(re, -sector)
+  }
+  return(re)
+}
 
 
 

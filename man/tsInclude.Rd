@@ -2,10 +2,13 @@
 % Please edit documentation in R/pub02_dataGettingFuncs.R
 \name{tsInclude}
 \alias{tsInclude}
+\alias{tsLoad}
 \alias{tsRequire}
 \title{tsInclude}
 \usage{
 tsInclude(os = R.Version()$arch)
+
+tsLoad(os = R.Version()$arch)
 
 tsRequire()
 }

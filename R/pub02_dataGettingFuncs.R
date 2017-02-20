@@ -169,7 +169,7 @@ lcdb.update <- function(){
   lcdb.update.LC_RptDate()               ;  cat("lcdb.update.LC_RptDate()... Done \n");
   lcdb.update.LC_PerformanceGrowth()     ;  cat("lcdb.update.LC_PerformanceGrowth()... Done \n");
   lcdb.update.QT_FreeShares()            ;  cat("lcdb.update.QT_FreeShares()... Done \n");
-  lcfs.update()                          ;  cat("lcfs.update()... Done \n");
+  lcdb.update.QT_FactorScore()           ;  cat("lcdb.update.QT_FactorScore()... Done \n");
   
 }
 
@@ -338,7 +338,6 @@ lcdb.update.QT_DailyQuote <- function(begT,endT,stockID){
       } else {
         begT <- dbGetQuery(con,"select min(TradingDay) from QT_DailyQuote")[[1]]
       }
-      
     }
     begT_filt <- paste("TradingDay >=",begT)
     if(missing(endT)){
@@ -1061,7 +1060,7 @@ lcdb.update.QT_FreeShares <- function(){
 
 #' @rdname lcdb.update
 #' @export
-lcfs.update <- function(endT=Sys.Date()){
+lcdb.update.QT_FactorScore <- function(endT=Sys.Date()){
   require(QFactorGet)
   con <- db.local()
   begT <- dbGetQuery(con,"select max(TradingDay) from QT_FactorScore")[[1]]
@@ -1108,6 +1107,9 @@ lcfs.update <- function(endT=Sys.Date()){
 
 # This function comes from package RFactorModel
 inner_getRawFactor <- function (TS,factorFun,factorPar) {
+  if("factorscore" %in% names(TS)){
+    stop("There has existed a 'factorscore' field in the TS object. Please remove or rename it first!")
+  }
   if(missing(factorPar)){
     TSF <- do.call(factorFun,c(list(TS)))
   } else if(is.list(factorPar)){
@@ -1122,6 +1124,10 @@ inner_getRawFactor <- function (TS,factorFun,factorPar) {
   } else {
     stop("The factorPar must be a list or a character string!")
   }
+  if(!("factorscore" %in% names(TSF))){
+    stop("There must be a 'factorscore' field in the TSF result!")
+  }
+  return(TSF)
 }
 
 # This function comes from package RFactorModel
@@ -1226,6 +1232,60 @@ lcdb.init.QT_DailyQuote2 <- function(){
 
 
 
+#' lcfs.update
+#' 
+#' @param begT the begin date of the updating
+#' @param endT the end date of the updating
+#' @export
+#' @examples
+#' lcfs.update("F000008",20130322,20130330,c("EQ000001","EQ000002"))
+lcfs.update <- function(factorID,begT=19900101,endT=99999999,stockID,
+                        splitNbin="month"){
+  
+  if(missing(stockID)){
+    pool_filt <- "1>0"
+  } else{
+    pool_filt <- paste("ID in",brkQT(stockID))
+  }
+
+  con <- db.local()
+  factorFun <- CT_FactorLists(factorID = factorID)$factorFun
+  factorPar <- CT_FactorLists(factorID = factorID)$factorPar
+  
+  loopT <- dbGetQuery(con,paste("select distinct tradingday from QT_FactorScore where TradingDay >=",begT,"and TradingDay <=",endT,"order by tradingday"))[[1]]
+  # loopT <- loopT[loopT>=begT & loopT<=endT]    
+  loopT.L <- split(loopT,cut(intdate2r(loopT),splitNbin))
+  
+  subfun <- function(Ti){
+    cat(paste(" ",min(Ti),"to",max(Ti)," ...\n"))
+    dates <- paste(Ti,collapse=",")
+    TS <- dbGetQuery(con,paste("select TradingDay as date, ID as stockID from QT_FactorScore where TradingDay in (",dates,") and",pool_filt))
+    TS$date <- intdate2r(TS$date)    
+    TSF <- inner_getRawFactor(TS,factorFun,factorPar)
+    TSF$date <- rdate2int(TSF$date)
+    TSF <- renameCol(TSF,src="factorscore",tgt=factorID)
+    
+    for(Tij in Ti){ # update the factorscore day by day.
+      #     Tij <- Ti[1]
+      # cat(paste(" ",Tij))
+      dbWriteTable(con,"yrf_tmp",TSF[TSF$date==Tij,],overwrite=TRUE,append=FALSE,row.names=FALSE)
+      qr <- paste("UPDATE QT_FactorScore
+                  SET ",factorID,"= (SELECT ",factorID," FROM yrf_tmp WHERE yrf_tmp.stockID =QT_FactorScore.ID) 
+                  WHERE QT_FactorScore.ID = (SELECT stockID FROM yrf_tmp WHERE yrf_tmp.stockID =QT_FactorScore.ID)
+                  and QT_FactorScore.TradingDay =",Tij)
+      res <- dbSendQuery(con,qr)
+      dbClearResult(res)  
+    }   
+    gc()
+  }  
+  
+  cat(paste("Function lcfs.add: updateing factor score of",factorID,".... \n"))
+  plyr::l_ply(loopT.L, subfun, .progress = plyr::progress_text(style=3))   
+  dbDisconnect(con)
+}
+
+
+
 #' lcfs.add
 #' 
 #' add/update a factorscore column in local sqlite table \code{"QT_FactorScore"}. On the same time, correspondingly, add/update a record into table \code{"CT_FactorLists"} and table \code{"CT_TechVars"}.
@@ -1236,11 +1296,9 @@ lcdb.init.QT_DailyQuote2 <- function(){
 #' @param factorName a character string. IF missing, then take a default name by function \code{default.factorName}. 
 #' @param factorType a character string
 #' @param factorDesc a character string
-#' @param begT the begin date of the adding/updating
-#' @param endT the end date of the adding/updating
 #' @param splitNbin a character of interval specification(see \code{\link{cut.Date}} for detail). Specify the time interval when looping of getting the \code{TSF} object.
 #' @return Write data into the local sqlite database, returning NULL.
-#' @seealso \code{\link{getTSF}},\code{\link{modelPar.factor}}, \code{\link{lcfs.update}}
+#' @seealso \code{\link{getTSF}},\code{\link{modelPar.factor}}, \code{\link{lcdb.update.QT_FactorScore}}
 #' @author Ruifei.Yin
 #' @export
 #' @examples
@@ -1252,7 +1310,6 @@ lcfs.add <- function(factorFun,
                      factorName = inner_default.factorName(factorFun,factorPar,factorDir),                      
                      factorType = "", 
                      factorDesc = "",
-                     begT = as.Date("1990-01-01"), endT = Sys.Date(),
                      splitNbin = "month"){   
   if(factorID %in% CT_FactorLists()$factorID) {
     is_overwrite <- select.list(choices=c("OK","CANCEL"),preselect="CANCEL",title=paste("Warning!\nThe factor",factorID,"has already exist!\nDo you want to overwrite it?"),graphics=FALSE)
@@ -1290,40 +1347,18 @@ lcfs.add <- function(factorFun,
                ) ")
   dbGetQuery(con,qr2)
   
-  # add 1 colume to table 'QT_FactorScore' , looping by 'splitNbin'
+  # add 1 colume to table 'QT_FactorScore' 
   tryCatch(dbGetQuery(con,paste("ALTER TABLE QT_FactorScore ADD COLUMN ",factorID,"float(0, 4)")),
            error=function(e) { print("RS-DBI driver: (error in statement: duplicate column name)") })
-  loopT <- dbGetQuery(con,"select distinct tradingday from QT_FactorScore order by tradingday")[[1]]
-  loopT <- loopT[loopT>=rdate2int(begT) & loopT<=rdate2int(endT)]    
-  loopT.L <- split(loopT,cut(intdate2r(loopT),splitNbin))
-  
-  subfun <- function(Ti){
-    cat(paste(" ",min(Ti),"to",max(Ti)," ...\n"))
-    dates <- paste(Ti,collapse=",")
-    TS <- dbGetQuery(con,paste("select TradingDay as date, ID as stockID from QT_FactorScore where TradingDay in (",dates,")"))
-    TS$date <- intdate2r(TS$date)    
-    TSF <- inner_getRawFactor(TS,factorFun,factorPar)
-    TSF$date <- rdate2int(TSF$date)
-    TSF <- renameCol(TSF,src="factorscore",tgt=factorID)
-    
-    for(Tij in Ti){ # update the factorscore day by day.
-      #     Tij <- Ti[1]
-      # cat(paste(" ",Tij))
-      dbWriteTable(con,"yrf_tmp",TSF[TSF$date==Tij,],overwrite=TRUE,append=FALSE,row.names=FALSE)
-      qr <- paste("UPDATE QT_FactorScore
-                  SET ",factorID,"= (SELECT ",factorID," FROM yrf_tmp WHERE yrf_tmp.stockID =QT_FactorScore.ID) 
-                  WHERE QT_FactorScore.ID = (SELECT stockID FROM yrf_tmp WHERE yrf_tmp.stockID =QT_FactorScore.ID)
-                  and QT_FactorScore.TradingDay =",Tij)
-      res <- dbSendQuery(con,qr)
-      dbClearResult(res)  
-    }   
-    gc()
-  }  
-  
-  cat(paste("Function lcfs.add: updateing factor score of",factorID,".... \n"))
-  plyr::l_ply(loopT.L, subfun, .progress = plyr::progress_text(style=3))   
   dbDisconnect(con)
+  
+  # update
+  lcfs.update(factorID = factorID,splitNbin = splitNbin)
+  
 }
+
+
+
 
 
 #' lcdb.update.QT_sus_res
@@ -1505,14 +1540,27 @@ tsInclude <- function(os = R.Version()$arch){
   tsLoad(os)
 }
 
+#' @rdname tsInclude
+#' @export
+tsLoad <- function(os = R.Version()$arch){
+  libpath <- .libPaths()[1]
+  if(os == "i386"){
+    dyn.load(paste(libpath,"/QDataGet/tslr/i386/tslr.dll",sep = ""))
+  }else if(os == "x86_64"){
+    dyn.load(paste(libpath,"/QDataGet/tslr/x64/tslr.dll",sep = ""))
+  }
+}
 
 #' @export
 #' @rdname tsInclude
 tsRequire <- function(){
   if(!exists("tsLogined")){
     tsInclude()
-    tsConnect()
-  } else if(tsLogined()==0){
+  }
+  if(!is.loaded("tslConnectServer")){
+    tsLoad()
+  }
+  if(tsLogined()==0){
     tsConnect()
   }
 }
@@ -2680,6 +2728,42 @@ getSectorID <- function(TS, stockID, endT=Sys.Date(),
   }
 }
 
+
+#' sectorID2indexID
+#' @export
+#' @examples 
+#' sctID <- getSectorID(stockID = "EQ000001",drop=TRUE)
+#' sectorID2indexID(sctID)
+sectorID2indexID <- function(sectorID){
+  tmpdat2 <- queryAndClose.odbc(db.jy(),
+                                "select A.*, B.SecuCode
+                                from JYDB.dbo.LC_CorrIndexIndustry A,
+                                JYDB.dbo.SecuMain B
+                                where A.IndexCode = B.InnerCode")
+  tmpdat2 <- subset(tmpdat2, IndustryStandard == 24 )
+  tmpdat2 <- subset(tmpdat2, substr(SecuCode,1,3) == "801")
+  tmpdat2 <- tmpdat2[,c("IndustryCode", "SecuCode")]
+  tmpdat2 <- renameCol(tmpdat2, "IndustryCode", "sector")
+  tmpdat2$sector <- paste0("ES33",tmpdat2$sector)
+  # output
+  sectorID_df <- data.frame("sector" = sectorID)
+  re <- merge.x(sectorID_df, tmpdat2, by = "sector")
+  re$SecuCode <- paste0("EI",re$SecuCode)
+  return(re$SecuCode)
+}
+
+#' stockID2indexID
+#' @export
+#' @examples 
+#' stockID2indexID(stockID = "EQ000001")
+stockID2indexID <- function(TS, stockID, withsector = F){
+  re <- getSectorID(TS = TS, stockID = stockID)
+  re$indexID <- sectorID2indexID(re$sector)
+  if(!withsector){
+    re <- dplyr::select(re, -sector)
+  }
+  return(re)
+}
 
 
 

@@ -3,14 +3,6 @@
 # ====================  Tinysoft Connection functions ====================
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx =====================
 
-tsLoad <- function(os = R.Version()$arch){
-  libpath <- .libPaths()[1]
-  if(os == "i386"){
-    dyn.load(paste(libpath,"/QDataGet/tslr/i386/tslr.dll",sep = ""))
-  }else if(os == "x86_64"){
-    dyn.load(paste(libpath,"/QDataGet/tslr/x64/tslr.dll",sep = ""))
-  }
-}
 
 #' tsConnect
 #'

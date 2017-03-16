@@ -3390,7 +3390,59 @@ is_blacklist <- function(TS,
   
 }
 
+#' is_st
+#' 
+#' is st stock
+#' @author Ruifei.yin
+#' @examples
+#' RebDates <- getRebDates(as.Date('2013-03-17'),as.Date('2016-04-17'),'month')
+#' TS <- getTS(RebDates,'EI000985')
+#' re <- is_st(TS)
+#' @export
+is_st <- function(TS,
+                  datelist,stockID, 
+                  drop,
+                  datasrc=defaultDataSRC()){
+  if (missing(TS) && any(missing(stockID),missing(datelist))) {
+    stop("Param TS and combination of stockID and datelist should at least have one!")
+  }
+  if (!missing(TS) && !all(missing(stockID),missing(datelist))) {
+    stop("Param TS and combination of stockID and datelist should only have one!")
+  }
+  if(missing(drop)){
+    drop <- if(missing(TS)) TRUE else FALSE
+  }
+  
+  if (missing(TS)){
+    TS <- expand.grid(date=datelist, stockID=stockID)
+  }
+  
+  check.TS(TS)
+  
+  if(datasrc=='ts'){
+    TS_ <- TS.getTech_ts(TS, funchar="IsST_()")
+    TS_ <- renameCol(TS_, c("IsST_()"), c("is_st"))
+    TS_$is_st <- ifelse(TS_$is_st==1,TRUE,FALSE)
+  } else {
+    TS_ <- transform(TS,date=rdate2int(date))
+    con <- db.local()
+    RSQLite::dbWriteTable(con,"yrf_tmp",TS_,overwrite=TRUE,row.names=FALSE)
+    qr <- "select y.*,q.SecuAbbr 'is_st' from yrf_tmp y
+            left join QT_DailyQuote2 q on y.date=q.TradingDay and y.stockID=q.ID"
+    TS_ <- RSQLite::dbGetQuery(con,qr)
+    RSQLite::dbDisconnect(con)
+    TS_ <- transform(TS_,date=intdate2r(date),
+                     is_st=stringr::str_detect(is_st,'ST'))
+  }
+  
 
+  if(drop){
+    return(TS_$is_st)
+  }else{
+    return(TS_)
+  }
+  
+}
 
 
 

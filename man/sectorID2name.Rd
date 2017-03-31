@@ -9,4 +9,3 @@ sectorID2name(sectorID)
 \description{
 sectorID2name
 }
-

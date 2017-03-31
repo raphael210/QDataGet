@@ -23,4 +23,3 @@ queryAndClose.odbc(db.quant(),"select top 10 * from QT_DailyQuote")
 \author{
 Ruifei.Yin
 }
-

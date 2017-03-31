@@ -24,4 +24,3 @@ factorList1 <- buildFactorList(factorFun = "gf.mkt_cap", factorStd = "norm", fac
 options(sectorAttr= list(std=list(factorList1,33),level=list(5,1)))
 defaultSectorAttr()
 }
-

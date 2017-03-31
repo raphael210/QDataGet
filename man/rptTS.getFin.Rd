@@ -2,8 +2,8 @@
 % Please edit documentation in R/pub02_dataGettingFuncs.R
 \name{rptTS.getFin}
 \alias{rptTS.getFin}
-\alias{rptTS.getFin_ts}
 \alias{rptTS.getFin_windR}
+\alias{rptTS.getFin_ts}
 \title{rptTS.getFin}
 \usage{
 rptTS.getFin_windR(rptTS, field, ...)
@@ -36,12 +36,11 @@ re <- rptTS.getFin_windR(rptTS,"np_belongto_parcomsh","rptType=1")
 # rptTS.getFin_ts
 re2 <- rptTS.getFin_ts(rptTS,'"np_belongto_parcomsh",report(46078,RDate)')
 }
-\author{
-Ruifei.Yin
-}
 \seealso{
 \code{\link[WindR]{w.wss}}
 
 \code{\link{ts.wss}}
 }
-
+\author{
+Ruifei.Yin
+}

@@ -18,4 +18,3 @@ lcfs.update
 \examples{
 lcfs.update("F000008",20130322,20130330,c("EQ000001","EQ000002"))
 }
-

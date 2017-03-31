@@ -17,10 +17,9 @@ a vector containing the tinysoft date value transformed from the R date
 \description{
 transform the R date to tinysoft date value
 }
-\author{
-Ruifei.Yin
-}
 \seealso{
 \code{\link{tsdate2r}}
 }
-
+\author{
+Ruifei.Yin
+}

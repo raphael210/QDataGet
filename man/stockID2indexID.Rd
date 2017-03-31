@@ -12,4 +12,3 @@ stockID2indexID
 \examples{
 stockID2indexID(stockID = "EQ000001")
 }
-

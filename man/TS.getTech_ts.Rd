@@ -35,4 +35,3 @@ TS <- getTS(getRebDates(as.Date('2011-03-17'),as.Date('2012-04-17')),'EI000300')
 \author{
 Ruifei.Yin
 }
-

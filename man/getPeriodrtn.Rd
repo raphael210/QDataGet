@@ -59,4 +59,3 @@ getPeriodrtn_FU(stockID="FUIF00",begT=as.Date("2012-01-01"), endT=as.Date("2012-
 \author{
 Ruifei.Yin
 }
-

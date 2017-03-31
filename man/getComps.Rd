@@ -37,4 +37,3 @@ getComps("EI000300",drop=FALSE)
 Other getComps functions: \code{\link{getIndexCompWgt}},
   \code{\link{getSectorComp}}
 }
-

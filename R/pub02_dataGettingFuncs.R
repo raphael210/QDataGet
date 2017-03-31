@@ -2047,7 +2047,7 @@ trday.nearby <- function(datelist,by, stockID=NULL,
 #' trday.offset(datelist,years(1))
 #' trday.offset(datelist,months(-1),stockID="EQ000527") 
 trday.offset <- function(datelist,by=months(1),stockID=NULL,
-                         dir=if(Sys.time()+by > Sys.time()) 1L else -1L, 
+                         dir=if(as.numeric(by)>0) 1L else -1L, 
                          TS,
                          drop){
   if(is.null(stockID) & missing(TS)){ # the market tradingday

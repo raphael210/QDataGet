@@ -23,4 +23,3 @@ getIFcontinuousCode()
 \author{
 Ruifei.Yin
 }
-

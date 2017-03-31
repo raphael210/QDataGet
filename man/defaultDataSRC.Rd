@@ -20,4 +20,3 @@ options(datasrc="quant")
 # -- reget
 defaultDataSRC()
 }
-

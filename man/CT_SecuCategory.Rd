@@ -14,4 +14,3 @@ CT_SecuCategory(DM=c(1,4))
 CT_SecuCategory(MS="xxx")
 CT_SecuCategory()
 }
-

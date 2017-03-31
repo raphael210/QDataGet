@@ -29,4 +29,3 @@ tmp <- getSectorComp("ES09440000",as.Date(c("2011-12-31","2012-12-31"))) # get t
 Other getComps functions: \code{\link{getComps}},
   \code{\link{getIndexCompWgt}}
 }
-

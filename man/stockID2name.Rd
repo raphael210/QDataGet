@@ -25,4 +25,3 @@ Other SecuMain functions: \code{\link{SecuCategory}},
   \code{\link{stockName2ID}},
   \code{\link{tradeCode2stockID}}
 }
-

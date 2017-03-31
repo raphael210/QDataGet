@@ -62,4 +62,3 @@ ts.wss("EQ000027",'"G_NP_Q",LastQuarterData(Rdate,9900604,0)',as.Date("2007-03-3
 ts.wss("EQ000027",'"G_NP_Q",LastQuarterData(Rdate,9900604,0)',as.Date("2007-03-31"),Time=Sys.Date()) # 229.16 (07_unadj/06_unadj-1)
 ts.wss("EQ000027",'"G_NP_Q",LastQuarterData(Rdate,9900604,0)',as.Date("2007-03-31"),adjust_yoy=TRUE) # 49 (07_unadj/06_adj-1) This is the correct one!
 }
-

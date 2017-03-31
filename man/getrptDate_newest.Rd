@@ -43,4 +43,3 @@ getrptDate_newest(stockID=c("EQ000001","EQ000002","EQ000004"), endT=as.Date("200
 \author{
 Ruifei.Yin
 }
-

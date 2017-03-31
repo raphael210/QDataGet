@@ -42,4 +42,3 @@ qt.melt <- getQuote_ts(stocks,begT,endT,variables,melt=TRUE)
 \author{
 Ruifei.Yin
 }
-

@@ -26,4 +26,3 @@ trday.is(TS=TS)
 \author{
 Ruifei.Yin
 }
-

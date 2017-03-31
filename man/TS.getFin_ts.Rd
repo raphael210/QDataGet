@@ -36,4 +36,3 @@ TSF4 <- TS.getFin_ts(TS, funchar)
 \author{
 Ruifei.Yin
 }
-

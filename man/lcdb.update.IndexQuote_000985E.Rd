@@ -12,4 +12,3 @@ lcdb.update.IndexQuote_000985E
 \examples{
 lcdb.update.IndexQuote_000985E()
 }
-

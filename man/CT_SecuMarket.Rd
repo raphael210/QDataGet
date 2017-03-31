@@ -14,4 +14,3 @@ CT_SecuMarket(DM=c(83,90))
 CT_SecuMarket(MS="xxx")
 CT_SecuMarket()
 }
-

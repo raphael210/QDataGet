@@ -27,4 +27,3 @@ trday.count(as.Date("2012-01-01"),as.Date("2012-09-30"),stockID="EQ000527")
 \author{
 Ruifei.Yin
 }
-

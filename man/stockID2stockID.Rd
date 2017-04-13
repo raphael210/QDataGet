@@ -23,9 +23,6 @@ Covert the stockID to another type of stockID.
 stockID2stockID(c("EI000001","EI000300"),to="jy",from="local")
 stockID2stockID(c("SH000001","SH000300"),to="jy",from="ts")
 }
-\author{
-Ruifei.Yin
-}
 \seealso{
 Other SecuMain functions: \code{\link{SecuCategory}},
   \code{\link{SecuMarket}}, \code{\link{stockID2name}},
@@ -33,4 +30,6 @@ Other SecuMain functions: \code{\link{SecuCategory}},
   \code{\link{stockName2ID}},
   \code{\link{tradeCode2stockID}}
 }
-
+\author{
+Ruifei.Yin
+}

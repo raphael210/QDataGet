@@ -18,4 +18,3 @@ load frequently used data into memory, including \code{.tradingdays}, \code{.QT_
 \author{
 Ruifei.Yin
 }
-

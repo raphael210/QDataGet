@@ -49,4 +49,3 @@ test2 <- getSectorID(TS, sectorAttr= list(std=list(factorList1,33),level=list(5,
 \author{
 Ruifei.Yin
 }
-

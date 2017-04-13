@@ -12,4 +12,3 @@ CT_SystemConst
 \examples{
 CT_SystemConst(LB=1081)
 }
-

@@ -29,4 +29,3 @@ trday.nearby(datelist,20,stockID="EQ000527")
 \author{
 Ruifei.Yin
 }
-

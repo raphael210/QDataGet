@@ -28,4 +28,3 @@ trday.nearest(datelist, dir = 1, stockID="EQ000527")
 \author{
 Ruifei.Yin
 }
-

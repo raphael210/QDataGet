@@ -12,4 +12,3 @@ initiate the quote data of index 000985 through Wind API.
 \examples{
 lcdb.init.indexquote000985()
 }
-

@@ -30,4 +30,3 @@ rtn.adj <- getIFrtn("IF00",begT,endT,adj=TRUE)
 \author{
 Ruifei.Yin
 }
-

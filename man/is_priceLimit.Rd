@@ -28,4 +28,3 @@ is_priceLimit(stockID = "EQ300576",datelist = as.Date("2016-12-22"),priceType = 
 \author{
 Ruifei.yin
 }
-

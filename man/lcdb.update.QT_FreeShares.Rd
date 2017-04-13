@@ -11,5 +11,5 @@ lcdb.build.QT_FreeShares
 }
 \examples{
 lcdb.build.QT_FreeShares(filename="D:/sqlitedb/FREE_SHARES.csv")
+lcdb.update.QT_FreeShares()
 }
-

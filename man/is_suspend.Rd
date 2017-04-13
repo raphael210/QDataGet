@@ -22,4 +22,3 @@ re1 <- is_suspend(TS,nearby=c(0,1))#  Suspend of today and nextday
 \author{
 Ruifei.yin
 }
-

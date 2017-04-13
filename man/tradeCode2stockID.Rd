@@ -24,9 +24,6 @@ Covert the tradeCode to stockID given specific secucategory.
 tradeCode2stockID(c("600001","600002"),secuCate=1)
 tradeCode2stockID(c("000001","000300"),secuCate=4)
 }
-\author{
-Ruifei.Yin
-}
 \seealso{
 Other SecuMain functions: \code{\link{SecuCategory}},
   \code{\link{SecuMarket}}, \code{\link{stockID2name}},
@@ -34,4 +31,6 @@ Other SecuMain functions: \code{\link{SecuCategory}},
   \code{\link{stockID2tradeCode}},
   \code{\link{stockName2ID}}
 }
-
+\author{
+Ruifei.Yin
+}

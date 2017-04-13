@@ -4,7 +4,7 @@
 \alias{stockID2indexID}
 \title{stockID2indexID}
 \usage{
-stockID2indexID(TS, stockID, withsector = F)
+stockID2indexID(TS, stockID, withsector = FALSE)
 }
 \description{
 stockID2indexID
@@ -12,4 +12,3 @@ stockID2indexID
 \examples{
 stockID2indexID(stockID = "EQ000001")
 }
-

@@ -23,4 +23,3 @@ Other SecuMain functions: \code{\link{SecuMarket}},
   \code{\link{stockName2ID}},
   \code{\link{tradeCode2stockID}}
 }
-

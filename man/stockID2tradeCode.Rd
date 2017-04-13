@@ -21,9 +21,6 @@ Covert the stockID to tradeCode.
 stockID2tradeCode(c("EI000001","EQ000030"),IDsrc="local")
 stockID2tradeCode(c("SZ000001","SH000030"),IDsrc="ts")
 }
-\author{
-Ruifei.Yin
-}
 \seealso{
 Other SecuMain functions: \code{\link{SecuCategory}},
   \code{\link{SecuMarket}}, \code{\link{stockID2name}},
@@ -31,4 +28,6 @@ Other SecuMain functions: \code{\link{SecuCategory}},
   \code{\link{stockName2ID}},
   \code{\link{tradeCode2stockID}}
 }
-
+\author{
+Ruifei.Yin
+}

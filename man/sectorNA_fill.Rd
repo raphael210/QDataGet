@@ -12,4 +12,3 @@ sectorNA_fill(TSS, sectorAttr = defaultSectorAttr())
 \description{
 replace the NA value of sectorID with an "OTHER" sector
 }
-

@@ -11,4 +11,3 @@ TS.getTech(TS, variables = select.list(CT_TechVars(datasrc = datasrc, secuCate
 \description{
 TS.getTech
 }
-

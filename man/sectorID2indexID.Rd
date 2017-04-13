@@ -13,4 +13,3 @@ sectorID2indexID
 sctID <- getSectorID(stockID = "EQ000001",drop=TRUE)
 sectorID2indexID(sctID)
 }
-

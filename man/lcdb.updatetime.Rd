@@ -12,4 +12,3 @@ a datafrme, with cols: "table", "updatetime".
 \description{
 get the updatetime of tables in lcdb
 }
-

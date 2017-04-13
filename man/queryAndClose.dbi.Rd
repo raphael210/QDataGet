@@ -23,4 +23,3 @@ queryAndClose.dbi(db.local(),"select * from QT_DailyQuote limit 10")
 \author{
 Ruifei.Yin
 }
-

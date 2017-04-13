@@ -32,4 +32,3 @@ system.time(replicate(100,ii <- trday.get(datasrc="memory",stockID="EQ000527")))
 \author{
 Ruifei.yin
 }
-

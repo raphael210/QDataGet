@@ -34,10 +34,9 @@ add/update a factorscore column in local sqlite table \code{"QT_FactorScore"}. O
 \examples{
 system.time(lcfs.add(factorFun="gf.F_rank_chg",factorPar="lag=60,con_type=\\"1,2\\"", factorDir=1, factorID="F000999"))
 }
-\author{
-Ruifei.Yin
-}
 \seealso{
 \code{\link{getTSF}},\code{\link{modelPar.factor}}, \code{\link{lcdb.update.QT_FactorScore}}
 }
-
+\author{
+Ruifei.Yin
+}

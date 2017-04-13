@@ -28,10 +28,9 @@ system.time(re.wind <- TS.getFin_rptTS(TS,fun="rptTS.getFin_windR",field="np_bel
 system.time(re.ts_dir <- TS.getFin_ts(TS,funchar='report(46078,RDate)',varname="np_belongto_parcomsh")) # 12.49
 system.time(re.ts_rpt <- TS.getFin_rptTS(TS,fun="rptTS.getFin_ts",funchar='"np_belongto_parcomsh",report(46078,RDate)')) # 6.29
 }
-\author{
-Ruifei.Yin
-}
 \seealso{
 \code{\link{rptTS.getFin_windR}}, \code{\link{rptTS.getFin_ts}}
 }
-
+\author{
+Ruifei.Yin
+}

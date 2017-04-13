@@ -15,4 +15,3 @@ CT_industryList(std=9,level=1)
 CT_industryList(ID=c("ES0310","ES0312"))
 CT_industryList(name="SHENWAN")
 }
-

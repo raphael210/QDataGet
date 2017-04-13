@@ -9,4 +9,3 @@ CT_TechVars(datasrc, secuCate, tableName, vars)
 \description{
 CT_TechVars
 }
-

@@ -17,10 +17,9 @@ a vector with \bold{Date} class, transformed from the tinysoft date value
 \description{
 transform the tinysoft date value to R date
 }
-\author{
-Ruifei.Yin
-}
 \seealso{
 \code{\link{rdate2ts}}
 }
-
+\author{
+Ruifei.Yin
+}

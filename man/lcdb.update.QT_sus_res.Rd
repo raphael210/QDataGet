@@ -29,4 +29,3 @@ for(date in dates){
 bugs <- lcdb.update.QT_sus_res_bugsFinding()
 lcdb.update.QT_sus_res(stockID=bugs)
 }
-

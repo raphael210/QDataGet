@@ -4,7 +4,7 @@
 \alias{stockID2indexID}
 \title{stockID2indexID}
 \usage{
-stockID2indexID(TS, stockID, withsector = F)
+stockID2indexID(TS, stockID, withsector = FALSE)
 }
 \description{
 stockID2indexID

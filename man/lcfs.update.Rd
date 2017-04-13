@@ -4,8 +4,7 @@
 \alias{lcfs.update}
 \title{lcfs.update}
 \usage{
-lcfs.update(factorID, begT = 19900101, endT = 99999999, stockID,
-  splitNbin = "month")
+lcfs.update(factorID, begT, endT, stockID, splitNbin = "month")
 }
 \arguments{
 \item{begT}{the begin date of the updating}

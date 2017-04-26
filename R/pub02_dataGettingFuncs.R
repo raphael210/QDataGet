@@ -442,147 +442,114 @@ lcdb.update.LC_PerformanceGrowth <- function(){
 #' lcdb.add.LC_IndexComponent(indexID="EI000985")
 #' @export
 lcdb.add.LC_IndexComponent <- function(indexID){
+  qr1 <- paste("select ID,InnerCode,CompanyCode,'EI'+SecuCode 'SecuCode',SecuAbbr,
+               SecuMarket,ListedSector,ListedState,JSID 'UpdateTime',
+               SecuCode 'StockID_TS',SecuCategory,ListedDate,SecuCode 'StockID_wind'
+               from SecuMain WHERE SecuCode=",QT(substr(indexID,3,8)),
+               " and SecuCategory=4",sep='')
+  indexInfo <- queryAndClose.odbc(db.jy(),qr1,stringsAsFactors=FALSE)
+  
+  qr2 <- paste("SELECT 'EI'+s1.SecuCode 'IndexID','EQ'+s2.SecuCode 'SecuID',
+               convert(varchar(8),l.InDate,112) 'InDate',
+               convert(varchar(8),l.OutDate,112) 'OutDate',l.Flag,l.XGRQ 'UpdateTime'
+               FROM LC_IndexComponent l inner join SecuMain s1
+               on l.IndexInnerCode=s1.InnerCode and s1.SecuCode=",QT(substr(indexID,3,8)),
+               " left join SecuMain s2 on l.SecuInnerCode=s2.InnerCode",
+               " where s2.SecuCode like '3%' or s2.SecuCode like '6%' or s2.SecuCode like '0%'")
+  indexComp <- queryAndClose.odbc(db.jy(),qr2,stringsAsFactors=FALSE)
+  
   if(indexID=='EI000985'){
-    #check whether the index in local db
-    # con <- db.local()
-    # qr <- paste("select * from SecuMain where ID="
-    #             ,QT(indexID),sep="")
-    # re <- dbGetQuery(con,qr)
-    # dbDisconnect(con)
-    # if(nrow(re)>0) return("Already in local database!")
+    changeDate <- as.Date('2011-08-02')
     
-    #part 1 update local SecuMain
-    con <- db.jy()
-    qr <- paste("select ID,InnerCode,CompanyCode,SecuCode,SecuAbbr,SecuMarket,
-                ListedSector,ListedState,JSID 'UpdateTime',SecuCode 'StockID_TS',
-                SecuCategory,ListedDate,SecuCode 'StockID_wind'
-                from SecuMain WHERE SecuCode=",
-                QT(substr(indexID,3,8)),
-                " and SecuCategory=4")
-    indexInfo <- sqlQuery(con,qr)
     indexInfo <- transform(indexInfo,ID=indexID,
-                           SecuCode='000985',
+                           SecuCode=substr(SecuCode,3,8),
                            StockID_TS='SH000985',
                            StockID_wind='000985.SH')
     
     #part 2 update local LC_IndexComponent
-    qr <- "SELECT 'EI'+s1.SecuCode 'IndexID','EQ'+s2.SecuCode 'SecuID',
-    convert(varchar(8),l.InDate,112) 'InDate',convert(varchar(8),l.OutDate,112) 'OutDate',
-    l.Flag,l.XGRQ 'UpdateTime',convert(varchar(8),s2.ListedDate,112) 'IPODate'
-    FROM LC_IndexComponent l
-    inner join SecuMain s1 on l.IndexInnerCode=s1.InnerCode and s1.SecuCode in('801003','000985')
-    LEFT join SecuMain s2 on l.SecuInnerCode=s2.InnerCode
-    order by s1.SecuCode,l.InDate"
-    re <- sqlQuery(con,qr,stringsAsFactors=F)
-    indexComp <- re[re$IndexID=='EI000985',c("IndexID","SecuID","InDate","OutDate","Flag","UpdateTime")]
-    indexComp <- indexComp[substr(indexComp$SecuID,1,3) %in% c('EQ0','EQ3','EQ6'),]
+    qr <- paste("SELECT 'EI'+s1.SecuCode 'IndexID','EQ'+s2.SecuCode 'SecuID',
+                convert(varchar(8),l.InDate,112) 'InDate',
+                convert(varchar(8),l.OutDate,112) 'OutDate',
+                convert(varchar(8),s2.ListedDate,112) 'IPODate'
+                FROM LC_IndexComponent l
+                inner join SecuMain s1 on l.IndexInnerCode=s1.InnerCode and s1.SecuCode='801003'
+                left join SecuMain s2 on l.SecuInnerCode=s2.InnerCode
+                where (s2.SecuCode like '3%' or s2.SecuCode like '6%' or s2.SecuCode like '0%')
+                and l.InDate<",QT(changeDate))
+    re <- queryAndClose.odbc(db.jy(),qr,stringsAsFactors=FALSE)
     
     if(TRUE){ # -- 801003
-      tmp <- re[re$IndexID=='EI801003' & re$InDate<20110802,]
-      tmp <- tmp[substr(tmp$SecuID,1,3) %in% c('EQ0','EQ3','EQ6'),]
-      tmp <- transform(tmp,InDate=intdate2r(InDate),
+      tmp <- transform(re,InDate=intdate2r(InDate),
                        OutDate=intdate2r(OutDate),
-                       IPODate=intdate2r(IPODate))
-      tmp[(tmp$InDate-tmp$IPODate) < 90,'InDate'] <- trday.offset(tmp[(tmp$InDate-tmp$IPODate) < 90,'IPODate'],by = months(3))
-      tmp <- tmp[tmp$InDate < as.Date('2011-08-02'),]
-      tmp <- tmp[,c("IndexID","SecuID","InDate","OutDate","Flag","UpdateTime")]
+                       IPODate=intdate2r(IPODate)+90)
+      tmp[tmp$InDate<tmp$IPODate,'InDate'] <- tmp[tmp$InDate<tmp$IPODate,'IPODate']
+      tmp <- tmp[tmp$InDate < changeDate,c("SecuID","InDate","OutDate")]
+      tmp[is.na(tmp$OutDate),'OutDate'] <- changeDate
+      tmp[tmp$OutDate>changeDate,'OutDate'] <- changeDate
       
-      qr <- "select 'EQ'+s.SecuCode 'SecuID',st.SpecialTradeType,
-      ct.MS,convert(varchar(8),st.SpecialTradeTime,112) 'SpecialTradeTime'
-      from JYDB.dbo.LC_SpecialTrade st,JYDB.dbo.SecuMain s,JYDB.dbo.CT_SystemConst ct
-      where st.InnerCode=s.InnerCode and SecuCategory=1
-      and st.SpecialTradeType=ct.DM and ct.LB=1185 and st.SpecialTradeType in(1,2,3,4,5,6)
-      order by s.SecuCode"
-      st <- sqlQuery(con,qr,stringsAsFactors=F)
-      odbcCloseAll()
-      st <- st[substr(st$SecuID,1,3) %in% c('EQ0','EQ3','EQ6'),]
-      st <- st[st$SpecialTradeTime<20110802,]
-      st$InDate <- ifelse(st$SpecialTradeType %in% c(2,4,6),st$SpecialTradeTime,NA)
-      st$OutDate <- ifelse(st$SpecialTradeType %in% c(1,3,5),st$SpecialTradeTime,NA)
-      st$InDate <- intdate2r(st$InDate)
-      st$OutDate <- intdate2r(st$OutDate)
-      st <- st[,c("SecuID","InDate","OutDate")]
+      qr <- paste("select 'EQ'+s.SecuCode 'SecuID',
+                  case when st.SpecialTradeType in(2,4,6) then convert(varchar(8),st.SpecialTradeTime,112)
+                  else NULL end 'InDate',
+                  case when st.SpecialTradeType in(1,3,5) then convert(varchar(8),st.SpecialTradeTime,112)
+                  else NULL end 'OutDate'
+                  from LC_SpecialTrade st,SecuMain s
+                  where st.InnerCode=s.InnerCode and s.SecuCategory=1
+                  and st.SpecialTradeTime<",QT(changeDate),
+                  " and st.SpecialTradeType in(1,2,3,4,5,6)
+                  and (s.SecuCode like '3%' or s.SecuCode like '6%' or s.SecuCode like '0%')
+                  order by s.SecuCode,st.SpecialTradeTime")
+      st <- queryAndClose.odbc(db.jy(),qr,stringsAsFactors=FALSE)
+      st <- transform(st,InDate=intdate2r(InDate),
+                      OutDate=intdate2r(OutDate))
+      st[is.na(st$OutDate),'OutDate'] <- changeDate
       
       tmp <- rbind(tmp[,c("SecuID","InDate","OutDate")],st)
       tmp <- reshape2::melt(tmp,id=c('SecuID'))
-      tmp <- tmp[!(is.na(tmp$value) & tmp$variable=='InDate'),]
+      tmp <- na.omit(tmp)
       tmp <- unique(tmp)
-      tmp[is.na(tmp$value),'value'] <- as.Date('2100-01-01')
       tmp <- dplyr::arrange(tmp,SecuID,value)
       
       tmp$flag <- c(1)
       for(i in 2: nrow(tmp)){
-        if(tmp$SecuID[i]==tmp$SecuID[i-1] && tmp$variable[i]==tmp$variable[i-1] && tmp$variable[i]=='InDate'){
+        if(tmp$SecuID[i]==tmp$SecuID[i-1] && tmp$variable[i-1]=='InDate' && tmp$variable[i]=='InDate'){
           tmp$flag[i-1] <- 0
-        }else if(tmp$SecuID[i]==tmp$SecuID[i-1] && tmp$variable[i]==tmp$variable[i-1] && tmp$variable[i]=='OutDate'){
+        }else if(tmp$SecuID[i]==tmp$SecuID[i-1] && tmp$variable[i-1]=='OutDate' && tmp$variable[i]=='OutDate'){
           tmp$flag[i] <- 0
         }else{
           next
         }
       }
       tmp <- tmp[tmp$flag==1,c("SecuID","variable","value")]
-      tmp <- dplyr::arrange(tmp,SecuID,value)
-      tmp1 <- tmp[tmp$variable=='InDate',]
-      tmp2 <- tmp[tmp$variable=='OutDate',]
-      tmp <- cbind(tmp1[,c("SecuID","value")],tmp2[,"value"])
+      tmp <- cbind(tmp[tmp$variable=='InDate',c("SecuID","value")],
+                   tmp[tmp$variable=='OutDate',"value"])
       colnames(tmp) <- c("SecuID","InDate","OutDate")
-      tmp[tmp$OutDate>as.Date('2011-08-02'),'OutDate'] <- as.Date('2011-08-02')
-      tmp$IndexID <- 'EI000985'
-      tmp$Flag <- 0
-      tmp$UpdateTime <- Sys.time()
-      tmp$InDate <- rdate2int(tmp$InDate)
-      tmp$OutDate <- rdate2int(tmp$OutDate )
+      tmp <- transform(tmp,IndexID='EI000985',
+                       Flag=0,
+                       UpdateTime=Sys.time(),
+                       InDate=rdate2int(InDate),
+                       OutDate=rdate2int(OutDate))
       tmp <- tmp[,c("IndexID","SecuID","InDate","OutDate","Flag","UpdateTime")]
     }
-    
     indexComp <- rbind(indexComp,tmp)
-    con <- db.local()
-    dbGetQuery(con,"delete from SecuMain where ID='EI000985'")
-    dbGetQuery(con,"delete from LC_IndexComponent where IndexID='EI000985'")
-    dbWriteTable(con,"SecuMain",indexInfo,overwrite=FALSE,append=TRUE,row.names=FALSE)
-    dbWriteTable(con,"LC_IndexComponent",indexComp,overwrite=FALSE,append=TRUE,row.names=FALSE)
-    dbDisconnect(con)
-  }else{
-    con <- db.local()
-    qr <- paste("select * from SecuMain where ID="
-                ,QT(indexID))
-    re <- dbGetQuery(con,qr)
-    dbDisconnect(con)
-    if(nrow(re)>0) return("Already in local database!")
     
+  }else{
     #part 1 update local SecuMain
-    con <- db.jy()
-    qr <- paste("select ID,InnerCode,CompanyCode,SecuCode,SecuAbbr,SecuMarket,
-                ListedSector,ListedState,JSID 'UpdateTime',SecuCode 'StockID_TS',
-                SecuCategory,ListedDate,SecuCode 'StockID_wind'
-                from SecuMain WHERE SecuCode=",
-                QT(substr(indexID,3,8)),
-                " and SecuCategory=4",sep='')
-    indexInfo <- sqlQuery(con,qr)
     indexInfo <- transform(indexInfo,ID=indexID,
+                           SecuCode=substr(SecuCode,3,8),
                            StockID_TS=ifelse(is.na(stockID2stockID(indexID,'local','ts')),substr(indexID,3,8),
                                              stockID2stockID(indexID,'local','ts')),
                            StockID_wind=ifelse(is.na(stockID2stockID(indexID,'local','wind')),substr(indexID,3,8),
                                                stockID2stockID(indexID,'local','wind')))
-    
-    #part 2 update local LC_IndexComponent
-    qr <- paste("SELECT 'EI'+s1.SecuCode 'IndexID','EQ'+s2.SecuCode 'SecuID',
-                convert(varchar(8),l.InDate,112) 'InDate',
-                convert(varchar(8),l.OutDate,112) 'OutDate',l.Flag,l.XGRQ 'UpdateTime'
-                FROM LC_IndexComponent l inner join SecuMain s1
-                on l.IndexInnerCode=s1.InnerCode and s1.SecuCode=",
-                QT(substr(indexID,3,8))," LEFT join JYDB.dbo.SecuMain s2
-                on l.SecuInnerCode=s2.InnerCode")
-    indexComp <- sqlQuery(con,qr)
-    odbcCloseAll()
-    
-    con <- db.local()
-    dbWriteTable(con,"SecuMain",indexInfo,overwrite=FALSE,append=TRUE,row.names=FALSE)
-    dbWriteTable(con,"LC_IndexComponent",indexComp,overwrite=FALSE,append=TRUE,row.names=FALSE)
-    dbDisconnect(con)
   }
-
+  con <- db.local()
+  dbGetQuery(con,paste("delete from SecuMain where ID=",QT(indexID),sep=''))
+  dbGetQuery(con,paste("delete from LC_IndexComponent where IndexID=",QT(indexID),sep=''))
+  
+  dbWriteTable(con,"SecuMain",indexInfo,overwrite=FALSE,append=TRUE,row.names=FALSE)
+  dbWriteTable(con,"LC_IndexComponent",indexComp,overwrite=FALSE,append=TRUE,row.names=FALSE)
+  dbDisconnect(con)
 }
+
 
 #' fix shenwan new industry rule
 #'

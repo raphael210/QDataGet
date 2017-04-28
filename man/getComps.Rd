@@ -4,11 +4,10 @@
 \alias{getComps}
 \title{getComps}
 \usage{
-getComps(sectorIDs, endT = Sys.Date(), drop = TRUE,
-  datasrc = defaultDataSRC())
+getComps(ID, endT = Sys.Date(), drop = TRUE, datasrc = defaultDataSRC())
 }
 \arguments{
-\item{sectorIDs}{a character string. The ID of the index, sector or plate. Could be a single-ID-code(eg. "EI000300","ES09440000",...) or a more complicated express containing some set operations and ID-codes(eg. "setdiff(union(EI000300,EI000905),ES09440000)")}
+\item{ID}{a character string. The ID of the index, sector or plate. Could be a single-ID-code(eg. "EI000300","ES09440000",...) or a more complicated express containing some set operations and ID-codes(eg. "setdiff(union(EI000300,EI000905),ES09440000)")}
 
 \item{endT}{a vector of class \code{Date}. IF missing, then get the latest components.}
 
@@ -22,9 +21,9 @@ get the components of the specific index, sector or plate on certain days.
 }
 \examples{
 re1 <- getComps("EI000300") # same as getIndexComp("EI000300")
-sectorIDs <- "setdiff(union(EI000300,EI399006),ES09440000)"
-re2 <- getComps(sectorIDs)
-re3 <- getComps(sectorIDs,endT=as.Date(c("2011-12-31","2012-12-31")))
+ID <- "setdiff(union(EI000300,EI399006),ES09440000)"
+re2 <- getComps(ID)
+re3 <- getComps(ID,endT=as.Date(c("2011-12-31","2012-12-31")))
 more examples:
 # CSI300 ex. financial servive sector
 getComps("setdiff(EI000300,ES09440000)")

@@ -985,8 +985,7 @@ lcdb.update.QT_FreeShares <- function(){
     dates <- trday.get(begT,endT)
     dates <- as.Date(unique(cut.Date2(dates,"week")))
     
-    lcdb.add.LC_IndexComponent('EI801003')
-    # TS <- getTS(dates,indexID = 'EI801003')
+    # lcdb.add.LC_IndexComponent('EI801003')
     TS <- getIndexComp(indexID = 'EI801003',endT = dates, drop = FALSE)
     TS$stockID <- stockID2stockID(TS$stockID,'local','wind')
     float_shares <- data.frame()
@@ -2278,7 +2277,7 @@ SecuCategory <- function(stockID,datasrc=defaultDataSRC()){
 #' getComps
 #'
 #' get the components of the specific index, sector or plate on certain days.
-#' @param sectorIDs a character string. The ID of the index, sector or plate. Could be a single-ID-code(eg. "EI000300","ES09440000",...) or a more complicated express containing some set operations and ID-codes(eg. "setdiff(union(EI000300,EI000905),ES09440000)")
+#' @param ID a character string. The ID of the index, sector or plate. Could be a single-ID-code(eg. "EI000300","ES09440000",...) or a more complicated express containing some set operations and ID-codes(eg. "setdiff(union(EI000300,EI000905),ES09440000)")
 #' @param endT a vector of class \code{Date}. IF missing, then get the latest components.
 #' @param drop if drop the field of date and return a vector when endT is length 1 ?
 #' @param datasrc
@@ -2287,9 +2286,9 @@ SecuCategory <- function(stockID,datasrc=defaultDataSRC()){
 #' @family getComps functions
 #' @examples
 #' re1 <- getComps("EI000300") # same as getIndexComp("EI000300")
-#' sectorIDs <- "setdiff(union(EI000300,EI399006),ES09440000)"
-#' re2 <- getComps(sectorIDs)
-#' re3 <- getComps(sectorIDs,endT=as.Date(c("2011-12-31","2012-12-31")))
+#' ID <- "setdiff(union(EI000300,EI399006),ES09440000)"
+#' re2 <- getComps(ID)
+#' re3 <- getComps(ID,endT=as.Date(c("2011-12-31","2012-12-31")))
 #' more examples:
 #' # CSI300 ex. financial servive sector
 #' getComps("setdiff(EI000300,ES09440000)")
@@ -2297,8 +2296,8 @@ SecuCategory <- function(stockID,datasrc=defaultDataSRC()){
 #' getComps("intersect(EI000300,ES09440000)")
 #' # not drop
 #' getComps("EI000300",drop=FALSE)
-getComps <- function(sectorIDs, endT=Sys.Date(), drop=TRUE, datasrc=defaultDataSRC()){  
-  IDs <- gsub("union|intersect|setdiff|[()]","",sectorIDs)
+getComps <- function(ID, endT=Sys.Date(), drop=TRUE, datasrc=defaultDataSRC()){  
+  IDs <- gsub("union|intersect|setdiff|[()]","",ID)
   IDs <- strsplit(IDs,split=",")[[1]]
   IDs <- unique(IDs[IDs!=""])  
   IDs_index <- IDs[substring(IDs,1,2)=="EI"]
@@ -2327,7 +2326,7 @@ getComps <- function(sectorIDs, endT=Sys.Date(), drop=TRUE, datasrc=defaultDataS
   
   subfun <- function(endT0){
     comps0 <- lapply(comps,function(x) x[x$date==endT0,"stockID"] )
-    dat0 <- with(comps0,eval(parse(text=sectorIDs)))
+    dat0 <- with(comps0,eval(parse(text=ID)))
     dat0 <- data.frame(date=endT0,stockID=dat0,stringsAsFactors=FALSE)
     return(dat0)    
   }  
@@ -2706,7 +2705,12 @@ is_component <- function(TS, stockID, endT=Sys.Date(),
                         sectorID,
                         drop=FALSE,
                         datasrc=defaultDataSRC()){
-  
+  # to do....
+  indexComp <- data.frame(stockID=getComps(sectorID,unique(TS$date)),is_comp=c(1))
+  colnames(indexComp) <- c('stockID',sectorID)
+  indexComp$stockID <- as.character(indexComp$stockID)
+  TSF <- dplyr::left_join(TSF,indexComp,by='stockID')
+  TSF[is.na(TSF)] <- 0
 }
 
 #' sectorID2indexID
@@ -3173,7 +3177,7 @@ MF_getStockPort <- function(fundID,rptDate,mode=c("all","top10"),datasrc = c("jy
                   and B.SecuCode in ('",fundIDqr,"')")
     tmpdat <- queryAndClose.odbc(db.jy(),qr)
     tmpdat$stockID <- paste0('EQ',substr(tmpdat$stockID + 1000000,2,7))
-    tmpdat$fundID <- paste0(tmpdat$fundID,".OF")
+    tmpdat$fundID <- paste0(substr(tmpdat$fundID + 1000000,2,7),".OF")
     tmpdat$rptDate <- intdate2r(tmpdat$rptDate)
     tmpdat <- tmpdat[tmpdat$rptDate %in% rptDate,]
   }
@@ -3203,7 +3207,7 @@ MF_Turnover_annual <- function(fundID,begrptDate,endrptDate){
                and B.SecuCode in ('",fundIDqr,"')")
   tmpdat <- queryAndClose.odbc(db.jy(),qr)
   tmpdat$rptDate <- intdate2r(tmpdat$rptDate)
-  
+  tmpdat$fundID <- substr(tmpdat$fundID + 1000000, 2, 7)
   # mkt_value db
   qr2 <- paste0("select convert(varchar(8),A.ReportDate,112) rptDate,
                 A.MarketValue mkt_cap, B.SecuCode fundID
@@ -3215,7 +3219,7 @@ MF_Turnover_annual <- function(fundID,begrptDate,endrptDate){
   tmpdat2 <- dplyr::group_by(tmpdat2, rptDate, fundID)
   tmpdat2 <- dplyr::summarise(tmpdat2, mkt_sum = sum(mkt_cap))
   tmpdat2$rptDate <- intdate2r(tmpdat2$rptDate)
-  
+  tmpdat2$fundID <- substr(tmpdat2$fundID + 1000000, 2, 7)
   # computing process
   finalre <- data.frame()
   for( i in 1:length(fundID)){
@@ -4439,14 +4443,6 @@ getPeriodrtn_FU <- function(SP, stockID, begT, endT, drop=FALSE,
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
 
 
-#' gf_lcfs
-#' @rdname getfactor
-#' @export
-gf_lcfs <- function(TS,factorID){
-  re <- getTech(TS,variables=factorID,tableName="QT_FactorScore",datasrc = "local")
-  re <- renameCol(re,factorID,"factorscore")
-  return(re)
-}
 
 
 
@@ -4482,6 +4478,8 @@ gf.free_float_sharesMV <- function(TS){
   re <- re[,c("date","stockID","factorscore")]
   return(re)
 }
+
+
 
 
 

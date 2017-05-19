@@ -2469,7 +2469,7 @@ getIndexCompWgt <- function(indexID="EI000300",endT,datasrc=defaultDataSRC()){
     re <- re[,c("date","stockID","wgt" )]
     return(re)
   }
-  endT <- daymat$newday
+  endT <- unique(daymat$newday)
   
   
   if(datasrc %in% c("quant","local")){    

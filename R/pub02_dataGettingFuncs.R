@@ -2700,18 +2700,49 @@ getSectorID <- function(TS, stockID, endT=Sys.Date(),
 
 
 
-# is component of specific sector or index?
+
+#' is component of specific sector or index?
+#'
+#' @param TS 
+#' @param stockID 
+#' @param endT 
+#' @param sectorID a character string. The ID of the index, sector or plate. See detail in \code{\link{getComps}}
+#' @param drop 
+#' @param datasrc 
+#' @return a dataframe or a vector(if drop==TRUE) 
+#' @export
+#' @examples
+#' is_component(stockID = c("EQ000001","EQ300089"),sectorID = "EI000300",drop=TRUE)
+#' is_component(stockID = c("EQ000001","EQ300089"),sectorID = "ES09440000")
+#' TS <- getTS(as.Date(c("2014-01-01","2016-01-01")),indexID = "EI000906")
+#' re <- is_component(TS,sectorID = "EI000300")
 is_component <- function(TS, stockID, endT=Sys.Date(),
                         sectorID,
                         drop=FALSE,
                         datasrc=defaultDataSRC()){
-  # to do....
-  indexComp <- data.frame(stockID=getComps(sectorID,unique(TS$date)),is_comp=c(1))
-  colnames(indexComp) <- c('stockID',sectorID)
-  indexComp$stockID <- as.character(indexComp$stockID)
-  TSF <- dplyr::left_join(TSF,indexComp,by='stockID')
-  TSF[is.na(TSF)] <- 0
+  if (missing(TS) && missing(stockID)) {
+    stop("Param TS and combination of stockID and endT should at least have one!")
+  }
+  if (!missing(TS) && !missing(stockID)) {
+    stop("Param TS and combination of stockID and endT should only have one!")
+  }
+  if (missing(TS)){
+    TS <- expand.grid(date=endT, stockID=stockID)
+  }
+  indexComp <- getComps(sectorID,unique(TS$date),drop = FALSE,datasrc = datasrc)
+  indexComp$is_comp <- 1L
+  TSF <- merge.x(TS,indexComp,by=c('date','stockID'))
+  TSF[is.na(TSF$is_comp),"is_comp"] <- 0
+  
+  if(drop){
+    return(TSF[,"is_comp"])
+  } else {
+    return(TSF)
+  }
+  
 }
+
+
 
 #' sectorID2indexID
 #' @export

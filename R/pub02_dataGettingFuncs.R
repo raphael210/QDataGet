@@ -401,17 +401,23 @@ lcdb.update.QT_DailyQuote2 <- function(begT,endT,stockID){
 
 #' @rdname lcdb.update
 #' @export
-lcdb.update.LC_RptDate <- function(){  
+lcdb.update.LC_RptDate <- function(begT,endT){  
   con <- db.local()
-  begT <- dbGetQuery(con,"select max(PublDate) from LC_RptDate")[[1]]
-  #   begT <- 19900101
-  tb.from <- queryAndClose.odbc(db.quant(),query=paste("select * from LC_RptDate where PublDate >",begT))  
+  if(missing(begT)){
+    begT <- dbGetQuery(con,"select max(PublDate) from LC_RptDate")[[1]]
+  }
+  if(missing(endT)){
+    endT <- 99999999
+  }
+  tb.from <- queryAndClose.odbc(db.quant(),query=paste("select * from LC_RptDate where PublDate >=",begT,"and PublDate <=",endT))  
   if(NROW(tb.from)==0){
     return()
   }
+  dbGetQuery(con,paste("delete from LC_RptDate where PublDate >=",begT,"and PublDate<=",endT))
   dbWriteTable(con,"LC_RptDate",tb.from,overwrite=FALSE,append=TRUE,row.names=FALSE)
   dbDisconnect(con)
 }
+
 
 
 

@@ -569,122 +569,115 @@ lcdb.add.LC_IndexComponent <- function(indexID){
 lcdb.fix.swindustry <- function(){
 
   #get raw data
-  con <- db.jy()
   qr <- "SELECT 'EQ'+s.SecuCode 'stockID',l.CompanyCode,l.FirstIndustryCode 'Code1',l.FirstIndustryName 'Name1',
   l.SecondIndustryCode 'Code2',l.SecondIndustryName 'Name2',l.ThirdIndustryCode 'Code3',
   l.ThirdIndustryName 'Name3',convert(varchar, l.InfoPublDate, 112) 'InDate',
   convert(varchar, l.CancelDate, 112) 'OutDate',l.InfoSource,l.Standard,l.Industry,
-  l.IfPerformed 'Flag',l.XGRQ 'UpdateTime'
-  FROM [JYDB].[dbo].[LC_ExgIndustry] l,JYDB.dbo.SecuMain s
+  l.IfPerformed 'Flag',convert(float,l.XGRQ) 'UpdateTime'
+  FROM LC_ExgIndustry l,SecuMain s
   where l.CompanyCode=s.CompanyCode and s.SecuCategory=1
   and s.SecuMarket in(83,90) and l.Standard in(9,24)"
-  re <- sqlQuery(con,qr,stringsAsFactors=F)
+  re <- queryAndClose.odbc(db.jy(),qr,as.is = TRUE)
   re <- re[substr(re$stockID,1,3) %in% c('EQ6','EQ3','EQ0'),]
-  re <- re[ifelse(is.na(re$OutDate),T,re$OutDate!=re$InDate),] # remove indate==outdate wrong data
+  re <- re[ifelse(is.na(re$OutDate),TRUE,re$OutDate!=re$InDate),] # remove indate==outdate wrong data
+  re <- transform(re,InDate=as.integer(InDate),
+                  OutDate=as.integer(OutDate),
+                  UpdateTime=as.double(UpdateTime))
   
-  sw24use <- re[(re$InDate>20140101) & (re$Standard==24),]
+  sw24use <- re[(re$InDate>=20140101) & (re$Standard==24),]
   sw9use <- re[(re$InDate<20140101) & (re$Standard==9),]
-  sw24tmp <- re[(re$InDate==20140101) & (re$Standard==24),]
-  sw9tmp <- sw9use[is.na(sw9use$OutDate) | sw9use$OutDate>20140101,c("stockID","Code1","Name1","Code2","Name2","Code3","Name3")]
-  colnames(sw9tmp) <- c("stockID","OldCode1","OldName1","OldCode2","OldName2","OldCode3","OldName3")
-  hashtable <- merge(sw24tmp,sw9tmp,by='stockID',all.x=T)
-  hashtable <- hashtable[,c("Code1","Name1","Code2","Name2","Code3","Name3","OldCode1","OldName1","OldCode2","OldName2","OldCode3","OldName3")]
-  hashtable <- unique(hashtable)
+  sw9use[is.na(sw9use$OutDate) | sw9use$OutDate>20140101,'OutDate'] <- 20140101
+  sw9use[,'Flag'] <- 2
+  sw9use <- dplyr::rename(sw9use,OldCode1=Code1,OldName1=Name1,OldCode2=Code2,
+                          OldName2=Name2,OldCode3=Code3,OldName3=Name3)
+  
+  #convert old industry to new industry
+  sw24tmp <- sw24use[sw24use$InDate==20140101,c("stockID","Code1","Name1","Code2","Name2","Code3","Name3")]
+  sw9part1 <- sw9use[sw9use$OutDate==20140101,]
+  sw9part1 <- dplyr::left_join(sw9part1,sw24tmp,by='stockID')
+  hashtable <- unique(sw9part1[,c("Code1","Name1","Code2","Name2","Code3","Name3","OldCode1","OldName1","OldCode2","OldName2","OldCode3","OldName3")])
+  hashtable <- na.omit(hashtable)
   hashtable <- plyr::ddply(hashtable,~OldName3,plyr::mutate,n=length(OldName3))
   hashtable <- hashtable[hashtable$n==1,c("Code1","Name1","Code2","Name2","Code3","Name3","OldCode1","OldName1","OldCode2","OldName2","OldCode3","OldName3")]
+  sw9part1 <- sw9part1[,colnames(sw24use)]
   
-  sw9use <- plyr::rename(sw9use,replace=c("Code1"="OldCode1",
-                                          "Name1"="OldName1",
-                                          "Code2"="OldCode2",
-                                          "Name2"="OldName2",
-                                          "Code3"="OldCode3",
-                                          "Name3"="OldName3"))
-  sw9use <- merge(sw9use,hashtable,by=c("OldCode1","OldName1",
+  sw9part2 <- sw9use[sw9use$OutDate<20140101,]
+  sw9part2 <- dplyr::left_join(sw9part2,hashtable,by=c("OldCode1","OldName1",
                                         "OldCode2","OldName2",
-                                        "OldCode3","OldName3"),all.x=T)
-  sw9use <- sw9use[,c("stockID","CompanyCode","Code1","Name1","Code2","Name2",
-                      "Code3","Name3","InDate","OutDate","InfoSource","Standard",
-                      "Industry","Flag","UpdateTime","OldCode1","OldName1","OldCode2",
-                      "OldName2","OldCode3","OldName3")]
-  tmp <- sw9use[is.na(sw9use$Code1),c("stockID","CompanyCode","InDate","OutDate","InfoSource","Standard",
-                                      "Industry","Flag","UpdateTime","OldCode1","OldName1","OldCode2",
-                                      "OldName2","OldCode3","OldName3")]
-  sw9use <- sw9use[!is.na(sw9use$Code1),c("stockID","CompanyCode","Code1","Name1","Code2","Name2",
-                                          "Code3","Name3","InDate","OutDate","InfoSource","Standard",
-                                          "Industry","Flag","UpdateTime")]
+                                        "OldCode3","OldName3"))
+  sw9part2 <- sw9part2[,colnames(sw24use)]
+  sw9use <- rbind(sw9part1,sw9part2)
   
-  tmp <- dplyr::arrange(tmp,stockID,InDate)
-  tmp <-merge(tmp,sw24tmp[,c("stockID","Code1","Name1","Code2","Name2","Code3","Name3")],by='stockID',all.x=T)
+  #fill na to zonghe industry
   zhcn <- unique(sw24use[sw24use$Code1==510000,'Name1'])
-  tmp[is.na(tmp$Code1),c("Name1","Name2","Name3")] <- zhcn
-  tmp[is.na(tmp$Code1),"Code1"] <-510000
-  tmp[is.na(tmp$Code2),"Code3"] <-510100
-  tmp[is.na(tmp$Code3),"Code3"] <-510101
-  tmp <- tmp[,c("stockID","CompanyCode","Code1","Name1","Code2","Name2",
-                "Code3","Name3","InDate","OutDate","InfoSource","Standard",
-                "Industry","Flag","UpdateTime")]
-  sw9use <- rbind(sw9use,tmp)
+  sw9use[is.na(sw9use$Code1),c("Name1","Name2","Name3")] <- zhcn
+  sw9use[is.na(sw9use$Code1),"Code1"] <-510000
+  sw9use[is.na(sw9use$Code2),"Code2"] <-510100
+  sw9use[is.na(sw9use$Code3),"Code3"] <-510101
   
   sw33 <- rbind(sw9use,sw24use)
-  sw33$Standard <- 33
-  sw33$Code1 <- paste('ES33',sw33$Code1,sep = '')
-  sw33$Code2 <- paste('ES33',sw33$Code2,sep = '')
-  sw33$Code3 <- paste('ES33',sw33$Code3,sep = '')
-  sw33$Code99 <- c(NA)
-  sw33$Name99 <- c(NA)
-  sw33$Code98 <- c(NA)
-  sw33$Name98 <- c(NA)
+  sw33 <- transform(sw33,Standard=33,
+                    Code1=paste('ES33',Code1,sep = ''),
+                    Code2=paste('ES33',Code2,sep = ''),
+                    Code3=paste('ES33',Code3,sep = ''),
+                    Code99=c(NA),
+                    Name99=c(NA),
+                    Code98=c(NA),
+                    Name98=c(NA))
   sw33 <- dplyr::arrange(sw33,stockID,InDate)
   
   #deal with abnormal condition
   #1 outdate<=indate
-  sw33 <- sw33[ifelse(is.na(sw33$OutDate),T,sw33$OutDate>sw33$InDate),]
+  sw33 <- sw33[ifelse(is.na(sw33$OutDate),TRUE,sw33$OutDate>sw33$InDate),]
   #2 one stock has two null outdate
-  tmp <- plyr::ddply(sw33,'stockID',plyr::summarise,NANum=sum(is.na(OutDate)))
-  tmp <- c(tmp[tmp$NANum>1,'stockID'])
-  sw33tmp <- sw33[sw33$stockID %in% tmp,]
-  sw33 <- sw33[!(sw33$stockID %in% tmp),]
-  if(nrow(sw33tmp)>0){
-    for(i in 1:(nrow(sw33tmp)-1)){
-      if(sw33tmp$stockID[i]==sw33tmp$stockID[i+1] && is.na(sw33tmp$OutDate[i])) sw33tmp$OutDate[i] <- sw33tmp$InDate[i+1]
-    }
+  tmp <- sw33 %>% dplyr::group_by(stockID) %>% 
+    dplyr::summarise(NANum=sum(is.na(OutDate))) %>% 
+    dplyr::ungroup() %>% dplyr::filter(NANum>1)
+  
+  if(nrow(tmp)>0){
+    tmp <- tmp$stockID
+    sw33tmp <- sw33[(sw33$stockID %in% tmp) & is.na(sw33$OutDate),]
+    sw33 <- sw33[!((sw33$stockID %in% tmp) & is.na(sw33$OutDate)),]
+    sw33tmp <- sw33tmp %>% dplyr::group_by(stockID) %>% dplyr::filter(InDate==min(InDate)) %>% dplyr::ungroup()
+    sw33 <- rbind(sw33,sw33tmp)
+    sw33 <- dplyr::arrange(sw33,stockID,InDate)
   }
-  sw33 <- rbind(sw33,sw33tmp)
-  sw33 <- dplyr::arrange(sw33,stockID,InDate)
+
   #3 indate[i+1]!=outdate[i]
-  sw33$tmpstockID <- c(NA,sw33$stockID[1:(nrow(sw33)-1)])
+  sw33$tmpstockID <- c(sw33$stockID[1],sw33$stockID[1:(nrow(sw33)-1)])
   sw33$tmpOutDate <- c(NA,sw33$OutDate[1:(nrow(sw33)-1)])
-  sw33$InDate <- ifelse(ifelse(is.na(sw33$tmpstockID) | is.na(sw33$tmpOutDate),FALSE,sw33$stockID==sw33$tmpstockID & sw33$InDate!=sw33$tmpOutDate),
+  sw33$InDate <- ifelse(ifelse(is.na(sw33$tmpOutDate),FALSE,sw33$stockID==sw33$tmpstockID & sw33$InDate!=sw33$tmpOutDate),
                         sw33$tmpOutDate,sw33$InDate)
   sw33 <- subset(sw33,select=-c(tmpstockID,tmpOutDate))
   # 4 duplicate indate
-  sw33 <- sw33[ifelse(is.na(sw33$OutDate),T,sw33$OutDate>sw33$InDate),]
+  sw33 <- sw33[ifelse(is.na(sw33$OutDate),TRUE,sw33$OutDate>sw33$InDate),]
   sw33[!is.na(sw33$OutDate) & sw33$Flag==1,'Flag'] <- 2
   
   # update local database CT_IndustryList
-  qr <- "SELECT Standard,Classification 'level','ES33'+IndustryCode 'IndustryID'
+  qr <- "SELECT Standard,Classification 'Level','ES33'+IndustryCode 'IndustryID'
   ,IndustryName,SectorCode 'Alias','ES33'+FirstIndustryCode 'Code1'
   ,FirstIndustryName 'Name1','ES33'+SecondIndustryCode 'Code2'
   ,SecondIndustryName 'Name2','ES33'+ThirdIndustryCode 'Code3'
-  ,ThirdIndustryName 'Name3',UpdateTime
+  ,ThirdIndustryName 'Name3',convert(float,UpdateTime) 'UpdateTime'
   FROM CT_IndustryType where Standard=24"
-  indCon <- sqlQuery(con,qr,stringsAsFactors=F)
-  indCon$Standard <- 33
+  indCon <- queryAndClose.odbc(db.jy(),qr,as.is = TRUE)
+  indCon <- transform(indCon,Standard=33,UpdateTime=as.double(UpdateTime))
   indCon[is.na(indCon$Name2),'Code2'] <- NA
   indCon[is.na(indCon$Name3),'Code3'] <- NA
   
   # update local database CT_SystemConst
-  syscon <- sqlQuery(con,"select top 1 LB, LBMC, DM ,MS  from CT_SystemConst where LB=1081",stringsAsFactors=F)
-  syscon$DM <- 33
-  syscon$MS <- "SHENWAN2014fixed"
-  odbcCloseAll()
+  syscon <- queryAndClose.odbc(db.jy(),"select top 1 LB, LBMC, DM ,MS  from CT_SystemConst where LB=1081",as.is = TRUE)
+  syscon <- transform(syscon,DM=33, MS="SHENWAN2014fixed")
   
   # update...
   con <- db.local()
-  res <- dbSendQuery(con,"delete  from LC_ExgIndustry where Standard=33;
-                          delete  from CT_IndustryList where Standard=33;
-                          delete  from CT_SystemConst where LB=1081 and DM=33")
+  res <- dbSendQuery(con,"delete  from LC_ExgIndustry where Standard=33")
   dbClearResult(res)
+  res <- dbSendQuery(con,"delete  from CT_IndustryList where Standard=33")
+  dbClearResult(res)
+  res <- dbSendQuery(con,"delete  from CT_SystemConst where LB=1081 and DM=33")
+  dbClearResult(res)
+  
   dbWriteTable(con,'LC_ExgIndustry',sw33,overwrite=FALSE,append=TRUE,row.names=FALSE)
   dbWriteTable(con,'CT_IndustryList',indCon,overwrite=FALSE,append=TRUE,row.names=FALSE)
   dbWriteTable(con,'CT_SystemConst',syscon,overwrite=FALSE,append=TRUE,row.names=FALSE)

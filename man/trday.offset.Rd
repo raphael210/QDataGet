@@ -13,6 +13,8 @@ trday.offset(datelist, by = months(1), stockID = NULL, dir = if
 \item{by}{a period object. See detail in package \code{lubridate}.}
 
 \item{stockID}{a character string or null. If null, the market trading days, other wise the trading days of specific stock.}
+
+\item{dir}{1L or -1L. if the result date is not trdingday, get the forward nearest tradingday or the backward tradingday? See detail in \link{trday.nearest}}
 }
 \value{
 a vector of trading days of class Date

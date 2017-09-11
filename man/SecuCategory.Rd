@@ -21,5 +21,5 @@ Other SecuMain functions: \code{\link{SecuMarket}},
   \code{\link{stockID2stockID}},
   \code{\link{stockID2tradeCode}},
   \code{\link{stockName2ID}},
-  \code{\link{tradeCode2stockID}}
+  \code{\link{tradeCode2stockID}}, \code{\link{trday.IPO}}
 }

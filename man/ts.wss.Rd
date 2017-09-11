@@ -4,13 +4,15 @@
 \alias{ts.wss}
 \title{ts.wss}
 \usage{
-ts.wss(stocks, funchar, rptDate, Time = Sys.Date(), Rate = 1, RateDay = 0,
-  adjust_yoy = FALSE)
+ts.wss(stocks, funchar, varname, rptDate, Time = Sys.Date(), Rate = 1,
+  RateDay = 0, adjust_yoy = FALSE)
 }
 \arguments{
 \item{stocks}{a vector of stockID.}
 
 \item{funchar}{expression to get variables from tinysoft,a character string, usually copyed from tinysoft "stock-data-expert". If you want to specify the rptDate by param \code{rptDate}, the expression should be converted simply by replaceing the specified reportdate in the stock-data-expert expression by \code{'Rdate'}. e.g. convert \code{Last12MData(20091231,46002)} to \code{Last12MData(Rdate,46002)}.}
+
+\item{varname}{vector of charactor string}
 
 \item{rptDate}{a specified rptDate, with class of Date. Could be missing when unnessasry. See examples for more detail.}
 

@@ -4,8 +4,9 @@
 \alias{getrptDate_newest}
 \title{getrptDate_newest}
 \usage{
-getrptDate_newest(TS, stockID, endT = Sys.Date(), mult = c("last", "first",
-  "all"), drop = FALSE, datasrc = defaultDataSRC())
+getrptDate_newest(TS, stockID, endT = Sys.Date(), freq = c("q", "y", "h"),
+  mult = c("last", "first", "all"), drop = FALSE,
+  datasrc = defaultDataSRC())
 }
 \arguments{
 \item{TS}{a \bold{TS} object}
@@ -14,7 +15,7 @@ getrptDate_newest(TS, stockID, endT = Sys.Date(), mult = c("last", "first",
 
 \item{endT}{a vector of Date}
 
-\item{mult}{a character string. Could be one of "last","first","all". IF a listed company publish more than one financial reports, which one should be returned? the newest one(the default value), the earliest one or all of them?}
+\item{mult}{a character string. Could be one of "last","first","all". IF a listed company publish more than one financial reports in a single day, which one should be returned? the newest one(the default value), the earliest one or all of them? See example for dedail.}
 
 \item{drop}{a logical. Shoud the \code{TS} be exculded in the result?}
 }

@@ -13,6 +13,8 @@ trday.nearby(datelist, by, stockID = NULL, dir = if (by > 0) 1L else -1L,
 \item{by}{a integer giving the lagging days.If negetive,get the earlyer tradingday,if positive,get the later tradingday.}
 
 \item{stockID}{a character string or null. If null, the market trading days, other wise the trading days of specific stock.}
+
+\item{dir}{1L or -1L. see \code{\link{trday.nearest}}}
 }
 \value{
 a vector of trading days of class Date

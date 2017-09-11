@@ -3734,7 +3734,7 @@ rptTS.getFinSeri_ts <- function(rptTS, N, freq, funchar,varname, ...){
 #' FinStat <- calcFinStat(FinSeri,"mean")
 calcFinStat <- function(FinSeri,stat=c('mean','sum','slope','sd','mean/sd'),fname){
   if(missing(fname)){
-    fname <- guess_factorNames(FinSeri,no_factorname = c("stockID", "rptDate","lagN","lag_rptDate","ipoDate"))
+    fname <- guess_factorNames(FinSeri,no_factorname = c("stockID", "rptDate","lagN","lag_rptDate","ipoDate"),is_factorname = "factorscore")
   }
   # melt & group_by
   FinSeri <- reshape2::melt(FinSeri,measure.vars=fname,variable.name = "fname", value.name = "value")

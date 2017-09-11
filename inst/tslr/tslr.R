@@ -21,7 +21,7 @@ tsConnect <- function(user="gtrycs",psw="gtrycs888888"){
   b <- .External("tslLoginServer",user,psw) # login the server
   # c <- .External("tslSetComputeBitsOption",0)# compute automatically
   f <- .External("tslLogined")# return 1 if logined already
-  if (f!=1L) stop(paste("Tinysoft Login failed! Error message is:",f)) else cat("Tinysoft logined.")
+  if (f!=1L) stop(paste("Tinysoft Login failed! Error message is:",f)) else cat("Tinysoft logined.\n")
 }
 
 #' @rdname tsConnect

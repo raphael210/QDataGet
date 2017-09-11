@@ -9,7 +9,7 @@ trday.nearest(datelist, dir = -1L, stockID = NULL, TS, drop)
 \arguments{
 \item{datelist}{a vector of class Date}
 
-\item{dir}{a integer. Indicating forward or backward to find, if \code{datelist} is not tradingday. -1 for forward, 1 for backward.}
+\item{dir}{a integer. Indicating forward or backward to find, if \code{datelist} is not tradingday. -1 for backward, 1 for forward.}
 
 \item{stockID}{a character string or null. If null, the market trading days, other wise the trading days of specific stock.}
 }

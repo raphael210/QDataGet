@@ -57,9 +57,9 @@ lcdb.update.QT_DailyQuote(begT, endT, stockID)
 
 lcdb.update.QT_DailyQuote2(begT, endT, stockID)
 
-lcdb.update.LC_RptDate()
+lcdb.update.LC_RptDate(begT, endT)
 
-lcdb.update.LC_PerformanceGrowth()
+lcdb.update.LC_PerformanceGrowth(begT, endT)
 
 lcdb.fix.swindustry()
 

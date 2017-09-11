@@ -2,11 +2,17 @@
 % Please edit documentation in R/pub02_dataGettingFuncs.R
 \name{getSectorID}
 \alias{getSectorID}
+\alias{gf_sector}
+\alias{cast_sector}
 \title{getSectorID}
 \usage{
 getSectorID(TS, stockID, endT = Sys.Date(),
   sectorAttr = defaultSectorAttr(), ret = c("ID", "name"), drop = FALSE,
   datasrc = defaultDataSRC())
+
+gf_sector(TS, sectorAttr)
+
+cast_sector(TSS)
 }
 \arguments{
 \item{TS}{a \bold{TS} object}
@@ -20,6 +26,8 @@ getSectorID(TS, stockID, endT = Sys.Date(),
 \item{ret}{a charactor string,could be one of "ID" or "name",indicating sectorID or sectorName returned.}
 
 \item{drop}{a logical. Shoud the \code{TS} be exculded in the result?}
+
+\item{TSS}{a dataframe, with cols: date,stockID,and some dummy variables of sectors.}
 }
 \value{
 a data.frame,with the same cols of TS,added by "\code{sector}". Or a vector if \code{drop} is TRUE. You can get more sector infomation by \code{\link{CT_industryList}}
@@ -42,7 +50,7 @@ getSectorID(stockID=c("EQ000001","EQ000002","EQ000004"), endT=as.Date("2010-01-0
 getSectorID(stockID=c("EQ000001","EQ000002","EQ000004"), endT=as.Date("2010-01-01"), sectorAttr=list(3,1), ret="name")
 getSectorID(stockID=c("EQ000001","EQ000002","EQ000004"), endT=as.Date("2010-01-01"), sectorAttr=list(3,2), ret="name")
 # -- combined sectorAttr
-factorList1 <- buildFactorList(factorFun = "gf.mkt_cap", factorNA = "median")
+factorList1 <- buildFactorList(factorFun = "gf.mkt_cap",factorRefine=refinePar_default("robust",NULL))
 test <- getSectorID(TS, sectorAttr= list(std=list(factorList1),level=list(5))) # cut by mkt_cap, group_1 is the max-mkt_cap-group,etc.
 test2 <- getSectorID(TS, sectorAttr= list(std=list(factorList1,33),level=list(5,1)))
 }

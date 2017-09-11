@@ -29,7 +29,7 @@ Other SecuMain functions: \code{\link{SecuCategory}},
   \code{\link{SecuMarket}}, \code{\link{stockID2name}},
   \code{\link{stockID2stockID}},
   \code{\link{stockID2tradeCode}},
-  \code{\link{stockName2ID}}
+  \code{\link{stockName2ID}}, \code{\link{trday.IPO}}
 }
 \author{
 Ruifei.Yin

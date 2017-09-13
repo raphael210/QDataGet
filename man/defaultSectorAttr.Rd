@@ -15,7 +15,7 @@ get the default sectorAttr. You can reset the default value by eg. \code{options
 \examples{
 # -- get the default sectorAttr
 defaultSectorAttr()
-# -- reset 
+# -- reset
 options(sectorAttr=list(std=3,level=2))
 # -- reget
 defaultSectorAttr()

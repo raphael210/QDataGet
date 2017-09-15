@@ -9,14 +9,14 @@
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ======================
 
 #' defaultDataSRC
-#' 
+#'
 #' get the default datasrc. You can reset the default value by eg. \code{options(datasrc="quant")}
-#' @return a character string, the value of the default datasrc. 
+#' @return a character string, the value of the default datasrc.
 #' @export
 #' @examples
 #' # -- get the default datasrc
 #' defaultDataSRC()
-#' # -- reset 
+#' # -- reset
 #' options(datasrc="quant")
 #' # -- reget
 #' defaultDataSRC()
@@ -32,7 +32,7 @@ origin_sql <- function(){
 
 
 #' Database connection
-#' 
+#'
 #' connect database wind, quant, cs, jy, local, ...
 #' @rdname db.connection
 #' @return a database connection.
@@ -73,16 +73,16 @@ db.wind <- function(){
 #'
 #' read data from a ODBC data source with a query
 #' @param db a ODBC database object
-#' @param query a character string,indicating the query to execute 
+#' @param query a character string,indicating the query to execute
 #' @return a dataframe
 #' @author Ruifei.Yin
 #' @export
-#' @examples 
+#' @examples
 #' queryAndClose.odbc(db.quant(),"select top 10 * from QT_DailyQuote")
 queryAndClose.odbc <- function (db, query, as.is=FALSE, ...) {
   table = sqlQuery(db, query, as.is = as.is, ...)
   odbcClose(db)
-  return(table) 
+  return(table)
 }
 
 
@@ -90,28 +90,28 @@ queryAndClose.odbc <- function (db, query, as.is=FALSE, ...) {
 #'
 #' read data from a DBI data source with a query
 #' @param db a DBI data source object
-#' @param query a character string,indicating the query to execute 
+#' @param query a character string,indicating the query to execute
 #' @return a dataframe
 #' @author Ruifei.Yin
 #' @export
-#' @examples 
+#' @examples
 #' queryAndClose.dbi(db.local(),"select * from QT_DailyQuote limit 10")
 queryAndClose.dbi <- function (db, query, ...) {
   table = dbGetQuery(db, query, ...)
   dbDisconnect(db)
-  return(table) 
+  return(table)
 }
 
 
 
 #' lcdb.updatetime
-#' 
+#'
 #' get the updatetime of tables in lcdb
 #' @return a datafrme, with cols: "table", "updatetime".
 #' @export
 lcdb.updatetime <- function () {
   con <- db.local()
-  updatetime <- c(    
+  updatetime <- c(
     rdate2int(as.Date(as.POSIXct(dbGetQuery(con,"select max(updateTime) from SecuMain")[[1]],origin = origin_sql()),tz="")),
     rdate2int(as.Date(as.POSIXct(dbGetQuery(con,"select max(updateTime) from CT_IndustryList")[[1]],origin = origin_sql()),tz="")),
     rdate2int(as.Date(as.POSIXct(dbGetQuery(con,"select max(updateTime) from LC_ExgIndustry")[[1]],origin = origin_sql()),tz="")),
@@ -123,7 +123,7 @@ lcdb.updatetime <- function () {
     dbGetQuery(con,"select max(TradingDay) from QT_DailyQuote2")[[1]]       ,
     dbGetQuery(con,"select max(TradingDay) from QT_FactorScore")[[1]]       ,
     dbGetQuery(con,"select max(PublDate) from LC_RptDate")[[1]]             ,
-    dbGetQuery(con,"select max(InfoPublDate) from LC_PerformanceGrowth")[[1]]             
+    dbGetQuery(con,"select max(InfoPublDate) from LC_PerformanceGrowth")[[1]]
     )
   table <- c(
     "SecuMain",
@@ -165,12 +165,12 @@ lcdb.update <- function(){
   # lcdb.update.QT_UnTradingDay()          ;  cat("lcdb.update.QT_UnTradingDay()... Done \n");
   lcdb.update.QT_IndexQuote()            ;  cat("lcdb.update.QT_IndexQuote()... Done \n");
   lcdb.update.IndexQuote_000985E()       ;  cat("lcdb.update.IndexQuote_000985E()... Done \n");
-  
+
   lcdb.update.LC_RptDate()               ;  cat("lcdb.update.LC_RptDate()... Done \n");
   lcdb.update.LC_PerformanceGrowth()     ;  cat("lcdb.update.LC_PerformanceGrowth()... Done \n");
   lcdb.update.QT_FreeShares()            ;  cat("lcdb.update.QT_FreeShares()... Done \n");
   lcdb.update.QT_FactorScore()           ;  cat("lcdb.update.QT_FactorScore()... Done \n");
-  
+
 }
 
 #' @rdname lcdb.update
@@ -240,12 +240,12 @@ lcdb.update.LC_IndexComponent <- function(){
 #' @param begT a numeric date. if missing, '\code{max(EndDate)}' in the lcdb.
 #' @param endT a numeric date. if missing, 99999999.
 #' @aliases indexID a vector of indexID. if missing, all the index in server database.
-#' @examples 
+#' @examples
 #' lcdb.update.LC_IndexComponentsWeight() # update all the indexs up to date
 #' lcdb.update.LC_IndexComponentsWeight(20060101,20060330) # update all the indexs in given period
 #' lcdb.update.LC_IndexComponentsWeight(19000101,99999999,"EI000905") # update all the data of given index
 #' lcdb.update.LC_IndexComponentsWeight(20060101,20060330,"EI000905")
-lcdb.update.LC_IndexComponentsWeight <- function(begT,endT,IndexID){  
+lcdb.update.LC_IndexComponentsWeight <- function(begT,endT,IndexID){
   con <- db.local()
   if(TRUE){
     if(missing(begT)){
@@ -262,7 +262,7 @@ lcdb.update.LC_IndexComponentsWeight <- function(begT,endT,IndexID){
       pool_filt <- paste("IndexID in",brkQT(IndexID))
     }
   }
-  tb.from <- queryAndClose.odbc(db.quant(),query=paste("select * from LC_IndexComponentsWeight where",begT_filt,"and",endT_filt,"and",pool_filt))  
+  tb.from <- queryAndClose.odbc(db.quant(),query=paste("select * from LC_IndexComponentsWeight where",begT_filt,"and",endT_filt,"and",pool_filt))
   if(NROW(tb.from)==0){
     return()
   }
@@ -278,12 +278,12 @@ lcdb.update.LC_IndexComponentsWeight <- function(begT,endT,IndexID){
 lcdb.update.QT_UnTradingDay <- function(){
   con <- db.local()
   begT <- dbGetQuery(con,"select max(TradingDay) from QT_UnTradingDay")[[1]]
-  tb.from <- queryAndClose.odbc(db.quant(),query=paste("select * from QT_UnTradingDay where TradingDay >",begT))  
+  tb.from <- queryAndClose.odbc(db.quant(),query=paste("select * from QT_UnTradingDay where TradingDay >",begT))
   if(NROW(tb.from)==0){
     return()
   }
   dbWriteTable(con,"QT_UnTradingDay",tb.from,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbDisconnect(con)  
+  dbDisconnect(con)
 }
 
 
@@ -318,13 +318,13 @@ lcdb.update.QT_IndexQuote <- function(begT,endT,IndexID){
       pool_filt <- paste("ID in",brkQT(IndexID))
     }
   }
-  tb.from <- queryAndClose.odbc(db.quant(),query=paste("select * from QT_IndexQuote where ",begT_filt,"and",endT_filt,"and",pool_filt)) 
+  tb.from <- queryAndClose.odbc(db.quant(),query=paste("select * from QT_IndexQuote where ",begT_filt,"and",endT_filt,"and",pool_filt))
   if(NROW(tb.from)==0){
     return()
   }
   dbGetQuery(con,paste("delete from QT_IndexQuote where",begT_filt,"and",endT_filt,"and",pool_filt))
   dbWriteTable(con,"QT_IndexQuote",tb.from,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbDisconnect(con) 
+  dbDisconnect(con)
 }
 
 #' @rdname lcdb.update
@@ -401,7 +401,7 @@ lcdb.update.QT_DailyQuote2 <- function(begT,endT,stockID){
 
 #' @rdname lcdb.update
 #' @export
-lcdb.update.LC_RptDate <- function(begT,endT){  
+lcdb.update.LC_RptDate <- function(begT,endT){
   con <- db.local()
   if(missing(begT)){
     begT <- dbGetQuery(con,"select max(PublDate) from LC_RptDate")[[1]]
@@ -409,7 +409,7 @@ lcdb.update.LC_RptDate <- function(begT,endT){
   if(missing(endT)){
     endT <- 99999999
   }
-  tb.from <- queryAndClose.odbc(db.quant(),query=paste("select * from LC_RptDate where PublDate >=",begT,"and PublDate <=",endT))  
+  tb.from <- queryAndClose.odbc(db.quant(),query=paste("select * from LC_RptDate where PublDate >=",begT,"and PublDate <=",endT))
   if(NROW(tb.from)==0){
     return()
   }
@@ -420,13 +420,14 @@ lcdb.update.LC_RptDate <- function(begT,endT){
 
 
 
+
 #' @rdname lcdb.update
 #' @export
 lcdb.update.LC_PerformanceGrowth <- function(begT,endT){
   con <- db.local()
   if(missing(begT)){
     begT <- dbGetQuery(con,"select max(InfoPublDate) from LC_PerformanceGrowth")[[1]]
-  } 
+  }
   if(missing(endT)){
     endT <- 99999999
   }
@@ -456,7 +457,7 @@ lcdb.add.LC_IndexComponent <- function(indexID){
                from SecuMain WHERE SecuCode=",QT(substr(indexID,3,8)),
                " and SecuCategory=4",sep='')
   indexInfo <- queryAndClose.odbc(db.jy(),qr1,stringsAsFactors=FALSE)
-  
+
   qr2 <- paste("SELECT 'EI'+s1.SecuCode 'IndexID','EQ'+s2.SecuCode 'SecuID',
                convert(varchar(8),l.InDate,112) 'InDate',
                convert(varchar(8),l.OutDate,112) 'OutDate',l.Flag,l.XGRQ 'UpdateTime'
@@ -465,15 +466,15 @@ lcdb.add.LC_IndexComponent <- function(indexID){
                " left join SecuMain s2 on l.SecuInnerCode=s2.InnerCode",
                " where s2.SecuCode like '3%' or s2.SecuCode like '6%' or s2.SecuCode like '0%'")
   indexComp <- queryAndClose.odbc(db.jy(),qr2,stringsAsFactors=FALSE)
-  
+
   if(indexID=='EI000985'){
     changeDate <- as.Date('2011-08-02')
-    
+
     indexInfo <- transform(indexInfo,ID=indexID,
                            SecuCode=substr(SecuCode,3,8),
                            StockID_TS='SH000985',
                            StockID_wind='000985.SH')
-    
+
     #part 2 update local LC_IndexComponent
     qr <- paste("SELECT 'EI'+s1.SecuCode 'IndexID','EQ'+s2.SecuCode 'SecuID',
                 convert(varchar(8),l.InDate,112) 'InDate',
@@ -485,7 +486,7 @@ lcdb.add.LC_IndexComponent <- function(indexID){
                 where (s2.SecuCode like '3%' or s2.SecuCode like '6%' or s2.SecuCode like '0%')
                 and l.InDate<",QT(changeDate))
     re <- queryAndClose.odbc(db.jy(),qr,stringsAsFactors=FALSE)
-    
+
     if(TRUE){ # -- 801003
       tmp <- transform(re,InDate=intdate2r(InDate),
                        OutDate=intdate2r(OutDate),
@@ -494,7 +495,7 @@ lcdb.add.LC_IndexComponent <- function(indexID){
       tmp <- tmp[tmp$InDate < changeDate,c("SecuID","InDate","OutDate")]
       tmp[is.na(tmp$OutDate),'OutDate'] <- changeDate
       tmp[tmp$OutDate>changeDate,'OutDate'] <- changeDate
-      
+
       qr <- paste("select 'EQ'+s.SecuCode 'SecuID',
                   case when st.SpecialTradeType in(2,4,6) then convert(varchar(8),st.SpecialTradeTime,112)
                   else NULL end 'InDate',
@@ -510,13 +511,13 @@ lcdb.add.LC_IndexComponent <- function(indexID){
       st <- transform(st,InDate=intdate2r(InDate),
                       OutDate=intdate2r(OutDate))
       st[is.na(st$OutDate),'OutDate'] <- changeDate
-      
+
       tmp <- rbind(tmp[,c("SecuID","InDate","OutDate")],st)
       tmp <- reshape2::melt(tmp,id=c('SecuID'))
       tmp <- na.omit(tmp)
       tmp <- unique(tmp)
       tmp <- dplyr::arrange(tmp,SecuID,value)
-      
+
       tmp$flag <- c(1)
       for(i in 2: nrow(tmp)){
         if(tmp$SecuID[i]==tmp$SecuID[i-1] && tmp$variable[i-1]=='InDate' && tmp$variable[i]=='InDate'){
@@ -539,7 +540,7 @@ lcdb.add.LC_IndexComponent <- function(indexID){
       tmp <- tmp[,c("IndexID","SecuID","InDate","OutDate","Flag","UpdateTime")]
     }
     indexComp <- rbind(indexComp,tmp)
-    
+
   }else{
     #part 1 update local SecuMain
     indexInfo <- transform(indexInfo,ID=indexID,
@@ -552,7 +553,7 @@ lcdb.add.LC_IndexComponent <- function(indexID){
   con <- db.local()
   dbGetQuery(con,paste("delete from SecuMain where ID=",QT(indexID),sep=''))
   dbGetQuery(con,paste("delete from LC_IndexComponent where IndexID=",QT(indexID),sep=''))
-  
+
   dbWriteTable(con,"SecuMain",indexInfo,overwrite=FALSE,append=TRUE,row.names=FALSE)
   dbWriteTable(con,"LC_IndexComponent",indexComp,overwrite=FALSE,append=TRUE,row.names=FALSE)
   dbDisconnect(con)
@@ -561,7 +562,7 @@ lcdb.add.LC_IndexComponent <- function(indexID){
 
 #' fix shenwan new industry rule
 #'
-#' Due to the SHENWAN inustry standard changing in 2014, fix local database's shenwan industry rule's bug and make the rule keep consistent. The new industry standard is 33.  Update 3 related local tables:CT_SystemConst,CT_IndustryList and LC_ExgIndusry.  
+#' Due to the SHENWAN inustry standard changing in 2014, fix local database's shenwan industry rule's bug and make the rule keep consistent. The new industry standard is 33.  Update 3 related local tables:CT_SystemConst,CT_IndustryList and LC_ExgIndusry.
 #' @rdname lcdb.update
 #' @author Andrew Dow
 #' @return nothing.
@@ -569,7 +570,7 @@ lcdb.add.LC_IndexComponent <- function(indexID){
 #' lcdb.fix.swindustry()
 #' @export
 lcdb.fix.swindustry <- function(){
-  
+
   #get raw data
   qr <- "SELECT 'EQ'+s.SecuCode 'stockID',l.CompanyCode,l.FirstIndustryCode 'Code1',l.FirstIndustryName 'Name1',
   l.SecondIndustryCode 'Code2',l.SecondIndustryName 'Name2',l.ThirdIndustryCode 'Code3',
@@ -585,14 +586,14 @@ lcdb.fix.swindustry <- function(){
   re <- transform(re,InDate=as.integer(InDate),
                   OutDate=as.integer(OutDate),
                   UpdateTime=as.double(UpdateTime))
-  
+
   sw24use <- re[(re$InDate>=20140101) & (re$Standard==24),]
   sw9use <- re[(re$InDate<20140101) & (re$Standard==9),]
   sw9use[is.na(sw9use$OutDate) | sw9use$OutDate>20140101,'OutDate'] <- 20140101
   sw9use[,'Flag'] <- 2
   sw9use <- dplyr::rename(sw9use,OldCode1=Code1,OldName1=Name1,OldCode2=Code2,
                           OldName2=Name2,OldCode3=Code3,OldName3=Name3)
-  
+
   #convert old industry to new industry
   sw24tmp <- sw24use[sw24use$InDate==20140101,c("stockID","Code1","Name1","Code2","Name2","Code3","Name3")]
   sw9part1 <- sw9use[sw9use$OutDate==20140101,]
@@ -602,21 +603,21 @@ lcdb.fix.swindustry <- function(){
   hashtable <- plyr::ddply(hashtable,~OldName3,plyr::mutate,n=length(OldName3))
   hashtable <- hashtable[hashtable$n==1,c("Code1","Name1","Code2","Name2","Code3","Name3","OldCode1","OldName1","OldCode2","OldName2","OldCode3","OldName3")]
   sw9part1 <- sw9part1[,colnames(sw24use)]
-  
+
   sw9part2 <- sw9use[sw9use$OutDate<20140101,]
   sw9part2 <- dplyr::left_join(sw9part2,hashtable,by=c("OldCode1","OldName1",
                                                        "OldCode2","OldName2",
                                                        "OldCode3","OldName3"))
   sw9part2 <- sw9part2[,colnames(sw24use)]
   sw9use <- rbind(sw9part1,sw9part2)
-  
+
   #fill na to zonghe industry
   zhcn <- unique(sw24use[sw24use$Code1==510000,'Name1'])
   sw9use[is.na(sw9use$Code1),c("Name1","Name2","Name3")] <- zhcn
   sw9use[is.na(sw9use$Code1),"Code1"] <-510000
   sw9use[is.na(sw9use$Code2),"Code2"] <-510100
   sw9use[is.na(sw9use$Code3),"Code3"] <-510101
-  
+
   sw33 <- rbind(sw9use,sw24use)
   sw33 <- transform(sw33,Standard=33,
                     Code1=paste('ES33',Code1,sep = ''),
@@ -627,15 +628,15 @@ lcdb.fix.swindustry <- function(){
                     Code98=c(NA),
                     Name98=c(NA))
   sw33 <- dplyr::arrange(sw33,stockID,InDate)
-  
+
   #deal with abnormal condition
   #1 outdate<=indate
   sw33 <- sw33[ifelse(is.na(sw33$OutDate),TRUE,sw33$OutDate>sw33$InDate),]
   #2 one stock has two null outdate
-  tmp <- sw33 %>% dplyr::group_by(stockID) %>% 
-    dplyr::summarise(NANum=sum(is.na(OutDate))) %>% 
+  tmp <- sw33 %>% dplyr::group_by(stockID) %>%
+    dplyr::summarise(NANum=sum(is.na(OutDate))) %>%
     dplyr::ungroup() %>% dplyr::filter(NANum>1)
-  
+
   if(nrow(tmp)>0){
     tmp <- tmp$stockID
     sw33tmp <- sw33[(sw33$stockID %in% tmp) & is.na(sw33$OutDate),]
@@ -644,7 +645,7 @@ lcdb.fix.swindustry <- function(){
     sw33 <- rbind(sw33,sw33tmp)
     sw33 <- dplyr::arrange(sw33,stockID,InDate)
   }
-  
+
   #3 indate[i+1]!=outdate[i]
   sw33$tmpstockID <- c(sw33$stockID[1],sw33$stockID[1:(nrow(sw33)-1)])
   sw33$tmpOutDate <- c(NA,sw33$OutDate[1:(nrow(sw33)-1)])
@@ -654,7 +655,7 @@ lcdb.fix.swindustry <- function(){
   # 4 duplicate indate
   sw33 <- sw33[ifelse(is.na(sw33$OutDate),TRUE,sw33$OutDate>sw33$InDate),]
   sw33[!is.na(sw33$OutDate) & sw33$Flag==1,'Flag'] <- 2
-  
+
   # update local database CT_IndustryList
   qr <- "SELECT Standard,Classification 'Level','ES33'+IndustryCode 'IndustryID'
   ,IndustryName,SectorCode 'Alias','ES33'+FirstIndustryCode 'Code1'
@@ -666,11 +667,11 @@ lcdb.fix.swindustry <- function(){
   indCon <- transform(indCon,Standard=33,UpdateTime=as.double(UpdateTime))
   indCon[is.na(indCon$Name2),'Code2'] <- NA
   indCon[is.na(indCon$Name3),'Code3'] <- NA
-  
+
   # update local database CT_SystemConst
   syscon <- queryAndClose.odbc(db.jy(),"select top 1 LB, LBMC, DM ,MS  from CT_SystemConst where LB=1081",as.is = TRUE)
   syscon <- transform(syscon,DM=33, MS="SHENWAN2014fixed")
-  
+
   # update...
   con <- db.local()
   res <- dbSendQuery(con,"delete  from LC_ExgIndustry where Standard=33")
@@ -679,7 +680,7 @@ lcdb.fix.swindustry <- function(){
   dbClearResult(res)
   res <- dbSendQuery(con,"delete  from CT_SystemConst where LB=1081 and DM=33")
   dbClearResult(res)
-  
+
   dbWriteTable(con,'LC_ExgIndustry',sw33,overwrite=FALSE,append=TRUE,row.names=FALSE)
   dbWriteTable(con,'CT_IndustryList',indCon,overwrite=FALSE,append=TRUE,row.names=FALSE)
   dbWriteTable(con,'CT_SystemConst',syscon,overwrite=FALSE,append=TRUE,row.names=FALSE)
@@ -688,7 +689,7 @@ lcdb.fix.swindustry <- function(){
 }
 
 
-  
+
 #' @rdname lcdb.update
 #' @author Qian Han
 #' @return nothing.
@@ -701,7 +702,7 @@ lcdb.fix.ezindustry <- function(){
   seclist <- list()
   namelist <- list()
   seclist[[1]] <- c("ES33110000","ES33210000","ES33220000","ES33230000","ES33240000")
-  namelist[[1]] <- "BigCycle" 
+  namelist[[1]] <- "BigCycle"
   seclist[[2]] <- c("ES33480000","ES33490000","ES33430000")
   namelist[[2]] <- "FinRealEstate"
   seclist[[3]] <- c("ES33710000","ES33720000","ES33730000","ES33270000")
@@ -712,7 +713,7 @@ lcdb.fix.ezindustry <- function(){
   namelist[[5]] <- "Manufacturing"
   seclist[[6]] <- c("ES33420000","ES33410000","ES33510000")
   namelist[[6]] <- "Others"
-  
+
   # LC_ExgIndustry
   qr <- paste(" select * from LC_ExgIndustry
               where Standard = 33")
@@ -726,15 +727,15 @@ lcdb.fix.ezindustry <- function(){
     }
   }
   tmpdat$Standard <- 336
-  
+
   # CT_SystemConst
   tmpdat2 <- DBI::dbReadTable(con, "CT_SystemConst")
   tmpdat2 <- subset(tmpdat2, LB == 1081 & DM == 33)
   tmpdat2$DM <- 336
   tmpdat2$MS <- "6EasyIndustryCategory"
-  
+
   # CT_IndustryList
-  qr3 <- " select * from CT_IndustryList 
+  qr3 <- " select * from CT_IndustryList
   where Standard = 33
   and Level = 1"
   tmpdat3 <- DBI::dbGetQuery(con, qr3)
@@ -744,7 +745,7 @@ lcdb.fix.ezindustry <- function(){
   tmpdat3$IndustryName <- unlist(namelist)
   tmpdat3$Code1 <- tmpdat3$IndustryID
   tmpdat3$Name1 <- tmpdat3$IndustryName
-  
+
   # Update into LCDB
   dbGetQuery(con,"delete from LC_ExgIndustry where Standard=336")
   dbGetQuery(con,"delete from CT_IndustryList where Standard=336")
@@ -779,7 +780,7 @@ lcdb.init.IndexQuote_000985E <- function(){
     dates <- trday.get(begT,endT)
     dates <- as.Date(unique(cut.Date2(dates,"month")))
     TS <- getIndexComp(indexID = 'EI000985',endT = dates, drop = FALSE)
-    
+
     index <- data.frame()
     for(i in 1:(length(dates)-1)){
       # tmp.dates <- getRebDates(dates[i],dates[i+1],rebFreq = 'day')
@@ -792,12 +793,12 @@ lcdb.init.IndexQuote_000985E <- function(){
       quotedf$TradingDay <- intdate2r(quotedf$TradingDay)
       tmp.TS <- TS[TS$date==dates[i],]
       quotedf <- quotedf[quotedf$ID %in% tmp.TS$stockID,]
-      
+
       tmp <- quotedf %>% dplyr::group_by(TradingDay) %>%
         dplyr::summarise(DailyReturn = mean(DailyReturn, na.rm = TRUE))
       index <- rbind(index,tmp)
     }
-    
+
     tmp <- xts::xts(index$DailyReturn,order.by = index$TradingDay)
     tmp <- WealthIndex(tmp)
     close <- data.frame(TradingDay=zoo::index(tmp),close=zoo::coredata(tmp)*1000,row.names =NULL)
@@ -833,7 +834,7 @@ lcdb.init.IndexQuote_000985E <- function(){
 #' @export
 lcdb.update.IndexQuote_000985E <- function(begT,endT){
   con <- db.local()
-  
+
   if(TRUE){
     if(missing(begT)){
       begT <- dbGetQuery(con,"select max(TradingDay) from QT_IndexQuote where ID='EI000985E'")[[1]]
@@ -842,7 +843,7 @@ lcdb.update.IndexQuote_000985E <- function(begT,endT){
       endT <- dbGetQuery(con,"select max(TradingDay) from QT_IndexQuote")[[1]]
     }
   }
-  
+
   if(begT==endT){
     return('Alread up to date!')
   } else if(begT>endT){
@@ -856,18 +857,18 @@ lcdb.update.IndexQuote_000985E <- function(begT,endT){
     TS <- getIndexComp(indexID = 'EI000985',endT = begT,drop=FALSE)
     # tmp.dates <- getRebDates(begT,endT,rebFreq = 'day')
     tmp.dates <- trday.get(begT,endT)
-    
+
     cat('calculating',rdate2int(min(tmp.dates)),"~",rdate2int(max(tmp.dates)),'...\n')
     qr <- paste("select TradingDay,ID,DailyReturn from QT_DailyQuote2
                 where TradingDay>=",rdate2int(min(tmp.dates))," and TradingDay<=",rdate2int(max(tmp.dates)))
     quotedf <- dbGetQuery(con,qr)
     quotedf$TradingDay <- intdate2r(quotedf$TradingDay)
     quotedf <- quotedf[quotedf$ID %in% TS$stockID,]
-    
+
     index <- quotedf %>% dplyr::group_by(TradingDay) %>%
       dplyr::summarise(DailyReturn = mean(DailyReturn, na.rm = TRUE))
-    
-    
+
+
     tmp <- xts::xts(index$DailyReturn, order.by = index$TradingDay)
     tmp <- WealthIndex(tmp)
     close <- data.frame(TradingDay=zoo::index(tmp),close=zoo::coredata(tmp)*init_data$ClosePrice,row.names =NULL)
@@ -893,10 +894,10 @@ lcdb.update.IndexQuote_000985E <- function(begT,endT){
     dbGetQuery(con,paste("delete from QT_IndexQuote where ID='EI000985E' and TradingDay >=",rdate2int(begT),"and TradingDay <=",rdate2int(endT)))
     dbWriteTable(con,'QT_IndexQuote',index,overwrite=F,append=T,row.names=F)
   }
-  
+
   dbDisconnect(con)
   return('Done!')
-  
+
 }
 
 
@@ -910,7 +911,7 @@ lcdb.update.IndexQuote_000985E <- function(begT,endT){
 #' lcdb.init.indexquote000985()
 #' @export
 lcdb.init.indexquote000985 <- function(windCode='000985.CSI'){
-  
+
   con <- db.local()
   indexCode <- paste('EI',substr(windCode,1,6),sep = '')
   qr <- paste("select ID,DailyReturn from QT_IndexQuote where ID=",QT(indexCode))
@@ -926,13 +927,13 @@ lcdb.init.indexquote000985 <- function(windCode='000985.CSI'){
     index <- w.wsd(windCode,"pre_close,open,high,low,close,volume,amt,dealnum,pct_chg","2005-01-04",endT)[[2]]
     colnames(index) <- c("TradingDay","PrevClosePrice","OpenPrice","HighPrice", "LowPrice",
                          "ClosePrice","TurnoverVolume","TurnoverValue","TurnoverDeals","ChangePCT")
-    
+
     #get innercode
     qr <- paste("SELECT InnerCode FROM SecuMain
                 where SecuCode=",QT(substr(windCode,1,6))," and SecuCategory=4")
     innercode <- queryAndClose.odbc(db.jy(),qr)[[1]]
-    
-    
+
+
     index <- transform(index,TradingDay=rdate2int(TradingDay),
                        InnerCode=c(innercode),
                        DailyReturn=ChangePCT/100,
@@ -944,7 +945,7 @@ lcdb.init.indexquote000985 <- function(windCode='000985.CSI'){
                       "ChangePCT","NegotiableMV","UpdateTime","DailyReturn","ID")]
     dbWriteTable(con,'QT_IndexQuote',index,overwrite=F,append=T,row.names=F)
   }
-  
+
   dbDisconnect(con)
   return('Done!')
 }
@@ -976,7 +977,7 @@ lcdb.init.indexquote000985 <- function(windCode='000985.CSI'){
 lcdb.update.QT_FreeShares <- function(){
   con <- db.local()
   re <- dbReadTable(con,'QT_FreeShares')
-  
+
   begT <- intdate2r(max(re$date))
   begT <- trday.nearby(begT,1)
   endT <- trday.nearest(Sys.Date()-1)
@@ -986,7 +987,7 @@ lcdb.update.QT_FreeShares <- function(){
     # dates <- getRebDates(begT,endT,rebFreq = 'week')
     dates <- trday.get(begT,endT)
     dates <- as.Date(unique(cut.Date2(dates,"week")))
-    
+
     # lcdb.add.LC_IndexComponent('EI801003')
     TS <- getIndexComp(indexID = 'EI801003',endT = dates, drop = FALSE)
     TS$stockID <- stockID2stockID(TS$stockID,'local','wind')
@@ -1039,13 +1040,13 @@ lcdb.update.QT_FactorScore <- function(endT=Sys.Date()){
   }
   TS <- transform(TS,date=intdate2r(date))
   TS <- dplyr::arrange(TS,date,stockID)
-  
+
   factorLists <- CT_FactorLists()
   for(i in 1:NROW(factorLists)){
     factorName <- factorLists[i,"factorName"]
     factorID <- factorLists[i,"factorID"]
     factorFun <- factorLists[i,"factorFun"]
-    factorPar <- factorLists[i,"factorPar"]    
+    factorPar <- factorLists[i,"factorPar"]
     cat("Factor",factorName,"getting ...\n")
     subTSF <- inner_getRawFactor(TS=TS,factorFun=factorFun,factorPar=factorPar)
     subTSF <- renameCol(subTSF,src="factorscore",tgt=factorID)
@@ -1057,8 +1058,8 @@ lcdb.update.QT_FactorScore <- function(endT=Sys.Date()){
   }
   re <- renameCol(re,c("date","stockID"),c("TradingDay","ID"))
   re$TradingDay <- rdate2int(re$TradingDay)
-  
-  if(TRUE){ # add extra fields, and reorder the fields to fix the order of target table. 
+
+  if(TRUE){ # add extra fields, and reorder the fields to fix the order of target table.
     targetfield <- dbListFields(con,"QT_FactorScore")
     extrfield <- setdiff(targetfield,names(re))
     extrdat <- as.data.frame(matrix(NA,NROW(re),length(extrfield)))
@@ -1066,7 +1067,7 @@ lcdb.update.QT_FactorScore <- function(endT=Sys.Date()){
     re <- cbind(re,extrdat)
     re <- re[targetfield]
   }
-  
+
   dbWriteTable(con,"QT_FactorScore",re,overwrite=FALSE,append=TRUE,row.names=FALSE)
   dbDisconnect(con)
 }
@@ -1081,13 +1082,13 @@ inner_getRawFactor <- function (TS,factorFun,factorPar) {
   if(missing(factorPar)){
     TSF <- do.call(factorFun,c(list(TS)))
   } else if(is.list(factorPar)){
-    TSF <- do.call(factorFun,c(list(TS),factorPar))    
+    TSF <- do.call(factorFun,c(list(TS),factorPar))
   } else if(is.character(factorPar)){
     if(is.na(factorPar)||factorPar==""){
       funchar <- paste(factorFun,"(TS)")
     } else {
       funchar <- paste(factorFun,"(","TS,",factorPar,")")
-    }    
+    }
     TSF <- eval(parse(text=funchar))
   } else {
     stop("The factorPar must be a list or a character string!")
@@ -1117,7 +1118,7 @@ inner_default.factorName <- function (factorFun, factorPar, factorDir) {
 
 
 
-lcdb.init.QT_DailyQuote <- function(){  
+lcdb.init.QT_DailyQuote <- function(){
   con <- db.local()
   dbGetQuery(con,"
               CREATE TABLE QT_DailyQuote (
@@ -1138,25 +1139,25 @@ lcdb.init.QT_DailyQuote <- function(){
               RRClosePrice smallmoney NULL,
               TotalShares decimal(20, 4) NULL,
               NonRestrictedShares decimal(20, 4) NULL
-              );   
+              );
               CREATE UNIQUE INDEX [IX_QT_DailyQuote] ON [QT_DailyQuote]([ID] ,[TradingDay] DESC);
               CREATE INDEX IX_QT_DailyQuote_TradingDay ON QT_DailyQuote (TradingDay);
-              ")  
+              ")
   all.stocks <- queryAndClose.odbc(db.quant(),"select distinct ID from QT_DailyQuote")[[1]]
-  
+
   subfun <- function(stock0){
     #   stock0 <- "EQ000001"
     cat(paste(" ",stock0))
     data0<- queryAndClose.odbc(db.quant(),paste("select * from QT_DailyQuote where ID=",QT(stock0)))
     dbWriteTable(con, "QT_DailyQuote", data0, overwrite = FALSE, append=TRUE,row.names = FALSE)
-    gc()    
+    gc()
   }
   cat("Function lite.QT_DailyQuote: getting the quote ....\n")
-  l_ply(all.stocks, subfun, .progress = progress_text(style=3))  
+  l_ply(all.stocks, subfun, .progress = progress_text(style=3))
   dbDisconnect(con)
 }
 
-lcdb.init.QT_DailyQuote2 <- function(){  
+lcdb.init.QT_DailyQuote2 <- function(){
   dbGetQuery(con,"CREATE UNIQUE INDEX IX_QT_DailyQuote2 ON QT_DailyQuote2 (TradingDay desc ,ID)")
   con <- db.local()
   dbGetQuery(con,"
@@ -1178,22 +1179,22 @@ lcdb.init.QT_DailyQuote2 <- function(){
               RRClosePrice smallmoney NULL,
               TotalShares decimal(20, 4) NULL,
               NonRestrictedShares decimal(20, 4) NULL
-              );            
-              CREATE UNIQUE INDEX IX_QT_DailyQuote2 ON QT_DailyQuote2 (TradingDay DESC, ID);            
+              );
+              CREATE UNIQUE INDEX IX_QT_DailyQuote2 ON QT_DailyQuote2 (TradingDay DESC, ID);
               CREATE INDEX IX_QT_DailyQuote2_ID on QT_DailyQuote2 (ID);
               CREATE INDEX [IX_QT_DailyQuote2_ID_TradingDay] ON [QT_DailyQuote2]([ID] ,[TradingDay]  DESC);
-              ")    
+              ")
   all.days <- queryAndClose.odbc(db.quant(),"select distinct TradingDay from QT_DailyQuote")[[1]]
   all.days <- all.days[order(-all.days)]
-  
+
   subfun <- function(day0){
     cat(paste(" ",day0))
     data0 <- dbGetQuery(con,paste("select * from QT_DailyQuote where TradingDay=",day0))
     dbWriteTable(con, "QT_DailyQuote2", data0, overwrite = FALSE, append=TRUE,row.names = FALSE)
-    gc()    
+    gc()
   }
   cat("Function lite.QT_DailyQuote: getting the quote ....\n")
-  l_ply(all.days, subfun, .progress = progress_text(style=3))  
+  l_ply(all.days, subfun, .progress = progress_text(style=3))
   dbDisconnect(con)
 }
 
@@ -1201,7 +1202,7 @@ lcdb.init.QT_DailyQuote2 <- function(){
 
 
 #' lcfs.update
-#' 
+#'
 #' @param begT the begin date of the updating
 #' @param endT the end date of the updating
 #' @export
@@ -1221,51 +1222,51 @@ lcfs.update <- function(factorID,begT,endT,stockID,
   } else{
     pool_filt <- paste("ID in",brkQT(stockID))
   }
-  
+
   factorFun <- CT_FactorLists(factorID = factorID)$factorFun
   factorPar <- CT_FactorLists(factorID = factorID)$factorPar
-  
+
   loopT <- rdate2int(trday.get(intdate2r(begT),intdate2r(endT)))
   loopT.L <- split(loopT,cut(intdate2r(loopT),splitNbin))
-  
+
   subfun <- function(Ti){
     cat(paste(" ",min(Ti),"to",max(Ti)," ...\n"))
     dates <- paste(Ti,collapse=",")
     TS <- dbGetQuery(con,paste("select TradingDay as date, ID as stockID from QT_FactorScore where TradingDay in (",dates,") and",pool_filt))
-    TS$date <- intdate2r(TS$date)    
+    TS$date <- intdate2r(TS$date)
     TSF <- inner_getRawFactor(TS,factorFun,factorPar)
     TSF$date <- rdate2int(TSF$date)
     TSF <- renameCol(TSF,src="factorscore",tgt=factorID)
-    
+
     for(Tij in Ti){ # update the factorscore day by day.
       #     Tij <- Ti[1]
       # cat(paste(" ",Tij))
       dbWriteTable(con,"yrf_tmp",TSF[TSF$date==Tij,],overwrite=TRUE,append=FALSE,row.names=FALSE)
       qr <- paste("UPDATE QT_FactorScore
-                  SET ",factorID,"= (SELECT ",factorID," FROM yrf_tmp WHERE yrf_tmp.stockID =QT_FactorScore.ID) 
+                  SET ",factorID,"= (SELECT ",factorID," FROM yrf_tmp WHERE yrf_tmp.stockID =QT_FactorScore.ID)
                   WHERE QT_FactorScore.ID = (SELECT stockID FROM yrf_tmp WHERE yrf_tmp.stockID =QT_FactorScore.ID)
                   and QT_FactorScore.TradingDay =",Tij)
       res <- dbSendQuery(con,qr)
-      dbClearResult(res)  
-    }   
+      dbClearResult(res)
+    }
     gc()
-  }  
-  
+  }
+
   cat(paste("Function lcfs.update: updateing factor score of",factorID,".... \n"))
-  plyr::l_ply(loopT.L, subfun, .progress = plyr::progress_text(style=3))   
+  plyr::l_ply(loopT.L, subfun, .progress = plyr::progress_text(style=3))
   dbDisconnect(con)
 }
 
 
 
 #' lcfs.add
-#' 
+#'
 #' add/update a factorscore column in local sqlite table \code{"QT_FactorScore"}. On the same time, correspondingly, add/update a record into table \code{"CT_FactorLists"} and table \code{"CT_TechVars"}.
 #' @param factorFun a character string naming the function to get the factor scores
 #' @param factorPar a character string, containing the parameters of the \code{factorFun}. Note that unlike in \code{\link{getTSF}}, here the factorPar could not be a list, because it need to be written into database.
 #' @param factorDir a integer,should be 1 or -1 (1 for the positive factor,-1 for the negative one). \bold{Note that} the \code{factorDir} here is only used to write a record into table \code{"CT_FactorLists"}, not used when getting \code{TSF}. So that the factorscore in table \code{"QT_FactorScore"} is kept \bold{"raw", without adding the dirrection infomation}.
 #' @param factorID a character string
-#' @param factorName a character string. IF missing, then take a default name by function \code{default.factorName}. 
+#' @param factorName a character string. IF missing, then take a default name by function \code{default.factorName}.
 #' @param factorType a character string
 #' @param factorDesc a character string
 #' @param splitNbin a character of interval specification(see \code{\link{cut.Date}} for detail). Specify the time interval when looping of getting the \code{TSF} object.
@@ -1275,20 +1276,20 @@ lcfs.update <- function(factorID,begT,endT,stockID,
 #' @export
 #' @examples
 #' system.time(lcfs.add(factorFun="gf.F_rank_chg",factorPar="lag=60,con_type=\"1,2\"", factorDir=1, factorID="F000999"))
-lcfs.add <- function(factorFun, 
-                     factorPar="", 
+lcfs.add <- function(factorFun,
+                     factorPar="",
                      factorDir,
-                     factorID,                      
-                     factorName = inner_default.factorName(factorFun,factorPar,factorDir),                      
-                     factorType = "", 
+                     factorID,
+                     factorName = inner_default.factorName(factorFun,factorPar,factorDir),
+                     factorType = "",
                      factorDesc = "",
-                     splitNbin = "month"){   
+                     splitNbin = "month"){
   if(factorID %in% CT_FactorLists()$factorID) {
     is_overwrite <- select.list(choices=c("OK","CANCEL"),preselect="CANCEL",title=paste("Warning!\nThe factor",factorID,"has already exist!\nDo you want to overwrite it?"),graphics=FALSE)
     if(is_overwrite == "CANCEL") return(invisible(NULL))
-  } 
+  }
   con <- db.local()
-  # insert or replace a row to table 'CT_FactorLists' 
+  # insert or replace a row to table 'CT_FactorLists'
   if(!is.character(factorPar)){
     stop("The 'factorPar' must be a character!")
   }
@@ -1305,8 +1306,8 @@ lcfs.add <- function(factorFun,
                ",QT(factorDesc),"
                ) ")
   dbGetQuery(con,qr1)
-  
-  # insert or replace a row to table 'CT_TechVars'  
+
+  # insert or replace a row to table 'CT_TechVars'
   qr2 <- paste("replace into CT_TechVars
                (datasrc, secuCate, varName, func, tableName)
                values
@@ -1318,15 +1319,15 @@ lcfs.add <- function(factorFun,
                'QT_FactorScore'
                ) ")
   dbGetQuery(con,qr2)
-  
-  # add 1 colume to table 'QT_FactorScore' 
+
+  # add 1 colume to table 'QT_FactorScore'
   tryCatch(dbGetQuery(con,paste("ALTER TABLE QT_FactorScore ADD COLUMN ",factorID,"float(0, 4)")),
            error=function(e) { print("RS-DBI driver: (error in statement: duplicate column name)") })
   dbDisconnect(con)
-  
+
   # update
   lcfs.update(factorID = factorID,splitNbin = splitNbin)
-  
+
 }
 
 
@@ -1334,10 +1335,10 @@ lcfs.add <- function(factorFun,
 
 
 #' lcdb.update.QT_sus_res
-#' 
+#'
 #' @export
 #' @rdname  lcdb.update.QT_sus_res
-#' @examples 
+#' @examples
 #' #-- initiate:
 #' lcdb.init.QT_sus_res(19901231,19950630)
 #' #-- update:
@@ -1354,10 +1355,10 @@ lcdb.init.QT_sus_res <- function(begT=19901231,endT){
   con <- db.local()
   begT_filt <- paste("TradingDay >=",begT)
   endT_filt <- paste("TradingDay <= ",endT)
-  
+
   QTdata <- dbGetQuery(con,paste("select ID, TradingDay, TurnoverVolume from QT_DailyQuote2 where ",begT_filt,"and",endT_filt, "order by ID,TradingDay"))
   updateDate <- max(QTdata$TradingDay)
-  
+
   loops <- unique(QTdata$ID)
   TB_sus_res <- data.frame()
   for (ii in 1:length(loops)){
@@ -1367,7 +1368,7 @@ lcdb.init.QT_sus_res <- function(begT=19901231,endT){
     QTstock <- dplyr::filter(QTdata,ID==stockID_)
     QTstock <- dplyr::mutate(QTstock,Vol_lag=lag(TurnoverVolume))
     QTstock <- dplyr::mutate(QTstock,sus_res=ifelse(TurnoverVolume<1 & Vol_lag>=1, "s",  # - suspend
-                                                    ifelse(Vol_lag<1 & TurnoverVolume>=1, "r", # - resumption 
+                                                    ifelse(Vol_lag<1 & TurnoverVolume>=1, "r", # - resumption
                                                            NA))) # - nothing
     sus <- dplyr::filter(QTstock,sus_res=="s")$TradingDay
     res <- dplyr::filter(QTstock,sus_res=="r")$TradingDay
@@ -1375,7 +1376,7 @@ lcdb.init.QT_sus_res <- function(begT=19901231,endT){
       if(sus[1] > res[1]){
         res_lag <- res[1]  # -- res_lag
         res <- res[-1]
-      } 
+      }
       if(length(sus)>length(res)){
         res <- c(res,NA)
       }
@@ -1383,7 +1384,7 @@ lcdb.init.QT_sus_res <- function(begT=19901231,endT){
       TB_sus_res <- rbind(TB_sus_res,S_R)
     }
   }
-  
+
   dbWriteTable(con,"QT_sus_res",TB_sus_res,overwrite=FALSE,append=TRUE,row.names=FALSE)
   dbGetQuery(con,"CREATE UNIQUE INDEX [IX_QT_sus_res] ON [QT_sus_res] ([stockID], [sus]);")
   dbDisconnect(con)
@@ -1412,13 +1413,13 @@ lcdb.update.QT_sus_res <- function(endT,stockID){
   } else{
     pool_filt <- paste("ID in",brkQT(stockID))
   }
-  
+
   if(endT<=begT){
     stop("Can not update this table in the midst!")
   }
   QTdata <- dbGetQuery(con,paste("select ID, TradingDay, TurnoverVolume from QT_DailyQuote2 where ",begT_filt,"and",endT_filt,"and",pool_filt, "order by ID,TradingDay"))
   updateDate <- max(QTdata$TradingDay)
-  
+
   loops <- unique(QTdata$ID)
   TB_sus_res <- data.frame()
   for (ii in 1:length(loops)){
@@ -1428,15 +1429,15 @@ lcdb.update.QT_sus_res <- function(endT,stockID){
     QTstock <- dplyr::filter(QTdata,ID==stockID_)
     QTstock <- dplyr::mutate(QTstock,Vol_lag=lag(TurnoverVolume)) # this step will trim the QTdata of begT just right to avoid the overlapping
     QTstock <- dplyr::mutate(QTstock,sus_res=ifelse(TurnoverVolume<1 & Vol_lag>=1, "s",  # - suspend
-                                                    ifelse(Vol_lag<1 & TurnoverVolume>=1, "r", # - resumption 
+                                                    ifelse(Vol_lag<1 & TurnoverVolume>=1, "r", # - resumption
                                                            NA))) # - nothing
     sus <- dplyr::filter(QTstock,sus_res=="s")$TradingDay
     res <- dplyr::filter(QTstock,sus_res=="r")$TradingDay
-    
+
     if(length(sus)==0 & length(res) == 0){
       next
     } else if(length(sus)==0){ # length(sus)==0 & length(res)==1
-      dbGetQuery(con,paste("UPDATE QT_sus_res 
+      dbGetQuery(con,paste("UPDATE QT_sus_res
                             SET res = ",res,
                             "WHERE stockID=",QT(stockID_),
                             "and sus=(select max(sus) from QT_sus_res where stockID=",QT(stockID_),")"))
@@ -1447,25 +1448,25 @@ lcdb.update.QT_sus_res <- function(endT,stockID){
     } else {
       if(sus[1] > res[1]){
         res_lag <- res[1]  # -- res_lag
-        dbGetQuery(con,paste("UPDATE QT_sus_res 
+        dbGetQuery(con,paste("UPDATE QT_sus_res
                               SET res = ",res_lag,
                               "WHERE stockID=",QT(stockID_),
                               "and sus=(select max(sus) from QT_sus_res where stockID=",QT(stockID_),")"))
         res <- res[-1]
-      } 
+      }
       if(length(sus)>length(res)){
         res <- c(res,NA)
       }
       S_R <- data.frame(stockID=stockID_,sus=sus,res=res,updateDate=updateDate)
       TB_sus_res <- rbind(TB_sus_res,S_R)
     }
-    
+
   }
-  
+
   if(!missing(stockID)){
     dbGetQuery(con,paste("delete from QT_sus_res where stockID in",brkQT(loops)))
   }
-  
+
   dbWriteTable(con,"QT_sus_res",TB_sus_res,overwrite=FALSE,append=TRUE,row.names=FALSE)
   dbDisconnect(con)
 }
@@ -1541,7 +1542,7 @@ tsRequire <- function(){
 #'
 #' transform the R date to tinysoft date value
 #' @param rdate a vector with \bold{Date} class
-#' @param GAP.R2TS the constant of R to tinysoft date-transformating 
+#' @param GAP.R2TS the constant of R to tinysoft date-transformating
 #' @return a vector containing the tinysoft date value transformed from the R date
 #' @seealso \code{\link{tsdate2r}}
 #' @author Ruifei.Yin
@@ -1556,7 +1557,7 @@ rdate2ts <- function(rdate, GAP.R2TS=25569){
 #'
 #' transform the tinysoft date value to R date
 #' @param tsdate a vector containing the tinysoft date value
-#' @param GAP.R2TS the constant of R to tinysoft date-transformating 
+#' @param GAP.R2TS the constant of R to tinysoft date-transformating
 #' @return a vector with \bold{Date} class, transformed from the tinysoft date value
 #' @seealso \code{\link{rdate2ts}}
 #' @author Ruifei.Yin
@@ -1575,7 +1576,7 @@ tsdate2r <- function(tsdate, GAP.R2TS=25569){
 
 
 #' ts.wss
-#' 
+#'
 #' realize the "stock-data-expert" functions in Tinysoft.Given the stocklist, get specific variables of the stocks from Tinysoft.
 #' @param stocks a vector of stockID.
 #' @param funchar expression to get variables from tinysoft,a character string, usually copyed from tinysoft "stock-data-expert". If you want to specify the rptDate by param \code{rptDate}, the expression should be converted simply by replaceing the specified reportdate in the stock-data-expert expression by \code{'Rdate'}. e.g. convert \code{Last12MData(20091231,46002)} to \code{Last12MData(Rdate,46002)}.
@@ -1584,13 +1585,13 @@ tsdate2r <- function(tsdate, GAP.R2TS=25569){
 #' @param Time a Date object, giving the pn_date() in tinysoft
 #' @param Rate a integer,giving the type of rights adjustment, could be one of 0(no adjustment),1(geometric adjustment),2(simple adjustment),3
 #' @param RateDay a integer,giving the base date of right adjustment,could be one of 0(the last trading day),-1(the IPO date),or a tinysoft date integer(eg. \code{rdate2ts(as.Date("2010-01-02"))})
-#' @param adjust_yoy a logic.  If TRUE, param \code{Time} will be set to \code{rptDate.deadline(rptDate)}, the financial index before(not including) \code{rptDate} will be adjusted, the financial index after \code{rptDate} will not be adjusted. 
+#' @param adjust_yoy a logic.  If TRUE, param \code{Time} will be set to \code{rptDate.deadline(rptDate)}, the financial index before(not including) \code{rptDate} will be adjusted, the financial index after \code{rptDate} will not be adjusted.
 #' @return a dataframe,with cols:stockID,stockName,and the returned variables.
 #' @note you can get different financial index by set param Time and param adjust_yoy.
 #' If you set param \code{Time} to 1900-01-01, all the financial index returned will not be adjusted; If you set param \code{Time} to \code{Sys.Date()}, all the financial index returned will be adjusted; See example for detail.
 #' @export
 #' @family stockDataExpert functions
-#' @examples 
+#' @examples
 #' stocks <- c("EQ600011","EQ000631","EQ000004")
 #' funchar1 <- '"eps",reportofall(9900000,20121231),
 #'    "zyywlrzzl",reportofall(9900601,20121231),
@@ -1601,7 +1602,7 @@ tsdate2r <- function(tsdate, GAP.R2TS=25569){
 #'    "Ndayrtn(%)(N=10)",StockZf2(10),
 #'    "floatMV(20110926)",StockMarketValue(40812)'
 #' re1 <- ts.wss(stocks,funchar1)
-#' 
+#'
 #' # -- specify the rptDate
 #' funchar2 <- '"eps",reportofall(9900000,Rdate),
 #'    "zyywlrzzl",reportofall(9900601,Rdate),
@@ -1612,30 +1613,30 @@ tsdate2r <- function(tsdate, GAP.R2TS=25569){
 #'    "Ndayrtn(%)(N=10)",StockZf2(10),
 #'    "floatMV(20110926)",StockMarketValue(40812)'
 #' re2 <- ts.wss(stocks,funchar2,rptDate=as.Date('2012-12-31'))
-#' 
+#'
 #' all.equal(re1,re2)  # TRUE
-#' 
+#'
 #' # -- getting financial index (adjust or not)
 #' ts.wss("EQ000027",'"G_NP_Q",LastQuarterData(Rdate,9900604,0)',as.Date("2007-03-31"),Time=as.Date("1900-06-29")) # 31.8 (07_adj/06_adj-1)
 #' ts.wss("EQ000027",'"G_NP_Q",LastQuarterData(Rdate,9900604,0)',as.Date("2007-03-31"),Time=Sys.Date()) # 229.16 (07_unadj/06_unadj-1)
 #' ts.wss("EQ000027",'"G_NP_Q",LastQuarterData(Rdate,9900604,0)',as.Date("2007-03-31"),adjust_yoy=TRUE) # 49 (07_unadj/06_adj-1) This is the correct one!
-ts.wss <- function(stocks,funchar,varname,rptDate,Time=Sys.Date(),Rate=1,RateDay=0, 
-                   adjust_yoy=FALSE){   
+ts.wss <- function(stocks,funchar,varname,rptDate,Time=Sys.Date(),Rate=1,RateDay=0,
+                   adjust_yoy=FALSE){
   stocks <- stockID2stockID(stocks,from="local",to="ts")
   if(missing(rptDate)) {
     rptDate <- 0
   } else {
     if(adjust_yoy){
       Time <- rptDate.deadline(rptDate)
-    } 
+    }
     rptDate <- rdate2int(rptDate)
   }
   Time=rdate2ts(Time)
   syspars <- list(CurrentDate=Time,bRate=Rate,RateDay=RateDay)
-  stocks.str <- paste(stocks,collapse=";")  
+  stocks.str <- paste(stocks,collapse=";")
   str <- paste('Rdate:=',rptDate,';\n',
                'return Query("","',
-               stocks.str,               
+               stocks.str,
                '",True,"","stockID",DefaultStockID(),',
                funchar,
                ');',
@@ -1658,27 +1659,27 @@ ts.wss <- function(stocks,funchar,varname,rptDate,Time=Sys.Date(),Rate=1,RateDay
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
 
 #' memory.load
-#' 
+#'
 #' load frequently used data into memory, including \code{.tradingdays}, \code{.QT_sus_res}, ...
 #' @param reload a logic. If reload the memory data?
 #' @param datasrc
 #' @return return NULL, but load some data into memory.
 #' @export
 #' @author Ruifei.Yin
-memory.load <- function(reload=FALSE){  
+memory.load <- function(reload=FALSE){
   if(!exists(".tradingdays") || reload){
     if(reload){
       cat("[memory data reloading]\n")
     } else {
       cat("[memory data loading]\n")
-    }  
-    
-    # -- the market trading days  
+    }
+
+    # -- the market trading days
     cat("  Loading the market trading days: '.tradingdays' ... \n")
     qr1 <- "select TradingDate from QT_TradingDay where SecuMarket=83 and IfTradingDay=1"
-    tradingdays <- queryAndClose.dbi(db.local(),qr1)[[1]] 
+    tradingdays <- queryAndClose.dbi(db.local(),qr1)[[1]]
     .tradingdays <<- intdate2r(tradingdays)
-    
+
     # -- the stock's untrading days
     # cat("  Loading the stocks' untrading days: '.QT_UnTradingDay' ... \n")
     # qr2 <- "select * from QT_UnTradingDay"
@@ -1688,7 +1689,7 @@ memory.load <- function(reload=FALSE){
     #   QT_UnTradingDay <- queryAndClose.odbc(db.quant(),qr2)
     # }
     # .QT_UnTradingDay <<- data.table::data.table(transform(QT_UnTradingDay, TradingDay = intdate2r(TradingDay)),key="ID")
-    
+
     # -- the SQLite memory database
     cat("  Loading the SQLite memory database. You can run DBI::dbListTables(.con_memory) to get the loaded table list \n")
     con_local <- db.local()
@@ -1697,19 +1698,19 @@ memory.load <- function(reload=FALSE){
     QT_sus_res <- dbReadTable(con_local,"QT_sus_res")
     dbWriteTable(.con_memory, "QT_sus_res", QT_sus_res)
     dbGetQuery(.con_memory,"CREATE UNIQUE INDEX [IX_QT_sus_res] ON [QT_sus_res] ([stockID], [sus])")
-    
-    
-    
+
+
+
     dbDisconnect(con_local)
-    
-  }  
+
+  }
 }
 
 
 
 
 #' TS.sus_res
-#' 
+#'
 #' get the suspension and resumption data
 #' @param TS
 #' @param datasrc
@@ -1720,7 +1721,7 @@ memory.load <- function(reload=FALSE){
 #' TS <- getTS(getRebDates(as.Date("2007-01-01"),as.Date("2016-01-01"),rebFreq = "week"),indexID = "EI000300")
 #' microbenchmark::microbenchmark(re <- TS.sus_res(TS,datasrc="memory),re1 <- TS.sus_res(TS,datasrc = "local"),times = 10)
 TS.sus_res <- function(TS,datasrc=defaultDataSRC()){
-  
+
   if(datasrc == "memory"){
     memory.load()
     TS$date <- rdate2int(TS$date)
@@ -1742,7 +1743,7 @@ TS.sus_res <- function(TS,datasrc=defaultDataSRC()){
     re <- dbGetQuery(con,qr)
     dbDisconnect(con)
   }
-  
+
   re <- merge.x(TS,re,by=c("date","stockID"),mult = "first")
   re <- dplyr::mutate(re,date=intdate2r(date),sus=intdate2r(sus),res=intdate2r(res))
   return(re)
@@ -1750,7 +1751,7 @@ TS.sus_res <- function(TS,datasrc=defaultDataSRC()){
 
 
 #' trday.get
-#' 
+#'
 #' get the trading date series from begT to endT
 #' @param begT a Date object.The default is as.Date("1990-12-19")
 #' @param endT a Date object.The default is Sys.Date()
@@ -1769,19 +1770,19 @@ TS.sus_res <- function(TS,datasrc=defaultDataSRC()){
 #' system.time(replicate(100,ii <- trday.get(datasrc="memory",stockID="EQ000527"))) # 1.25
 trday.get <- function(begT=as.Date("1990-12-19"),endT=Sys.Date(),
                           stockID=NULL,
-                          datasrc="memory"){    
-  
+                          datasrc="memory"){
+
   # get the market trading days
   if(datasrc %in% c("quant","local")){
     begT <- max(begT,as.Date("1990-12-19"))
     begT <- rdate2int(begT)
     endT <- rdate2int(endT)
-    qr <- paste("select TradingDate from QT_TradingDay where SecuMarket=83 and IfTradingDay=1 and TradingDate between ",begT,"and",endT)    
+    qr <- paste("select TradingDate from QT_TradingDay where SecuMarket=83 and IfTradingDay=1 and TradingDate between ",begT,"and",endT)
     if(datasrc=="quant"){
       trday <- queryAndClose.odbc(db.quant(),qr)
     } else if(datasrc=="local"){
       trday <- queryAndClose.dbi(db.local(),qr)
-    }     
+    }
     re <- trday[[1]]
     re <- intdate2r(re)
   } else if (datasrc=="memory") {
@@ -1789,10 +1790,10 @@ trday.get <- function(begT=as.Date("1990-12-19"),endT=Sys.Date(),
     begT <- max(begT,as.Date("1990-12-19"))
     re <- get(".tradingdays")
     re <- re[re >= begT & re <= endT]
-  }  
-  
+  }
+
   # get the stock's trading days
-  
+
   # if(!is.null(stockID)){
   #   if(datasrc %in% c("quant","local")){
   #     qr <- paste("select * from QT_UnTradingDay where ID =",QT(stockID))
@@ -1800,27 +1801,27 @@ trday.get <- function(begT=as.Date("1990-12-19"),endT=Sys.Date(),
   #       untrday <- queryAndClose.odbc(db.quant(),qr)
   #     } else if(datasrc=="local"){
   #       untrday <- queryAndClose.dbi(db.local(),qr)
-  #     }       
+  #     }
   #     untrday <- untrday[["TradingDay"]]
-  #     untrday <- intdate2r(untrday)      
+  #     untrday <- intdate2r(untrday)
   #   } else if (datasrc=="memory"){
   #     if(!exists(".QT_UnTradingDay")){
   #       stop("The object of '.QT_UnTradingDay' is not exist in the memory! Please load it, with 'memory.load()'!")
   #     }
   #     untrday <-  .QT_UnTradingDay[stockID,]$TradingDay
-  #   } 
+  #   }
   #   re <- as.Date(setdiff(re,untrday),origin="1970-01-01")
-  # }    
-  
-  
+  # }
+
+
   if(!is.null(stockID)){
     TS <- expand.grid(date=re, stockID=stockID)
     sus_res <- TS.sus_res(TS,datasrc = datasrc)
     isTradingday <- is.na(sus_res$sus)
     re <- re[isTradingday]
-  }  
-  
-  re <- re[order(re)] 
+  }
+
+  re <- re[order(re)]
   return(re)
 }
 
@@ -1832,7 +1833,7 @@ trday.get <- function(begT=as.Date("1990-12-19"),endT=Sys.Date(),
 
 
 #' trday.is
-#' 
+#'
 #' Identify if the date is trading day or not
 #' @param datelist a vector of class Date
 #' @param stockID a character string or NULL If NULL, the market trading days, other wise the trading days of specific stock.
@@ -1854,8 +1855,8 @@ trday.is <- function(datelist,stockID=NULL,TS,
     tradingday <- trday.get(begT=mindt,endT=maxdt,stockID=NULL)
     re <- datelist %in% tradingday
     return(re)
-  } 
-  
+  }
+
   if (missing(TS) && any(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should at least have one!")
   }
@@ -1865,13 +1866,13 @@ trday.is <- function(datelist,stockID=NULL,TS,
   if(missing(drop)){
     drop <- if(missing(TS)) TRUE else FALSE
   }
-  
+
   if (missing(TS)){
     TS <- expand.grid(date=datelist, stockID=stockID)
   }
   sus_res <- TS.sus_res(TS)
   isTradingday <- trday.is(sus_res$date,stockID=NULL) & is.na(sus_res$sus)
-  
+
   if(drop){
     re <- isTradingday
   }else {
@@ -1887,11 +1888,11 @@ trday.is <- function(datelist,stockID=NULL,TS,
 
 #' trday.nearest
 #'
-#' get the nearest tradingday. 
+#' get the nearest tradingday.
 #' @param datelist a vector of class Date
 #' @param dir a integer. Indicating forward or backward to find, if \code{datelist} is not tradingday. -1 for backward, 1 for forward.
 #' @param stockID a character string or null. If null, the market trading days, other wise the trading days of specific stock.
-#' @return a vector of class Date, the value of which is the nearest tradingday before/after the \code{datelist} if \code{datelist} is not a tradingday, otherwise,the \code{datelist} itself. 
+#' @return a vector of class Date, the value of which is the nearest tradingday before/after the \code{datelist} if \code{datelist} is not a tradingday, otherwise,the \code{datelist} itself.
 #' @author Ruifei.Yin
 #' @export
 #' @examples
@@ -1900,11 +1901,11 @@ trday.is <- function(datelist,stockID=NULL,TS,
 #' trday.nearest(datelist, dir = 1)
 #' trday.nearest(datelist, dir = 1, stockID="EQ000527")
 trday.nearest <- function(datelist, dir=-1L, stockID=NULL, TS,
-                          drop){ 
+                          drop){
   if(is.null(stockID) & missing(TS)){ # the market tradingday
     tradingdays <- trday.get(endT=Sys.Date()+365, stockID=NULL)
     if(dir == -1L){
-      re <- tradingdays[findInterval(datelist, tradingdays)]  
+      re <- tradingdays[findInterval(datelist, tradingdays)]
     } else if(dir == 1L){
       re <- tradingdays[findInterval.rightClosed(datelist, tradingdays)+1]
     } else {
@@ -1912,8 +1913,8 @@ trday.nearest <- function(datelist, dir=-1L, stockID=NULL, TS,
     }
     re <- as.Date(re,origin="1970-01-01")
     return(re)
-  } 
-  
+  }
+
   if (missing(TS) && any(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should at least have one!")
   }
@@ -1923,7 +1924,7 @@ trday.nearest <- function(datelist, dir=-1L, stockID=NULL, TS,
   if(missing(drop)){
     drop <- if(missing(TS)) TRUE else FALSE
   }
-  
+
   if (missing(TS)){
     TS <- expand.grid(date=datelist, stockID=stockID)
   }
@@ -1946,17 +1947,17 @@ trday.nearest <- function(datelist, dir=-1L, stockID=NULL, TS,
     re <- dplyr::select(re,-sus,-res)
   }
   return(re)
-  
+
 }
 
 
 
 
 #' trday.nearby
-#' 
+#'
 #' get the nearby tradingday by shifting forward or backward.If the argument datelist is not a tradingday,the tradingday nearest by it will be firstly find by function \code{\link{trday.nearest}}.
 #' @param datelist a vector of class Date
-#' @param by a integer giving the lagging days.If negetive,get the earlyer tradingday,if positive,get the later tradingday. 
+#' @param by a integer giving the lagging days.If negetive,get the earlyer tradingday,if positive,get the later tradingday.
 #' @param stockID a character string or null. If null, the market trading days, other wise the trading days of specific stock.
 #' @param dir 1L or -1L. see \code{\link{trday.nearest}}
 #' @return a vector of trading days of class Date
@@ -1965,21 +1966,21 @@ trday.nearest <- function(datelist, dir=-1L, stockID=NULL, TS,
 #' @examples
 #' (datelist <- as.Date(c("2012-07-21","2012-07-22","2012-07-23","2013-01-30")))
 #' trday.nearby(datelist,-20) # the tradingday 20 days earlyer than datelist
-#' trday.nearby(datelist,20) # the tradingday 20 days later than datelist 
-#' trday.nearby(datelist,20,stockID="EQ000527") 
+#' trday.nearby(datelist,20) # the tradingday 20 days later than datelist
+#' trday.nearby(datelist,20,stockID="EQ000527")
 trday.nearby <- function(datelist,by, stockID=NULL,
                          dir=if(by>0) 1L else -1L,
                          TS,
                          drop){
   if(is.null(stockID) & missing(TS)){ # the market tradingday
-    trdingday.all <- trday.get(endT=Sys.Date()+365, stockID=NULL)   
+    trdingday.all <- trday.get(endT=Sys.Date()+365, stockID=NULL)
     trdlist <- trdingday.all[findInterval(datelist, trdingday.all)] # get the nearest tradingday
     lag.trdingday.all <- xts::lag.xts(trdingday.all, -by)
     idx <- match(trdlist, trdingday.all)
     re <- lag.trdingday.all[idx]
     return(re)
   }
-  
+
   if (missing(TS) && any(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should at least have one!")
   }
@@ -1989,15 +1990,15 @@ trday.nearby <- function(datelist,by, stockID=NULL,
   if(missing(drop)){
     drop <- if(missing(TS)) TRUE else FALSE
   }
-  
+
   if (missing(TS)){
     TS <- expand.grid(date=datelist, stockID=stockID)
   }
   # get the market's nearby tradingday
-  nearby_market <- trday.nearby(TS$date,by=by,stockID=NULL) 
+  nearby_market <- trday.nearby(TS$date,by=by,stockID=NULL)
   # get the stock's nearest tradingday
   nearby <- trday.nearest(TS=data.frame(date=nearby_market,stockID=TS$stockID),dir = dir,drop = TRUE)
-  
+
   if(drop){
     re <- nearby
   } else {
@@ -2007,8 +2008,8 @@ trday.nearby <- function(datelist,by, stockID=NULL,
 }
 
 
-#' trday.offset 
-#' 
+#' trday.offset
+#'
 #' offset the datelist by months,quarters,ect. then get the nearest tradingday
 #' @param datelist a vector of class Date
 #' @param by a period object. See detail in package \code{lubridate}.
@@ -2022,9 +2023,9 @@ trday.nearby <- function(datelist,by, stockID=NULL,
 #' trday.offset(datelist,months(1)) # the tradingdays 1 month after the datelist
 #' trday.offset(datelist,months(-1)) # the tradingdays 1 month before the datelist
 #' trday.offset(datelist,years(1))
-#' trday.offset(datelist,months(-1),stockID="EQ000527") 
+#' trday.offset(datelist,months(-1),stockID="EQ000527")
 trday.offset <- function(datelist,by=months(1),stockID=NULL,
-                         dir=if(as.numeric(by)>0) 1L else -1L, 
+                         dir=if(as.numeric(by)>0) 1L else -1L,
                          TS,
                          drop){
   if(is.null(stockID) & missing(TS)){ # the market tradingday
@@ -2035,8 +2036,8 @@ trday.offset <- function(datelist,by=months(1),stockID=NULL,
     }
     re <- trday.nearest(re, dir=dir, stockID=NULL)
     return(re)
-  } 
-  
+  }
+
   if (missing(TS) && any(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should at least have one!")
   }
@@ -2046,15 +2047,15 @@ trday.offset <- function(datelist,by=months(1),stockID=NULL,
   if(missing(drop)){
     drop <- if(missing(TS)) TRUE else FALSE
   }
-  
+
   if (missing(TS)){
     TS <- expand.grid(date=datelist, stockID=stockID)
   }
   # get the market's offset tradingday
-  offset_market <- trday.offset(TS$date,by=by,dir=dir,stockID=NULL) 
+  offset_market <- trday.offset(TS$date,by=by,dir=dir,stockID=NULL)
   # get the stock's offset tradingday
   offset <- trday.nearest(TS=data.frame(date=offset_market,stockID=TS$stockID),dir = dir,drop = TRUE)
-  
+
   if(drop){
     re <- offset
   } else {
@@ -2065,13 +2066,13 @@ trday.offset <- function(datelist,by=months(1),stockID=NULL,
 
 
 
-#' trday.count 
-#' 
+#' trday.count
+#'
 #' get the count of the trading days between \code{begT} and \code{endT}.
 #' @param begT a Date object.The default is as.Date("1990-12-19")
 #' @param endT a Date object.The default is Sys.Date()
 #' @param stockID a character string or null. If null, the market trading days, other wise the trading days of specific stock.
-#' @return a integer 
+#' @return a integer
 #' @export
 #' @author Ruifei.Yin
 #' @examples
@@ -2095,10 +2096,10 @@ trday.IPO <- function(stockID,datasrc=defaultDataSRC()){
     tmpdat <- queryAndClose.odbc(db.quant(),query=qr)
   } else if(datasrc=="local") {
     tmpdat <- queryAndClose.dbi(db.local(),query=qr)
-  } 
-  re <- tmpdat[match(stockID,tmpdat[,2]),1]  
+  }
+  re <- tmpdat[match(stockID,tmpdat[,2]),1]
   re <- intdate2r(re)
-  return(re)  
+  return(re)
 }
 
 
@@ -2107,7 +2108,7 @@ trday.IPO <- function(stockID,datasrc=defaultDataSRC()){
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
 
 #' tradeCode2stockID
-#' 
+#'
 #' Covert the tradeCode to stockID given specific secucategory.
 #' @param tradeCode Vector of character,giving the stock trading code. eg. \code{c("600001","600002","000300")}
 #' @param secuCate integer,giving the secuCategory.(1 for A equity,4 for index,...)
@@ -2128,14 +2129,14 @@ tradeCode2stockID <- function(tradeCode, secuCate=1, IDsrc="local",
                    ts="StockID_TS",
                    wind="StockID_wind")
   qr <- paste("select secucode,",id_var,"from SecuMain where secucategory=",secuCate)
-  
+
   if(datasrc=="quant"){
     tmpdat <- queryAndClose.odbc(db.quant(),query=qr,as.is=1)
   } else if(datasrc=="local") {
     tmpdat <- queryAndClose.dbi(db.local(),query=qr)
-  }  
-  
-  stockID <- tmpdat[match(tradeCode,tmpdat[,1]),2]    
+  }
+
+  stockID <- tmpdat[match(tradeCode,tmpdat[,1]),2]
   return(stockID)
 }
 
@@ -2147,7 +2148,7 @@ intCode2tradeCode <- function(){
 
 
 #' stockID2tradeCode
-#' 
+#'
 #' Covert the stockID to tradeCode.
 #' @param stockID a vector of stockID of specific datascr.
 #' @param IDsrc  a charactor string, could be one of "local","jy","ts","wind",etc.
@@ -2167,19 +2168,19 @@ stockID2tradeCode <- function(stockID,IDsrc="local",
                    ts="StockID_TS",
                    wind="StockID_wind")
   qr <- paste("select secucode,",id_var,"from SecuMain")
-  
+
   if(datasrc=="quant"){
     tmpdat <- queryAndClose.odbc(db.quant(),query=qr,as.is=1)
   } else if(datasrc=="local") {
     tmpdat <- queryAndClose.dbi(db.local(),query=qr)
-  } 
-  
-  tradeCode <- tmpdat[match(stockID,tmpdat[,2]),1]  
+  }
+
+  tradeCode <- tmpdat[match(stockID,tmpdat[,2]),1]
   return(tradeCode)
 }
 
 #' stockID2stockID
-#' 
+#'
 #' Covert the stockID to another type of stockID.
 #' @param stockID a vector of specific type
 #' @param to a character string, giving the type of stockID convered to. Could be one of "local","ts","jy","wind".
@@ -2192,7 +2193,7 @@ stockID2tradeCode <- function(stockID,IDsrc="local",
 #' stockID2stockID(c("EI000001","EI000300"),to="jy",from="local")
 #' stockID2stockID(c("SH000001","SH000300"),to="jy",from="ts")
 stockID2stockID <- function(stockID, from, to,
-                            datasrc=defaultDataSRC()){  
+                            datasrc=defaultDataSRC()){
   id_from <- switch(from,
                     local="ID",
                     quant="ID",
@@ -2206,13 +2207,13 @@ stockID2stockID <- function(stockID, from, to,
                   ts="StockID_TS",
                   wind="StockID_wind")
   qr <- paste("select",id_from,",",id_to,"from SecuMain")
-  
+
   if(datasrc=="quant"){
     tmpdat <- queryAndClose.odbc(db.quant(),query=qr)
   } else if(datasrc=="local") {
     tmpdat <- queryAndClose.dbi(db.local(),query=qr)
-  } 
-  
+  }
+
   stockID_to <- tmpdat[match(stockID,tmpdat[,1]),2]
   return(stockID_to)
 }
@@ -2231,9 +2232,9 @@ stockID2name <- function(stockID,datasrc=defaultDataSRC()){
     tmpdat <- queryAndClose.odbc(db.quant(),query=qr)
   } else if(datasrc=="local") {
     tmpdat <- queryAndClose.dbi(db.local(),query=qr)
-  } 
-  re <- tmpdat[match(stockID,tmpdat[,2]),1]  
-  return(re)  
+  }
+  re <- tmpdat[match(stockID,tmpdat[,2]),1]
+  return(re)
 }
 
 #' stockName2ID
@@ -2249,9 +2250,9 @@ stockName2ID <- function(name, datasrc=defaultDataSRC()){
     tmpdat <- queryAndClose.odbc(db.quant(),query=qr)
   } else if(datasrc=="local") {
     tmpdat <- queryAndClose.dbi(db.local(),query=qr)
-  }   
-  re <- tmpdat[grep(name, gsub("\\s*","",tmpdat$SecuAbbr)), ]  
-  return(re) 
+  }
+  re <- tmpdat[grep(name, gsub("\\s*","",tmpdat$SecuAbbr)), ]
+  return(re)
 }
 
 #' SecuMarket
@@ -2265,9 +2266,9 @@ SecuMarket <- function(stockID,datasrc=defaultDataSRC()){
     tmpdat <- queryAndClose.odbc(db.quant(),query=qr)
   } else if(datasrc=="local") {
     tmpdat <- queryAndClose.dbi(db.local(),query=qr)
-  } 
-  re <- tmpdat[match(stockID,tmpdat[,2]),1]  
-  return(re)  
+  }
+  re <- tmpdat[match(stockID,tmpdat[,2]),1]
+  return(re)
 }
 #' SecuCategory
 #' @param stockID a vector
@@ -2280,9 +2281,9 @@ SecuCategory <- function(stockID,datasrc=defaultDataSRC()){
     tmpdat <- queryAndClose.odbc(db.quant(),query=qr)
   } else if(datasrc=="local") {
     tmpdat <- queryAndClose.dbi(db.local(),query=qr)
-  } 
-  re <- tmpdat[match(stockID,tmpdat[,2]),1]  
-  return(re)  
+  }
+  re <- tmpdat[match(stockID,tmpdat[,2]),1]
+  return(re)
 }
 
 
@@ -2317,14 +2318,14 @@ SecuCategory <- function(stockID,datasrc=defaultDataSRC()){
 #' getComps("intersect(EI000300,ES09440000)")
 #' # not drop
 #' getComps("EI000300",drop=FALSE)
-getComps <- function(ID, endT=Sys.Date(), drop=TRUE, datasrc=defaultDataSRC()){  
+getComps <- function(ID, endT=Sys.Date(), drop=TRUE, datasrc=defaultDataSRC()){
   IDs <- gsub("union|intersect|setdiff|[()]","",ID)
   IDs <- strsplit(IDs,split=",")[[1]]
-  IDs <- unique(IDs[IDs!=""])  
+  IDs <- unique(IDs[IDs!=""])
   IDs_index <- IDs[substring(IDs,1,2)=="EI"]
   IDs_sector <- IDs[substring(IDs,1,2)=="ES"]
-  IDs_plate <- IDs[substring(IDs,1,2)=="EP"]  
-  
+  IDs_plate <- IDs[substring(IDs,1,2)=="EP"]
+
   if(length(IDs_index) > 0){
     comp_index <- lapply(IDs_index, FUN=getIndexComp, endT=endT, drop=FALSE, datasrc=datasrc)
     names(comp_index) <- IDs_index
@@ -2343,17 +2344,17 @@ getComps <- function(ID, endT=Sys.Date(), drop=TRUE, datasrc=defaultDataSRC()){
   } else {
     comp_plate <- list()
   }
-  comps <- c(comp_index,comp_sector,comp_plate)  
-  
+  comps <- c(comp_index,comp_sector,comp_plate)
+
   subfun <- function(endT0){
     comps0 <- lapply(comps,function(x) x[x$date==endT0,"stockID"] )
     dat0 <- with(comps0,eval(parse(text=ID)))
     dat0 <- data.frame(date=endT0,stockID=dat0,stringsAsFactors=FALSE)
-    return(dat0)    
-  }  
+    return(dat0)
+  }
   # cat("Function getComps: getting the components ....\n")
   re <- plyr::ldply(endT, subfun)
-  
+
   if(length(endT)==1 && drop==TRUE){
     return(re$stockID)
   } else {
@@ -2371,22 +2372,22 @@ getComps <- function(ID, endT=Sys.Date(), drop=TRUE, datasrc=defaultDataSRC()){
 #' @param datasrc
 #' @return If \code{endT} is missing or is length 1 and \code{drop} is TRUE, a vector of stockID of the components; else a dataframe, with cols: "date" and "stockID"
 #' @export
-#' @examples 
+#' @examples
 #' tmp <- getIndexComp("EI000300") # get the latest components, a vector
 #' tmp <- getIndexComp("EI000300",drop=FALSE) # get the latest components, a dataframe
 #' tmp <- getIndexComp("EI000300",as.Date("2012-12-31")) # get the components on single day,a vector
 #' tmp <- getIndexComp("EI000300",as.Date(c("2011-12-31","2012-12-31"))) # get the components on multi-days, a data frame
 getIndexComp <- function(indexID, endT=Sys.Date(), drop=TRUE, datasrc=defaultDataSRC()){
-  if(datasrc %in% c("quant","local")){   
+  if(datasrc %in% c("quant","local")){
     endT <- rdate2int(endT)
-    tmpdat <- data.frame(endT=endT)    
+    tmpdat <- data.frame(endT=endT)
     qr <- paste("SELECT a.endT as date, b.SecuID as stockID from yrf_tmp a, LC_IndexComponent b
-                  where b.IndexID=", QT(indexID), 
-                "and InDate<=endT and (OutDate>endT or OutDate IS NULL)")      
+                  where b.IndexID=", QT(indexID),
+                "and InDate<=endT and (OutDate>endT or OutDate IS NULL)")
     if(datasrc=="quant"){
       con <- db.quant()
       sqlDrop(con, sqtable="yrf_tmp", errors=FALSE)
-      sqlSave(con, dat=tmpdat, tablename="yrf_tmp", safer=FALSE, rownames=FALSE)    
+      sqlSave(con, dat=tmpdat, tablename="yrf_tmp", safer=FALSE, rownames=FALSE)
       re <- sqlQuery(con,query=qr)
       odbcClose(con)
     } else if (datasrc=="local"){
@@ -2394,14 +2395,14 @@ getIndexComp <- function(indexID, endT=Sys.Date(), drop=TRUE, datasrc=defaultDat
       dbWriteTable(con, name="yrf_tmp", value=tmpdat, row.names = FALSE, overwrite = TRUE)
       re <- dbGetQuery(con,qr)
       dbDisconnect(con)
-    }  
-    re$date <- intdate2r(re$date) 
-    
-  } 
+    }
+    re$date <- intdate2r(re$date)
+
+  }
   if(datasrc=="ts"){
     endT <- rdate2ts(endT)
     indexID <- stockID2stockID(indexID,to="ts",from="local")
-    subfun <- function(endT0){  
+    subfun <- function(endT0){
       tsRequire()
       stocks <- tsRemoteCallFunc("GetBKbyDate",list(indexID,endT0))
       stocks <- as.vector(as.matrix(stocks))
@@ -2409,16 +2410,16 @@ getIndexComp <- function(indexID, endT=Sys.Date(), drop=TRUE, datasrc=defaultDat
       dat0 <- data.frame(date=tsdate2r(endT0),stockID=stocks,stringsAsFactors=FALSE)
       return(dat0)
     }
-    re <- plyr::ldply(endT,subfun)  
+    re <- plyr::ldply(endT,subfun)
   }
-  
+
   re <- dplyr::arrange(re,date,stockID)
   if(length(endT)==1 && drop==TRUE){
     return(re$stockID)
   } else {
     return(re)
   }
-  
+
 }
 
 
@@ -2431,22 +2432,22 @@ getIndexComp <- function(indexID, endT=Sys.Date(), drop=TRUE, datasrc=defaultDat
 #' @return a dataframe, with cols: "date", "stockID","wgt".
 #' @export
 #' @family getComps functions
-#' @examples 
+#' @examples
 #' tmp <- getIndexCompWgt("EI000300") # get the latest components
 #' tmp <- getIndexCompWgt("EI000985",as.Date("2012-12-31")) # get the components on single day
 #' tmp <- getIndexCompWgt("EI000300",as.Date(c("2011-12-31","2012-12-31"))) # get the components on multi-days
 getIndexCompWgt <- function(indexID="EI000300",endT,datasrc=defaultDataSRC()){
-  
-  if(missing(endT)) endT <- trday.nearby(Sys.Date(),by=-1)  # if endT missing, get the nearest wgt data.  
+
+  if(missing(endT)) endT <- trday.nearby(Sys.Date(),by=-1)  # if endT missing, get the nearest wgt data.
   endT <- trday.nearest(endT)    # if endT is not tradingday, get the nearest trading days.
-  
-  trday.nearbyinDB <- function(indexID,endT,datasrc){ 
+
+  trday.nearbyinDB <- function(indexID,endT,datasrc){
     # sometimes, the index-component-weight in database is not daily data, this function is used to get nearest date on which the weight data is available.
     daymat <- data.frame(oldday=endT)
     endT <- rdate2int(endT)
     qr <- paste(
       "SELECT DISTINCT EndDate
-      FROM LC_IndexComponentsWeight 
+      FROM LC_IndexComponentsWeight
       where IndexID=",QT(indexID),"order by EndDate"
     )
     if(datasrc=="quant"){
@@ -2459,10 +2460,10 @@ getIndexCompWgt <- function(indexID="EI000300",endT,datasrc=defaultDataSRC()){
       dbDisconnect(con)
     } else if (datasrc=="jy"){
       con <- db.jy()
-      indexID <- stockID2stockID(indexID,to="jy",from="local")  
+      indexID <- stockID2stockID(indexID,to="jy",from="local")
       qr <- paste(
         "SELECT DISTINCT convert(varchar,EndDate,112) 'EndDate'
-        FROM LC_IndexComponentsWeight 
+        FROM LC_IndexComponentsWeight
         where IndexCode=",QT(indexID),"order by EndDate"
       )
       re <- sqlQuery(con,query=qr)
@@ -2480,7 +2481,7 @@ getIndexCompWgt <- function(indexID="EI000300",endT,datasrc=defaultDataSRC()){
     }
   }
   daymat <- trday.nearbyinDB(indexID,endT,datasrc)
-  
+
   if(is.numeric(daymat)){ # -- calulate the estimated wgt by 'free_foat_MV'
     warning("There is no wgt data in table 'LC_IndexComponentsWeight', calulate the estimated wgt by 'free_foat_MV'.")
     # TS <- getTS(endT,indexID)
@@ -2491,18 +2492,18 @@ getIndexCompWgt <- function(indexID="EI000300",endT,datasrc=defaultDataSRC()){
     return(re)
   }
   endT <- unique(daymat$newday)
-  
-  
-  if(datasrc %in% c("quant","local")){    
-    tmpdat <- data.frame(endT=endT)    
-    qr <- paste("SELECT a.endT as date, b.SecuID as stockID, Weight/100 as wgt 
+
+
+  if(datasrc %in% c("quant","local")){
+    tmpdat <- data.frame(endT=endT)
+    qr <- paste("SELECT a.endT as date, b.SecuID as stockID, Weight/100 as wgt
                 from yrf_tmp a, LC_IndexComponentsWeight b
-                where b.IndexID=", QT(indexID), 
-                "and a.endT=b.EndDate")      
+                where b.IndexID=", QT(indexID),
+                "and a.endT=b.EndDate")
     if(datasrc=="quant"){
       con <- db.quant()
       sqlDrop(con, sqtable="yrf_tmp", errors=FALSE)
-      sqlSave(con, dat=tmpdat, tablename="yrf_tmp", safer=FALSE, rownames=FALSE)    
+      sqlSave(con, dat=tmpdat, tablename="yrf_tmp", safer=FALSE, rownames=FALSE)
       re <- sqlQuery(con,query=qr)
       odbcClose(con)
     } else if (datasrc=="local"){
@@ -2510,34 +2511,34 @@ getIndexCompWgt <- function(indexID="EI000300",endT,datasrc=defaultDataSRC()){
       dbWriteTable(con, name="yrf_tmp", value=tmpdat, row.names = FALSE, overwrite = TRUE)
       re <- dbGetQuery(con,qr)
       dbDisconnect(con)
-    }  
+    }
     re=merge(re,daymat,by.x="date",by.y ="newday" )
     re=re[,c("oldday","stockID","wgt")]
     colnames(re)<-c("date","stockID","wgt")
   }
-  
+
   if(datasrc=="jy"){
-    indexID <- stockID2stockID(indexID,to="jy",from="local")     
+    indexID <- stockID2stockID(indexID,to="jy",from="local")
     subfun <- function(endT0){
       qr <- paste(
         "SELECT InnerCode as stockID, Weight/100 as wgt
-        FROM LC_IndexComponentsWeight as a  
+        FROM LC_IndexComponentsWeight as a
         where IndexCode=",QT(indexID) ,"and a.EndDate=",QT(endT0)
       )
-      dat <- queryAndClose.odbc(db.jy(),query=qr)            
+      dat <- queryAndClose.odbc(db.jy(),query=qr)
       if(nrow(dat)==0){
-        warning(paste("weight data is missing on",endT0,"!"))      
+        warning(paste("weight data is missing on",endT0,"!"))
       } else {
         dat <- data.frame(date=intdate2r(endT0),dat,stringsAsFactors=FALSE)
-      }    
+      }
       return(dat)
-    }  
+    }
     cat("Function getIndexCompWgt: getting the component wgts ....\n")
-    re <- plyr::ldply(endT,subfun,.progress="text")    
-    re$stockID <- stockID2stockID(re$stockID,to="local",from="jy")    
+    re <- plyr::ldply(endT,subfun,.progress="text")
+    re$stockID <- stockID2stockID(re$stockID,to="local",from="jy")
   }
-  
-  re <- dplyr::arrange(re,date,stockID) 
+
+  re <- dplyr::arrange(re,date,stockID)
   return(re)
 }
 
@@ -2553,25 +2554,25 @@ getIndexCompWgt <- function(indexID="EI000300",endT,datasrc=defaultDataSRC()){
 #' @return If \code{endT} is missing or is length 1 and \code{drop} is TRUE, a vector of stockID of the components; else a dataframe, with cols: "date" and "stockID"
 #' @export
 #' @family getComps functions
-#' @examples 
+#' @examples
 #' tmp <- getSectorComp("ES09440000") # get the latest components, a vector
 #' tmp <- getSectorComp("ES09440000",as.Date("2012-12-31")) # get the components on single day,a vector
 #' tmp <- getSectorComp("ES09440000",as.Date(c("2011-12-31","2012-12-31"))) # get the components on multi-days, a data frame
 getSectorComp <- function(sectorID, endT=Sys.Date(), drop=TRUE, datasrc=defaultDataSRC()){
-  
+
   level <- CT_industryList(ID=sectorID)$Level
-  sectorVar <- paste("Code",level,sep="")  
-  
-  if(datasrc %in% c("quant","local")){    
+  sectorVar <- paste("Code",level,sep="")
+
+  if(datasrc %in% c("quant","local")){
     endT <- rdate2int(endT)
-    tmpdat <- data.frame(endT=endT)    
+    tmpdat <- data.frame(endT=endT)
     qr <- paste("SELECT a.endT as date, b.stockID as stockID from yrf_tmp a, LC_ExgIndustry b
-                where ",sectorVar,"=", QT(sectorID), 
-                "and InDate<=endT and (OutDate>endT or OutDate IS NULL)")      
+                where ",sectorVar,"=", QT(sectorID),
+                "and InDate<=endT and (OutDate>endT or OutDate IS NULL)")
     if(datasrc=="quant"){
       con <- db.quant()
       sqlDrop(con, sqtable="yrf_tmp", errors=FALSE)
-      sqlSave(con, dat=tmpdat, tablename="yrf_tmp", safer=FALSE, rownames=FALSE)    
+      sqlSave(con, dat=tmpdat, tablename="yrf_tmp", safer=FALSE, rownames=FALSE)
       re <- sqlQuery(con,query=qr)
       odbcClose(con)
     } else if (datasrc=="local"){
@@ -2579,21 +2580,21 @@ getSectorComp <- function(sectorID, endT=Sys.Date(), drop=TRUE, datasrc=defaultD
       dbWriteTable(con, name="yrf_tmp", value=tmpdat, row.names = FALSE, overwrite = TRUE)
       re <- dbGetQuery(con,qr)
       dbDisconnect(con)
-    }  
+    }
     re$date <- intdate2r(re$date)
-  }   
+  }
   re <- dplyr::arrange(re,date,stockID)
   if(length(endT)==1 && drop==TRUE){
     return(re$stockID)
   } else {
     return(re)
-  }  
+  }
 }
 
 
 #' @family getComps functions
 getPlateComp <- function(plateID,endT,drop,datasrc){
-  
+
 }
 
 
@@ -2607,7 +2608,7 @@ sectorID2name <- function(sectorID){
   return(re)
 }
 plateID2name <- function(plateID){
-  
+
 }
 
 
@@ -2643,7 +2644,8 @@ plateID2name <- function(plateID){
 getSectorID <- function(TS, stockID, endT=Sys.Date(),
                         sectorAttr=defaultSectorAttr(),ret=c("ID","name"),
                         drop=FALSE,
-                        datasrc=defaultDataSRC()){
+                        datasrc=defaultDataSRC(),
+                        fillNA=FALSE){
   
   if(identical(sectorAttr,"existing") | is.null(sectorAttr)){
     return(TS)
@@ -2697,23 +2699,26 @@ getSectorID <- function(TS, stockID, endT=Sys.Date(),
         TS <- merge.x(TS,re,by=c("date","stockID"))
         TS$date <- intdate2r(TS$date)
       }
-    }else{
-      factorList <- sectorAttr$std[[i]]
-      level <- sectorAttr$level[[i]]
-      tmpTS <- TS[,c("date","stockID")]
-      tmpTSF <- getTSF(TS = tmpTS, FactorList = factorList)
-      tmpTSF <- dplyr::group_by(tmpTSF, date)
-      tmpTSF <- dplyr::mutate(tmpTSF,sector_=cut(rank(-factorscore,na.last="keep"),breaks =level,labels=FALSE))
-      tmpTSF <- dplyr::select(tmpTSF,-factorscore)
-      TS <- merge.x(TS,tmpTSF, by=c("date","stockID"))
-    }
+      if(fillNA){
+        TS$sector_ <- sector_NA_fill(sector = TS$sector_, sectorAttr = list(std = sectorSTD, level = level))
+      }
+  }else{
+    factorList <- sectorAttr$std[[i]]
+    level <- sectorAttr$level[[i]]
+    tmpTS <- TS[,c("date","stockID")]
+    tmpTSF <- getTSF(TS = tmpTS, FactorList = factorList)
+    tmpTSF <- dplyr::group_by(tmpTSF, date)
+    tmpTSF <- dplyr::mutate(tmpTSF,sector_=cut(rank(-factorscore,na.last="keep"),breaks =level,labels=FALSE))
+    tmpTSF <- dplyr::select(tmpTSF,-factorscore)
+    TS <- merge.x(TS,tmpTSF, by=c("date","stockID"))
+  }
     if(i==1L){
       TS <-  renameCol(TS,"sector_","sector")
     } else {
       TS$sector <- paste(TS$sector, TS$sector_, sep="_")
       TS <- dplyr::select(TS,-sector_)
     }
-  }
+}
   
   # return
   if(drop){
@@ -2728,13 +2733,13 @@ getSectorID <- function(TS, stockID, endT=Sys.Date(),
 
 #' is component of specific sector or index?
 #'
-#' @param TS 
-#' @param stockID 
-#' @param endT 
+#' @param TS
+#' @param stockID
+#' @param endT
 #' @param sectorID a character string. The ID of the index, sector or plate. See detail in \code{\link{getComps}}
-#' @param drop 
-#' @param datasrc 
-#' @return a dataframe or a vector(if drop==TRUE) 
+#' @param drop
+#' @param datasrc
+#' @return a dataframe or a vector(if drop==TRUE)
 #' @export
 #' @examples
 #' is_component(stockID = c("EQ000001","EQ300089"),sectorID = "EI000300",drop=TRUE)
@@ -2758,20 +2763,20 @@ is_component <- function(TS, stockID, endT=Sys.Date(),
   indexComp$is_comp <- 1L
   TSF <- merge.x(TS,indexComp,by=c('date','stockID'))
   TSF[is.na(TSF$is_comp),"is_comp"] <- 0
-  
+
   if(drop){
     return(TSF[,"is_comp"])
   } else {
     return(TSF)
   }
-  
+
 }
 
 
 
 #' sectorID2indexID
 #' @export
-#' @examples 
+#' @examples
 #' sctID <- getSectorID(stockID = "EQ000001",drop=TRUE)
 #' sectorID2indexID(sctID)
 sectorID2indexID <- function(sectorID){
@@ -2794,7 +2799,7 @@ sectorID2indexID <- function(sectorID){
 
 #' stockID2indexID
 #' @export
-#' @examples 
+#' @examples
 #' stockID2indexID(stockID = "EQ000001")
 stockID2indexID <- function(TS, stockID, withsector = FALSE){
   re <- getSectorID(TS = TS, stockID = stockID)
@@ -2808,19 +2813,20 @@ stockID2indexID <- function(TS, stockID, withsector = FALSE){
 
 
 #' deal with the NA value of sectorID
-#' 
+#'
 #' replace the NA value of sectorID with an "OTHER" sector
 #' @param TSS a dataframe with a "sector" colume
 #' @param sectorAttr
 #' @export
-sectorNA_fill <- function(TSS,sectorAttr=defaultSectorAttr()){
-  Standard=c(	3,	3,	3,	9,	9,	9,	9,	9,	33,	33,	33)
-  Level=c(	1,	2,	3,	1,	2,	3,	98,	99,	1,	2,	3)
-  IndustryID=c(	'ES0370',	'ES037010',	'ES03701010',	'ES09510000',	'ES09510100',	'ES09510101',	'ES0951000098',	'ES0951000099',	'ES33510000')
-  rp <- IndustryID[Standard==sectorAttr[[1]]&Level==sectorAttr[[2]]]
-  TSS[is.na(TSS$sector),'sector'] <- rp
-  return(TSS)
+sector_NA_fill <- function(sector, sectorAttr=defaultSectorAttr()){
+  Standard=c( 3,      3,      3,      9,      9,      9,      9,      9,      33,   33, 33, 336)
+  Level=c(        1,      2,      3,      1,      2,      3,      98,   99,   1,      2,      3,  1)
+  IndustryID=c(       'ES0370',  'ES037010',      'ES03701010',  'ES09510000',  'ES09510100',  'ES09510101',  'ES0951000098',         'ES0951000099',      'ES33510000','ES33510100','ES33510101', 'ES6')
+  replace_sec_value <- IndustryID[Standard==sectorAttr[[1]]&Level==sectorAttr[[2]]]
+  sector[is.na(sector)] <- replace_sec_value
+  return(sector)
 }
+
 
 
 
@@ -2829,11 +2835,11 @@ sectorNA_fill <- function(TSS,sectorAttr=defaultSectorAttr()){
 #' @rdname getSectorID
 #' @export
 gf_sector <- function(TS, sectorAttr) {
-  TSS <- getSectorID(TS,sectorAttr = sectorAttr)
-  TSS <- sectorNA_fill(TSS,sectorAttr=sectorAttr)
+  TSS <- getSectorID(TS,sectorAttr = sectorAttr, fillNA = TRUE)
   re <- cast_sector(TSS)
   return(re)
 }
+
 
 #' @rdname getSectorID
 #' @param TSS a dataframe, with cols: date,stockID,and some dummy variables of sectors.
@@ -2848,7 +2854,7 @@ cast_sector <- function(TSS){
 }
 
 #' check.colnames_sectorfs
-#' 
+#'
 #' @export
 check.colnames_sectorfs <- function(data){
   check.colnames(data,"sector")
@@ -2859,14 +2865,14 @@ check.colnames_sectorfs <- function(data){
 }
 
 #' defaultSectorAttr
-#' 
+#'
 #' get the default sectorAttr. You can reset the default value by eg. \code{options(sectorAttr=list(std=3,level=2))}
 #' @return a list, the value of the default sectorAttr
 #' @export
 #' @examples
 #' # -- get the default sectorAttr
 #' defaultSectorAttr()
-#' # -- reset 
+#' # -- reset
 #' options(sectorAttr=list(std=3,level=2))
 #' # -- reget
 #' defaultSectorAttr()
@@ -2897,7 +2903,7 @@ CT_SystemConst <- function(LB,datasrc=defaultDataSRC()){
   } else if(datasrc=="jy"){
     re <- queryAndClose.odbc(db.jy(),qr)[,c("LB","LBMC", "DM","MS")]
   }
-  
+
   if(!missing(LB)){
     re <- re[re$LB==LB,]
   }
@@ -2965,14 +2971,14 @@ CT_sectorSTD <- function(DM,MS){
 #' CT_industryList(name="SHENWAN")
 CT_industryList <- function(std,level,ID,name,
                             datasrc=defaultDataSRC()){
-  
+
   qr <- "select * from CT_IndustryList"
   if(datasrc=="local"){
     re <- queryAndClose.dbi(db.local(),qr)
   } else if(datasrc=="quant"){
     re <- queryAndClose.odbc(db.quant(),qr)
   }
-  
+
   if(!missing(std)){
     re <- re[re$Standard %in% std, ]
   }
@@ -3034,9 +3040,9 @@ CT_FactorLists <- function(factorID,factorName,factorType){
 
 
 #' getIFlastfirstday
-#' 
+#'
 #' get the first,last and open dates of all IFs.
-#' 
+#'
 #' Note that the "firstday" is the date when the current-month IF switching,while the "openday" is the date the IF IPOing.
 #' @param begM beginning month,a yearmon object.
 #' @param endM ending month,a yearmon object.
@@ -3046,25 +3052,25 @@ CT_FactorLists <- function(factorID,factorName,factorType){
 #' @examples
 #' getIFlastfirstday()
 getIFlastfirstday <- function(begM=zoo::as.yearmon("2010-05"),endM=zoo::as.yearmon(Sys.Date())){
-  dt <- seq(from=zoo::as.Date(zoo::as.yearmon("2010-05")),to=Sys.Date()+1/12,by="month")  
+  dt <- seq(from=zoo::as.Date(zoo::as.yearmon("2010-05")),to=Sys.Date()+1/12,by="month")
   IF01 <- paste("IF",substr(as.character(dt),3,4),substr(as.character(dt),6,7),sep="")
   # ---- lastday
   lastday0 <- as.Date(timeDate::timeNthNdayInMonth(dt,5,3))
-  lastday <- as.Date(ifelse(trday.is(lastday0)|(lastday0>=Sys.Date()),lastday0,trday.nearby(lastday0,1))) 
+  lastday <- as.Date(ifelse(trday.is(lastday0)|(lastday0>=Sys.Date()),lastday0,trday.nearby(lastday0,1)))
   # ---- firstday
-  lastday_lag <-lag.m(lastday,1,TRUE)   
+  lastday_lag <-lag.m(lastday,1,TRUE)
   firstday <- as.Date(ifelse(dt!=as.Date("2010-05-01"),trday.nearby(lastday_lag,1),as.Date("2010-04-16")))
-  firstday <- as.Date(ifelse(lastday_lag>=Sys.Date()&(!is.na(lastday_lag)),lastday_lag+3,firstday)) # this is a very tricky method!  
+  firstday <- as.Date(ifelse(lastday_lag>=Sys.Date()&(!is.na(lastday_lag)),lastday_lag+3,firstday)) # this is a very tricky method!
   # ---- openday
   openday <- vector(length=length(dt))
   for(ii in 1:length(dt)){
-    mm <-month(dt[ii]) 
+    mm <-month(dt[ii])
     if(mm %in% c(3,6,9,12)){
       if(ii<=7){
         openday[ii] <-as.Date("2010-04-16")
       } else {
         openday[ii] <-firstday[ii-7]
-      } 
+      }
     } else {
       if(ii<=1){
         openday[ii] <-as.Date("2010-04-16")
@@ -3084,7 +3090,7 @@ getIFlastfirstday <- function(begM=zoo::as.yearmon("2010-05"),endM=zoo::as.yearm
 
 
 #' getIFlist
-#' 
+#'
 #' get the list(the 4 future at one time) of codes of all CSI300 index futures and the first and last day of every current-month future.
 #' @param begM beginning month,a yearmon object.
 #' @param endM ending month,a yearmon object.
@@ -3100,7 +3106,7 @@ getIFlist <- function(begM=zoo::as.yearmon("2010-05"),endM=zoo::as.yearmon(Sys.D
   d2 <- d1+months(1)
   d3 <- vector(length=length(d1))
   for(i in 1:length(d1)){
-    mm <-month(d1[i]) 
+    mm <-month(d1[i])
     if(mm %in% c(1,4,7,10)){d3[i] <-d1[i]+months(2)}
     if(mm %in% c(2,5,8,11)){d3[i] <-d1[i]+months(4)}
     if(mm %in% c(3,6,9,12)){d3[i] <-d1[i]+months(3)}
@@ -3118,10 +3124,10 @@ getIFlist <- function(begM=zoo::as.yearmon("2010-05"),endM=zoo::as.yearmon(Sys.D
 }
 
 #' getIFcontinuousCode
-#' 
+#'
 #' get the continuous index future code on every trading day
 #' @param begT
-#' @param endT 
+#' @param endT
 #' @return a datafame with cols:tradingday,IF00,IF01,IF02,IF03,IF04,firstday,lastday...
 #' @export
 #' @author Ruifei.Yin
@@ -3131,17 +3137,17 @@ getIFlist <- function(begM=zoo::as.yearmon("2010-05"),endM=zoo::as.yearmon(Sys.D
 #' getIFcontinuousCode()
 getIFcontinuousCode <- function(begT=as.Date("2010-04-16"),endT=Sys.Date()){
   tradingday <- data.frame(tradingday=trday.get(begT,endT),stringsAsFactors=FALSE)
-  IFlist <- getIFlist() 
-  sqlchar1 <- "select * from tradingday as a ,IFlist as b 
+  IFlist <- getIFlist()
+  sqlchar1 <- "select * from tradingday as a ,IFlist as b
   where a.tradingday <= b.lastday and a.tradingday >= b.firstday"
-  re <- sqldf(sqlchar1) 
+  re <- sqldf(sqlchar1)
   return(re)
 }
 
 
 
 #' getIFrtn
-#' 
+#'
 #' get index future daily return series
 #' @param code the code of the future(eg."IF00","IF01","IF02"...)
 #' @param begT an object of class "Date"
@@ -3169,7 +3175,7 @@ getIFrtn <- function(code,begT,endT,adj=FALSE){
     rtn.xts <- xts(rtn,time.adj)
   } else {
     rtn.xts <- xts(rtn,time)
-  }  
+  }
   rtn.daily <- aggregate(rtn.xts,by=zoo::as.Date,PerformanceAnalytics::Return.cumulative)
   colnames(rtn.daily) <- code
   return(rtn.daily)
@@ -3187,15 +3193,15 @@ getIFrtn <- function(code,begT,endT,adj=FALSE){
 
 
 #' MF_getQuote
-#' 
+#'
 #' @export
-#' @examples 
+#' @examples
 #' fundID <- c("519983.OF","519987.OF")
 #' begT <- as.Date("2016-01-05")
 #' variables <- c("NAV_adj_return1")
 #' MF_getQuote(fundID = fundID, begT = begT, variables = variables)
 MF_getQuote <- function(fundID,begT,endT,variables="NAV_adj_return1",datasrc = c("wind","jy","ts")){
-  
+
   datasrc <- match.arg(datasrc)
   if(missing(begT)){
     begT<- w.wss(fundID,'fund_setupdate')[[2]]
@@ -3207,7 +3213,7 @@ MF_getQuote <- function(fundID,begT,endT,variables="NAV_adj_return1",datasrc = c
   if(missing(endT)){
     endT <- trday.nearby(Sys.Date(),-1)
   }
-  
+
   if(datasrc == "jy"){
     # MF_FundNetValueRe missing
   }else if(datasrc == "ts"){
@@ -3240,9 +3246,9 @@ MF_getQuote <- function(fundID,begT,endT,variables="NAV_adj_return1",datasrc = c
 
 
 #' MF_getStockPort
-#' 
+#'
 #' @export
-#' @examples 
+#' @examples
 #' fundID <- c("519983.OF","519987.OF")
 #' MF_getStockPort(fundID,as.Date("2016-09-30"),mode="top10",datasrc = "jy")
 MF_getStockPort <- function(fundID,rptDate,mode=c("all","top10"),datasrc = c("jy","ts","wind")){
@@ -3275,15 +3281,15 @@ MF_getStockPort <- function(fundID,rptDate,mode=c("all","top10"),datasrc = c("jy
 }
 
 #' MF_Turnover_annual
-#' 
+#'
 #' @export
-#' @examples 
+#' @examples
 #' begrptDate <- as.Date("2015-06-30")
 #' endrptDate <- as.Date("2016-12-31")
 #' fundID <- c("519983.OF","519987.OF")
 #' MF_Turnover_annual(fundID, begrptDate, endrptDate)
 MF_Turnover_annual <- function(fundID,begrptDate,endrptDate){
-  
+
   # buy in and sell out db
   fundID <- substr(fundID,1,6)
   fundIDqr <- paste(fundID, collapse="','")
@@ -3353,7 +3359,7 @@ MF_Turnover_annual <- function(fundID,begrptDate,endrptDate){
 # --------------------  ~~ rptDate funcs ----------------
 
 #' rptDate.is
-#' 
+#'
 #' Is it a proper report date?
 #' @param rptDate a vector of rptDate , with class Date.
 #' @return a logical vector with the same length of rptDate.
@@ -3378,7 +3384,7 @@ rptDate.is <- function(rptDate,freq=c("q","y","h")){
 }
 
 #' check.rptDate
-#' 
+#'
 #' Is it a proper rptDate object? If TRUE, return NULL; else return an error.
 #' @param rptDate a vector of rptDate , with class Date.
 #' @export
@@ -3391,10 +3397,10 @@ check.rptDate <- function(rptDate){
   re <- rptDate.is(rptDate)
   re_all <- all(re)
   if(!re_all) {
-    warning("rptDate is not proper report date!") 
+    warning("rptDate is not proper report date!")
     cat("Following is not proper rptDate:\n")
     print(rptDate[!re])
-  } 
+  }
 }
 
 
@@ -3489,7 +3495,7 @@ rptDate.offset <- function(rptDate,by,freq){
 rptDate.deadline <- function(rptDate){
   check.rptDate(rptDate)
   q <- lubridate::quarter(rptDate)
-  y <- lubridate::year(rptDate)  
+  y <- lubridate::year(rptDate)
   re <- ISOdate(y,4,30,tz="")
   re[q==2] <- ISOdate(y[q==2], 8, 31, tz="")
   re[q==3] <- ISOdate(y[q==3], 10, 31, tz="")
@@ -3565,7 +3571,7 @@ rptDate.get <- function(begT, endT, freq=c("q","y","h"), dir=0L){
 }
 
 rptDate.publ <- function(rptDate,stockID){
-  
+
 }
 
 
@@ -3581,8 +3587,8 @@ rptDate.publ <- function(rptDate,stockID){
 #' @return a \bold{rptTS} object.a dataframe,with cols:
 #'   \itemize{
 #'   \item date: the rptDates
-#'   \item stockID: the stockID 
-#'   }.IF rptDates or stocks is not missing then use them directly, else get rptDates and stocks by \code{\link{rptDate.get}} and \code{\link{getComps}}. 
+#'   \item stockID: the stockID
+#'   }.IF rptDates or stocks is not missing then use them directly, else get rptDates and stocks by \code{\link{rptDate.get}} and \code{\link{getComps}}.
 #' @export
 #' @author Ruifei.Yin
 #' @examples
@@ -3611,15 +3617,15 @@ getrptTS <- function(begT,endT,freq=c("q","y","h"),dir=0,univ,rptDates,stocks){
 
 
 #' rptTS.getFin
-#' 
-#' get financtial indicators via \bold{rptTS} through WindR, or TinySoft. 
+#'
+#' get financtial indicators via \bold{rptTS} through WindR, or TinySoft.
 #' @rdname rptTS.getFin
 #' @name rptTS.getFin
-#' @aliases rptTS.getFin_windR 
+#' @aliases rptTS.getFin_windR
 #' @param rptTS a \bold{rptTS} object. a dataframe with cols:"rptDate","stockID"
 #' @param field character strting or a vector of character string, giving the windfields. eg.  "OPEN,CLOSE,HIGH" or c("OPEN","CLOSE","HIGH")
 #' @param varname vector of charactor string
-#' @param ... other arguments except \code{rptDate} in \code{w.wss} 
+#' @param ... other arguments except \code{rptDate} in \code{w.wss}
 #' @return a dataframe with the same length with rptTS, but added by some other financial indicator fields.
 #' @export
 #' @seealso \code{\link[WindR]{w.wss}}
@@ -3628,31 +3634,31 @@ getrptTS <- function(begT,endT,freq=c("q","y","h"),dir=0,univ,rptDates,stocks){
 #' rptTS <- getrptTS(begT=as.Date("2011-02-06"),endT=as.Date("2011-10-23"),stocks=c("EQ000001","EQ000002"))
 #' # rptTS.getFin_windR
 #' re <- rptTS.getFin_windR(rptTS,"np_belongto_parcomsh",options ="rptType=1")
-rptTS.getFin_windR <- function(rptTS, field, varname, ...){  
+rptTS.getFin_windR <- function(rptTS, field, varname, ...){
   check.rptTS(rptTS)
   require(WindR)
   if(!w.isconnected()){
     w.start(showmenu=FALSE)
-  }  
+  }
   rptTS2 <- transform(rptTS, stockID_wind=stockID2stockID(stockID,from="local",to="wind"), stringsAsFactors=FALSE)
-  Dts <- unique(rptTS$rptDate)  
+  Dts <- unique(rptTS$rptDate)
   Dts <- na.omit(Dts)
   df <- data.frame()
-  for(Dt in Dts){    
+  for(Dt in Dts){
     Dt <- as.Date(Dt,origin = "1970-01-01")
     codes <- rptTS2[rptTS2$rptDate==Dt, "stockID_wind", drop=TRUE]
     w_out <- w.wss(codes=codes, fields=field, paste('rptDate=',rdate2int(Dt)), ...)
     if(!w_out$ErrorCode==0){
       stop(paste('Error in w.wss running! rptDate =',rdate2int(Dt),'; errorcode=',w_out$ErrorCode))
-    } 
-    out <- data.frame(rptDate=Dt, w_out$Data)    
+    }
+    out <- data.frame(rptDate=Dt, w_out$Data)
     if(dim(df)[1]==0) {
       df <- out
     } else {
       df <- rbind(df,out)
-    }    
+    }
   }
-  
+
   df$stockID <- stockID2stockID(df$CODE,"wind","local")
   re <- merge.x(rptTS,df,by=c("rptDate","stockID"))
   re$CODE <- NULL
@@ -3680,14 +3686,14 @@ rptTS.getFin_windR <- function(rptTS, field, varname, ...){
 #' re3 <- rptTS.getFin_ts(rptTS,multi_funchar)
 rptTS.getFin_ts <- function(rptTS, funchar,varname, ...){
   check.rptTS(rptTS)
-  Dts <- unique(rptTS$rptDate) 
+  Dts <- unique(rptTS$rptDate)
   Dts <- na.omit(Dts)
   df <- data.frame()
-  for(Dt in Dts){ 
+  for(Dt in Dts){
     Dt <- as.Date(Dt,origin = "1970-01-01")
     codes <- rptTS[rptTS$rptDate==Dt, "stockID", drop=TRUE]
-    ts_out <- ts.wss(stocks=codes, funchar=funchar,varname = varname, rptDate=Dt, adjust_yoy=TRUE, ...)     
-    out <- data.frame(rptDate=Dt, ts_out)    
+    ts_out <- ts.wss(stocks=codes, funchar=funchar,varname = varname, rptDate=Dt, adjust_yoy=TRUE, ...)
+    out <- data.frame(rptDate=Dt, ts_out)
     if(dim(df)[1]==0) {
       df <- out
     } else {
@@ -3712,8 +3718,8 @@ rptTS.getFinSeri_ts <- function(rptTS, N, freq, funchar,varname, ...){
   rptTS_seri <- cbind(rptTS[,c("stockID","rptDate")],rptDate_df)
   rptTS_seri <- reshape2::melt(rptTS_seri,id.vars=c("stockID","rptDate"),variable.name="lagN",value.name="lag_rptDate")
   # remove repdate before IPO
-  rptTS_seri$ipoDate <- trday.IPO(rptTS_seri$stockID) 
-  rptTS_seri <- dplyr::filter(rptTS_seri,lag_rptDate>=ipoDate) 
+  rptTS_seri$ipoDate <- trday.IPO(rptTS_seri$stockID)
+  rptTS_seri <- dplyr::filter(rptTS_seri,lag_rptDate>=ipoDate)
   rptTS_seri <- dplyr::arrange(rptTS_seri,stockID,rptDate,desc(lag_rptDate))
   # get the financial index data
   rptTS_uniq <- unique(rptTS_seri[,c("stockID","lag_rptDate")])
@@ -3727,18 +3733,24 @@ rptTS.getFinSeri_ts <- function(rptTS, N, freq, funchar,varname, ...){
 
 
 #' calcFinStat
-#' 
+#'
 #' @export
 #' @examples
 #' # calcFinStat
 #' FinStat <- calcFinStat(FinSeri,"mean")
-calcFinStat <- function(FinSeri,stat=c('mean','sum','slope','sd','mean/sd'),fname){
+calcFinStat <- function(FinSeri,stat=c('mean','sum','slope','sd','mean/sd'),fname,rmGroupNum){
   if(missing(fname)){
     fname <- guess_factorNames(FinSeri,no_factorname = c("stockID", "rptDate","lagN","lag_rptDate","ipoDate"),is_factorname = "factorscore")
   }
   # melt & group_by
   FinSeri <- reshape2::melt(FinSeri,measure.vars=fname,variable.name = "fname", value.name = "value")
   FinSeri <- dplyr::group_by(FinSeri,fname,stockID,rptDate)
+  if(!missing(rmGroupNum)){
+    FinSeri <- FinSeri %>% dplyr::mutate(id =row_number())
+    FinSeri <- FinSeri %>% dplyr::filter(max(id) > rmGroupNum)
+    FinSeri <- dplyr::select(FinSeri,-id)
+  }
+
   # get rptTS_stat
   if(stat=="mean"){
     rptTS_stat <- dplyr::summarise(FinSeri,value=mean(value,na.rm = TRUE))
@@ -3761,17 +3773,17 @@ calcFinStat <- function(FinSeri,stat=c('mean','sum','slope','sd','mean/sd'),fnam
 }
 
 #' rptTS.getFinStat_ts
-#' 
+#'
 #' @export
 #' @examples
 #' # rptTS.getFinStat_ts
 #' FinStat <- rptTS.getFinStat_ts(rptTS,12,"q",'"np_belongto_parcomsh",report(46078,RDate)',stat="mean")
-rptTS.getFinStat_ts <- function(rptTS, N, freq, funchar, varname, 
+rptTS.getFinStat_ts <- function(rptTS, N, freq, funchar, varname,
                                 stat=c('mean','sum','slope','sd','mean/sd'),...){
   stat <- match.arg(stat)
   check.rptTS(rptTS)
   FinSeri <- rptTS.getFinSeri_ts(rptTS = rptTS,N = N,freq = freq,funchar = funchar, varname = varname, ...)
-  rptTS_stat <- calcFinStat(FinSeri=FinSeri,stat = stat,fname = varname)
+  rptTS_stat <- calcFinStat(FinSeri=FinSeri,stat = stat,fname = varname,rmGroupNum = N/2)
   re <- merge.x(rptTS,rptTS_stat,by=c("stockID","rptDate"))
   return(re)
 }
@@ -3780,7 +3792,7 @@ rptTS.getFinStat_ts <- function(rptTS, N, freq, funchar, varname,
 
 # --------------------  ~~ TS.getFin_by_rptTS ----------------
 #' getrptDate_newest
-#' 
+#'
 #' get the newest rptDate  of the stocks on specific dates.
 #' @param TS  a \bold{TS} object
 #' @param stockID a vector of stockID
@@ -3788,7 +3800,7 @@ rptTS.getFinStat_ts <- function(rptTS, N, freq, funchar, varname,
 #' @param mult a character string. Could be one of "last","first","all". IF a listed company publish more than one financial reports in a single day, which one should be returned? the newest one(the default value), the earliest one or all of them? See example for dedail.
 #' @param drop a logical. Shoud the \code{TS} be exculded in the result?
 #' @param datasrc
-#' @return a data.frame,with the same cols of TS,added by "\code{rptDate}". Or a vector if \code{drop} is TRUE. 
+#' @return a data.frame,with the same cols of TS,added by "\code{rptDate}". Or a vector if \code{drop} is TRUE.
 #' @note param TS and combination of stockID and endT should  at least have one and only have one. The combination of vector stockID and endT could be different length, which abide by the recycling rule.
 #' @author Ruifei.Yin
 #' @export
@@ -3817,10 +3829,10 @@ getrptDate_newest <- function(TS,stockID,endT=Sys.Date(),freq=c("q","y","h"),
     stop("Param TS and combination of stockID and endT should only have one!")
   }
   if (missing(TS)){
-    TS <- data.frame(date=endT, stockID=stockID) 
-  }   
+    TS <- data.frame(date=endT, stockID=stockID)
+  }
   check.TS(TS)
-  
+
   if(datasrc %in% c("quant","local")){
     TS_new <- TS
     TS_new$date <- rdate2int(TS_new$date)
@@ -3828,13 +3840,13 @@ getrptDate_newest <- function(TS,stockID,endT=Sys.Date(),freq=c("q","y","h"),
       "select date, a.stockID, EndDate as rptDate
       from yrf_tmp as a left join LC_RptDate as b
       on a.stockID=b.stockID and PublDate<=date and (PublDate_next>date or PublDate_next is null)
-      order by date, a.stockID, rptDate"      
+      order by date, a.stockID, rptDate"
     )
-    
+
     if(datasrc=="quant"){
       con <- db.quant()
       sqlDrop(con,sqtable="yrf_tmp",errors=FALSE)
-      sqlSave(con,dat=TS_new[,c("date","stockID")],tablename="yrf_tmp",safer=FALSE,rownames=FALSE)    
+      sqlSave(con,dat=TS_new[,c("date","stockID")],tablename="yrf_tmp",safer=FALSE,rownames=FALSE)
       re <- sqlQuery(con,query=qr)
       odbcClose(con)
     } else if (datasrc=="local"){
@@ -3842,29 +3854,29 @@ getrptDate_newest <- function(TS,stockID,endT=Sys.Date(),freq=c("q","y","h"),
       dbWriteTable(con,name="yrf_tmp",value=TS_new[,c("date","stockID")],row.names = FALSE,overwrite = TRUE)
       re <- dbGetQuery(con,qr)
       dbDisconnect(con)
-    }  
-    
-    re <- transform(re, date=intdate2r(date), rptDate=intdate2r(rptDate)) 
+    }
+
+    re <- transform(re, date=intdate2r(date), rptDate=intdate2r(rptDate))
     if(freq %in% c("y","h")){ # get the newest yearly report or halfyearly report
       re$rptDate <- rptDate.nearest(re$rptDate,freq = freq,dir = -1L)
     }
     re <- merge.x(TS,re,by=c("date","stockID"),mult=mult)
-  } 
-  
+  }
+
   if(drop){
     return(re[,"reptDate"])
   } else {
     return(re)
-  }    
-  
+  }
+
 }
 
 
 
 
 #' TS.getFin_by_rptTS
-#' 
-#' get financial factorscore via rptTS 
+#'
+#' get financial factorscore via rptTS
 #' @param TS
 #' @param fun a function or a non-empty character string naming the function to be called, which  get the financtial indicators from \bold{rptTS}. Note that the function must contain a param of 'rptTS' .
 #' @param ... optional arguments except rptTS of fun.
@@ -3872,18 +3884,18 @@ getrptDate_newest <- function(TS,stockID,endT=Sys.Date(),freq=c("q","y","h"),
 #' @export
 #' @seealso \code{\link{rptTS.getFin_windR}}, \code{\link{rptTS.getFin_ts}}
 #' @author Ruifei.Yin
-#' @examples 
+#' @examples
 #' TS <- Model.TS(modelPar.univ(indexID="ES09440000"))
 #' re <- TS.getFin_by_rptTS(TS,fun="rptTS.getFin_windR",field="np_belongto_parcomsh","rptType=1")
 #' re2 <- TS.getFin_by_rptTS(TS,fun="rptTS.getFin_ts",funchar='"np_belongto_parcomsh",report(46078,RDate)')
 #' # -- Following is a speed comparison of three different methods to get financial factorscores:
-#' 
+#'
 #' TS <- Model.TS(setmodelPar.time(modelPar.default(),begT=as.Date("2007-12-01"),endT=as.Date("2014-05-01")))
 #' system.time(re.wind <- TS.getFin_by_rptTS(TS,fun="rptTS.getFin_windR",field="np_belongto_parcomsh","rptType=1")) # 73.69
 #' system.time(re.ts_dir <- TS.getFin_ts(TS,funchar='report(46078,RDate)',varname="np_belongto_parcomsh")) # 12.49
 #' system.time(re.ts_rpt <- TS.getFin_by_rptTS(TS,fun="rptTS.getFin_ts",funchar='"np_belongto_parcomsh",report(46078,RDate)')) # 6.29
 TS.getFin_by_rptTS <- function(TS, fun, ...){
-  check.TS(TS)  
+  check.TS(TS)
   TS <- getrptDate_newest(TS,mult="last")
   rptTS <- unique(TS[, c("rptDate","stockID")])
   rptTSF <- do.call(fun, list(rptTS=rptTS, ...))
@@ -3909,7 +3921,7 @@ TS.getFin_by_rptTS <- function(TS, fun, ...){
 #' re1 <- is_suspend(TS,nearby=c(0,1))#  Suspend of today and nextday
 #' @export
 is_suspend <- function(TS,nearby=0,
-                       datelist,stockID, 
+                       datelist,stockID,
                        drop,
                        datasrc=defaultDataSRC()){
   if (missing(TS) && any(missing(stockID),missing(datelist))) {
@@ -3921,11 +3933,11 @@ is_suspend <- function(TS,nearby=0,
   if(missing(drop)){
     drop <- if(missing(TS)) TRUE else FALSE
   }
-  
+
   if (missing(TS)){
     TS <- expand.grid(date=datelist, stockID=stockID)
   }
-  
+
   check.TS(TS)
   if(datasrc=='ts'){
     sus <- rep(FALSE,nrow(TS))
@@ -3940,13 +3952,13 @@ is_suspend <- function(TS,nearby=0,
     for (by in nearby){
       TS_ <- data.frame(date=trday.nearby(TS$date,by), stockID=TS$stockID)
       istradingday <- trday.is(TS=TS_, drop = TRUE)
-      sus_ <- (!istradingday) 
+      sus_ <- (!istradingday)
       sus <- sus|sus_
     }
   }
   TS <- data.frame(TS,sus=ifelse(is.na(sus), FALSE, sus))
-  
-  
+
+
   if(drop){
     return(TS$sus)
   }else{
@@ -3956,7 +3968,7 @@ is_suspend <- function(TS,nearby=0,
 
 
 #' is_priceLimit
-#' 
+#'
 #' if over-price-limit
 #' @param nearby a integer vector. 0 means today, 1 means next tradingday. default is 0L. see detail in \code{\link{trday.nearby}}.
 #' @param lim a vector of length 2.
@@ -3971,10 +3983,10 @@ is_suspend <- function(TS,nearby=0,
 #' is_priceLimit(stockID = "EQ300576",datelist = as.Date("2016-12-22"),priceType = "open") #  open-price over limit
 #' @export
 is_priceLimit <- function(TS,nearby=0,lim=c(-10, 10), priceType=c("close","open"),
-                          datelist,stockID, 
+                          datelist,stockID,
                           drop,
                           datasrc=defaultDataSRC()){
-  
+
   if (missing(TS) && any(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should at least have one!")
   }
@@ -3984,14 +3996,14 @@ is_priceLimit <- function(TS,nearby=0,lim=c(-10, 10), priceType=c("close","open"
   if(missing(drop)){
     drop <- if(missing(TS)) TRUE else FALSE
   }
-  
+
   if (missing(TS)){
     TS <- expand.grid(date=datelist, stockID=stockID)
   }
-  
+
   check.TS(TS)
   priceType <- match.arg(priceType)
-  
+
   if(priceType=="close"){
     if(datasrc=='ts'){
       overlim <- rep(FALSE,nrow(TS))
@@ -4008,7 +4020,7 @@ is_priceLimit <- function(TS,nearby=0,lim=c(-10, 10), priceType=c("close","open"
         TS_ <- data.frame(date=trday.nearby(TS$date,by), stockID=TS$stockID)
         TS_ <- getTech(TS_,variables=c("pre_close","close") ,datasrc = datasrc)
         in_lim <- TS_$close > round(TS_$pre_close*(1+lim[1]/100),2) & TS_$close < round(TS_$pre_close*(1+lim[2]/100),2)
-        overlim_ <- (!in_lim) 
+        overlim_ <- (!in_lim)
         overlim <- overlim|overlim_
       }
     }
@@ -4028,17 +4040,17 @@ is_priceLimit <- function(TS,nearby=0,lim=c(-10, 10), priceType=c("close","open"
         TS_ <- data.frame(date=trday.nearby(TS$date,by), stockID=TS$stockID)
         TS_ <- getTech(TS_,variables=c("pre_close","open") ,datasrc = datasrc)
         in_lim <- TS_$open > round(TS_$pre_close*(1+lim[1]/100),2) & TS_$open < round(TS_$pre_close*(1+lim[2]/100),2)
-        overlim_ <- (!in_lim) 
+        overlim_ <- (!in_lim)
         overlim <- overlim|overlim_
       }
     }
   } else {
     stop("Invalid param of 'priceTpye'!")
   }
-  
-  
+
+
   TS <- data.frame(TS,overlim=ifelse(is.na(overlim), FALSE, overlim)) # if NA, set to FALSE
-  
+
   if(drop){
     return(TS$overlim)
   }else{
@@ -4050,12 +4062,12 @@ is_priceLimit <- function(TS,nearby=0,lim=c(-10, 10), priceType=c("close","open"
 
 #' @export
 is_blacklist <- function(TS,
-                         datelist,stockID, 
+                         datelist,stockID,
                          drop,
                          datasrc=defaultDataSRC()){
-  
+
   blklist=c("EQ600061","EQ600886","EQ600216") # temporally
-  
+
   if (missing(TS) && any(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should at least have one!")
   }
@@ -4065,26 +4077,26 @@ is_blacklist <- function(TS,
   if(missing(drop)){
     drop <- if(missing(TS)) TRUE else FALSE
   }
-  
+
   if (missing(TS)){
     TS <- expand.grid(date=datelist, stockID=stockID)
   }
-  
+
   check.TS(TS)
 
   TS$is_blacklist <- TS$stockID %in% blklist
-  
-  
+
+
   if(drop){
     return(TS$is_blacklist)
   }else{
     return(TS)
   }
-  
+
 }
 
 #' is_st
-#' 
+#'
 #' is st stock
 #' @author Ruifei.yin
 #' @examples
@@ -4093,7 +4105,7 @@ is_blacklist <- function(TS,
 #' re <- is_st(TS)
 #' @export
 is_st <- function(TS,
-                  datelist,stockID, 
+                  datelist,stockID,
                   drop,
                   datasrc=defaultDataSRC()){
   if (missing(TS) && any(missing(stockID),missing(datelist))) {
@@ -4105,13 +4117,13 @@ is_st <- function(TS,
   if(missing(drop)){
     drop <- if(missing(TS)) TRUE else FALSE
   }
-  
+
   if (missing(TS)){
     TS <- expand.grid(date=datelist, stockID=stockID)
   }
-  
+
   check.TS(TS)
-  
+
   if(datasrc=='ts'){
     TS_ <- TS.getTech_ts(TS, funchar="IsST_()")
     TS_ <- renameCol(TS_, c("IsST_()"), c("is_st"))
@@ -4127,23 +4139,23 @@ is_st <- function(TS,
     TS_ <- transform(TS_,date=intdate2r(date),
                      is_st=stringr::str_detect(is_st,'ST'))
   }
-  
+
 
   if(drop){
     return(TS_$is_st)
   }else{
     return(TS_)
   }
-  
+
 }
 
 
 
 #' @export
-getTech <- function(TS, 
-                    variables = select.list(CT_TechVars(datasrc=datasrc,secuCate="EQ",tableName=tableName)[["varName"]],graphics=TRUE,multiple=TRUE), 
+getTech <- function(TS,
+                    variables = select.list(CT_TechVars(datasrc=datasrc,secuCate="EQ",tableName=tableName)[["varName"]],graphics=TRUE,multiple=TRUE),
                     tableName="QT_DailyQuote2",
-                    datelist,stockID, 
+                    datelist,stockID,
                     drop,
                     datasrc=defaultDataSRC()){
   if (missing(TS) && any(missing(stockID),missing(datelist))) {
@@ -4152,16 +4164,16 @@ getTech <- function(TS,
   if (!missing(TS) && !all(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should only have one!")
   }
-  
+
   if (missing(TS)){
     TS <- expand.grid(date=datelist, stockID=stockID)
     missing_TS <- TRUE
   } else {
     missing_TS <- FALSE
   }
-  
+
   re <- TS.getTech(TS=TS,variables = variables,tableName = tableName,datasrc = datasrc)
-  
+
   if(missing(drop)){
     drop <- if(missing_TS&length(variables)==1) TRUE else FALSE
   }
@@ -4174,7 +4186,7 @@ getTech <- function(TS,
 
 #' @export
 getTech_ts <- function(TS,funchar,varname=funchar, Rate=1, RateDay=0,
-                       datelist,stockID, 
+                       datelist,stockID,
                        drop){
   if (missing(TS) && any(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should at least have one!")
@@ -4188,9 +4200,9 @@ getTech_ts <- function(TS,funchar,varname=funchar, Rate=1, RateDay=0,
   if (missing(TS)){
     TS <- expand.grid(date=datelist, stockID=stockID)
   }
-  
+
   result <- TS.getTech_ts(TS=TS,funchar = funchar,varname = varname,Rate = Rate,RateDay = RateDay)
-  
+
   if(drop){
     return(result[,varname])
   }else{
@@ -4200,7 +4212,7 @@ getTech_ts <- function(TS,funchar,varname=funchar, Rate=1, RateDay=0,
 
 #' @export
 getFin_ts <- function(TS,funchar,varname=funchar,Rate=1,RateDay=0,
-                      datelist,stockID, 
+                      datelist,stockID,
                       drop){
   if (missing(TS) && any(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should at least have one!")
@@ -4214,38 +4226,38 @@ getFin_ts <- function(TS,funchar,varname=funchar,Rate=1,RateDay=0,
   if (missing(TS)){
     TS <- expand.grid(date=datelist, stockID=stockID)
   }
-  
+
   result <- TS.getFin_ts(TS=TS,funchar = funchar,varname = varname,Rate = Rate,RateDay = RateDay)
-  
+
   if(drop){
     return(result[,varname])
   }else{
     return(result)
-  }  
+  }
 }
 
 
 
 #' TS.getTech
-#' @export 
-TS.getTech <- function(TS, 
-                       variables = select.list(CT_TechVars(datasrc=datasrc,secuCate="EQ",tableName=tableName)[["varName"]],graphics=TRUE,multiple=TRUE), 
+#' @export
+TS.getTech <- function(TS,
+                       variables = select.list(CT_TechVars(datasrc=datasrc,secuCate="EQ",tableName=tableName)[["varName"]],graphics=TRUE,multiple=TRUE),
                        tableName="QT_DailyQuote2",
                        datasrc=defaultDataSRC()){
-  check.TS(TS)  
+  check.TS(TS)
   tmpdat <- transform(TS[,c("stockID","date")], date = rdate2int(date))
-  tmpdat$PK_ <- 1:NROW(tmpdat)  
-  vars <- CT_TechVars(datasrc=datasrc,secuCate="EQ",tableName=tableName,vars=variables) 
+  tmpdat$PK_ <- 1:NROW(tmpdat)
+  vars <- CT_TechVars(datasrc=datasrc,secuCate="EQ",tableName=tableName,vars=variables)
   if(NROW(vars)==0){
     stop(paste("No fields matched in table",QT(tableName),"in datasrc",QT(datasrc),"!"))
   }
-  vars <- paste(vars$func,"as",QT(vars$varName), collapse=", ")      
-  qr <- paste("select a.*,",vars,"from yrf_tmp a left join",tableName ,"b on a.stockID=b.ID and a.date=b.TradingDay") 
-  
+  vars <- paste(vars$func,"as",QT(vars$varName), collapse=", ")
+  qr <- paste("select a.*,",vars,"from yrf_tmp a left join",tableName ,"b on a.stockID=b.ID and a.date=b.TradingDay")
+
   if(datasrc=="quant"){
     con <- db.quant()
     sqlDrop(con,sqtable="yrf_tmp",errors=FALSE)
-    sqlSave(con,dat=tmpdat,tablename="yrf_tmp",safer=FALSE,rownames=FALSE)    
+    sqlSave(con,dat=tmpdat,tablename="yrf_tmp",safer=FALSE,rownames=FALSE)
     re <- sqlQuery(con,query=qr)
     odbcClose(con)
   } else if (datasrc=="local"){
@@ -4256,12 +4268,12 @@ TS.getTech <- function(TS,
     }
     re <- dbGetQuery(con,qr)
     dbDisconnect(con)
-  }  
+  }
   re <- dplyr::arrange(re,PK_)[,variables,drop=FALSE]
-  re <- cbind(TS,re)    
-  
+  re <- cbind(TS,re)
+
   return(re)
- 
+
 }
 
 
@@ -4275,7 +4287,7 @@ TS.getTech <- function(TS,
 #' @note Note that the tinysoft function must contain ONLY two(no more!) system parameters: pn_stock() and pn_date() ,which is specifyed by the two fields in the TS respectively.
 #' @author Ruifei.Yin
 #' @export
-#' @examples 
+#' @examples
 #' TS <- getTS(getRebDates(as.Date('2011-03-17'),as.Date('2012-04-17')),'EI000300')
 #'  p1 <- 11
 #'  p2 <- 6
@@ -4286,15 +4298,15 @@ TS.getTech <- function(TS,
 #'  TSF2 <- TS.getTech_ts(TS, funchar)
 TS.getTech_ts <- function(TS,funchar,varname=funchar, Rate=1, RateDay=0){
   check.TS(TS)
-  
+
   tmpfile <- TS
   tmpfile$stockID <- stockID2stockID(tmpfile$stockID,from="local",to="ts")
   tmpfile$date <- as.character(tmpfile$date)
-  
+
   tmpcsv <- tempfile(fileext=".csv")
   tmpcsv2 <- stringr::str_replace_all(tmpcsv,'\\\\',"\\\\\\\\")
   write.csv(tmpfile,tmpcsv,row.names=FALSE,quote=FALSE)
-  
+
   subqr <- ""
   for( i in 1:length(funchar)){
     subqr <- paste0(subqr, '  factorexp[',i-1,'] := &"',funchar[i],'";  ')
@@ -4307,7 +4319,7 @@ TS.getTech_ts <- function(TS,funchar,varname=funchar, Rate=1, RateDay=0){
     subqr2 <- paste0(subqr2, ' SetSysParam(pn_rateday(), ',RateDay,'); ')
   }
   len.funchar <- length(funchar)-1
-  
+
   qrstr <- paste0('oV:=BackUpSystemParameters();
                   SetSysParam(pn_cycle(),cy_day());
                   ',subqr2,'
@@ -4330,9 +4342,9 @@ TS.getTech_ts <- function(TS,funchar,varname=funchar, Rate=1, RateDay=0){
   tsRequire()
   fct <- tsRemoteExecute(qrstr)
   fct <- plyr::ldply(fct, unlist)
-  colnames(fct) <- varname 
+  colnames(fct) <- varname
   result <- cbind(TS,fct)
-  return(result)  
+  return(result)
 }
 
 
@@ -4340,13 +4352,13 @@ TS.getTech_ts <- function(TS,funchar,varname=funchar, Rate=1, RateDay=0){
 
 #' TS.getFin_ts
 #'
-#' get financial factors throug a tinysoft expression, which could be simple or more complicated. 
+#' get financial factors throug a tinysoft expression, which could be simple or more complicated.
 #'
 #' Note that the tinysoft function must contain ONLY two system parameters(no more!):pn_stock() and pn_date() ,which is supplyed from the two fields in the TS respectively.Also,the function must contain a expression of 'Rdate:=NewReportDateOfEndT2(sp_time())' to get the newest Rdate of sp_time.
 #' @param TS a \bold{TS} object
 #' @param funchar a vector of character string, giving a tinysoft expression to get the financtial indicators of the stock. The expression can be made simply by replaceing the specified reportdate in the stock-data-expert expression by \code{'Rdate'}. e.g. change \code{Last12MData(20091231,46002)} to \code{Last12MData(Rdate,46002)}.
 #' @param varname character string, giving the name of the returned variables
-#' @return A \bold{TSF} object,a dataframe, containing at least cols:\bold{date}(with class of Date),\bold{stockID},\bold{varname},\bold{Rdate} 
+#' @return A \bold{TSF} object,a dataframe, containing at least cols:\bold{date}(with class of Date),\bold{stockID},\bold{varname},\bold{Rdate}
 #' @note Note that the tinysoft function must contain ONLY two system parameters(no more!):pn_stock() and pn_date() ,which is supplyed from the two fields in the TS respectively. Also,the function must contain a expression of 'Rdate:=NewReportDateOfEndT2(sp_time())' to get the newest Rdate of sp_time.
 #' @author Ruifei.Yin
 #' @export
@@ -4359,14 +4371,14 @@ TS.getTech_ts <- function(TS,funchar,varname=funchar, Rate=1, RateDay=0){
 #' TSF4 <- TS.getFin_ts(TS, funchar)
 TS.getFin_ts <- function(TS,funchar,varname=funchar,Rate=1,RateDay=0){
   check.TS(TS)
-  
+
   tmpfile <- TS
   tmpfile$stockID <- stockID2stockID(tmpfile$stockID,from="local",to="ts")
   tmpfile$date <- as.character(tmpfile$date)
   tmpcsv <- tempfile(fileext=".csv")
   tmpcsv2 <- stringr::str_replace_all(tmpcsv,'\\\\',"\\\\\\\\")
   write.csv(tmpfile,tmpcsv,row.names=FALSE,quote=FALSE)
-  
+
   subqr <- ""
   for( i in 1:length(funchar)){
     subqr <- paste0(subqr, '  factorexp[',i-1,'] := &"',funchar[i],'";  ')
@@ -4379,34 +4391,34 @@ TS.getFin_ts <- function(TS,funchar,varname=funchar,Rate=1,RateDay=0){
     subqr2 <- paste0(subqr2, ' SetSysParam(pn_rateday(), ',RateDay,'); ')
   }
   len.funchar <- length(funchar)-1
-  
+
   qrstr <- paste0('oV:=BackUpSystemParameters();
-                  SetSysParam(pn_cycle(),cy_day());  
-                  ',subqr2,'  
+                  SetSysParam(pn_cycle(),cy_day());
+                  ',subqr2,'
                   rdo2 importfile(ftcsv(),"","',tmpcsv2,'",timestockframe);
-                  factorexp := array();  
+                  factorexp := array();
                   ',subqr,'
-                  result:=array(); 
+                  result:=array();
                   for i:=0 to length(timestockframe)-1 do
-                  begin 
-                  SetSysParam(pn_stock(),timestockframe[i]["stockID"]); 
+                  begin
+                  SetSysParam(pn_stock(),timestockframe[i]["stockID"]);
                   SetSysParam(pn_date(),strtodate(timestockframe[i]["date"]));
-                  Rdate:=NewReportDateOfEndT2(sp_time()); 
+                  Rdate:=NewReportDateOfEndT2(sp_time());
                   for j:=0 to ',len.funchar,' do
-                  begin 
-                  factorvalue:=eval(factorexp[j]); 
-                  result[i][j]:=factorvalue; 
-                  end; 
-                  result[i]["Rdate"]:=Rdate; 
-                  end; 
-                  RestoreSystemParameters(oV); 
+                  begin
+                  factorvalue:=eval(factorexp[j]);
+                  result[i][j]:=factorvalue;
+                  end;
+                  result[i]["Rdate"]:=Rdate;
+                  end;
+                  RestoreSystemParameters(oV);
                   return result;')
   tsRequire()
   fct <- tsRemoteExecute(qrstr)
   fct <- plyr::ldply(fct,as.data.frame)
   colnames(fct) <- c(varname, "RDate")
   result <- cbind(TS,fct)
-  return(result)  
+  return(result)
 }
 
 
@@ -4415,14 +4427,14 @@ TS.getFin_ts <- function(TS,funchar,varname=funchar,Rate=1,RateDay=0){
 
 
 #' getQuote_ts
-#' 
+#'
 #' get Quote series of some stocks in certain period
 #' @param stocks a vector of charactor
 #' @param begT an object of class "Date"
 #' @param endT an object of class "Date"
 #' @param variables a vector of charactor,elements of which could be stockID,stockName,date,price,open,high,low,vol,amount,yclose,sectional_yclose,cjbs,...
 #' @param Cycle a charactor string,eg."cy_day()","cy_30m()","cy_month()",...
-#' @param Rate a integer,giving the type of rights adjustment, could be one of 0(no adjustment),1(geometric adjustment),2(simple adjustment),3 
+#' @param Rate a integer,giving the type of rights adjustment, could be one of 0(no adjustment),1(geometric adjustment),2(simple adjustment),3
 #' @param RateDay a integer,giving the base date of right adjustment,could be one of 0(the last trading day),-1(the IPO date),or a tinysoft date integer(eg.\code{rdate2ts(as.Date("2010-01-02"))})
 #' @param melt a logical. If FALSE(default), the style of result is "stockID+date~variable";If TRUE, the quote data will be melted(see the examples for details).
 #' @param split
@@ -4446,12 +4458,12 @@ getQuote_ts <- function(stocks,begT,endT,variables,Cycle="cy_day()",Rate=0,RateD
   #     variables <- c("price","yclose")
   #     Cycle="cy_day()"
   #     Rate=0
-  #     RateDay=0     
+  #     RateDay=0
   subfun <- function(stocks,begT,endT,variables,Cycle,Rate,RateDay,melt){
     stockID <- paste(stocks,collapse=",")
     begT <- rdate2ts(begT)
     endT <- rdate2ts(endT)
-    variables <- paste('["',variables,'"]',sep="",collapse=",")  
+    variables <- paste('["',variables,'"]',sep="",collapse=",")
     tsRequire()
     qt <- tsRemoteCallFunc("getQuote",list(stockID,begT,endT,variables,Cycle,Rate,RateDay))
     qt <- plyr::ldply(qt,as.data.frame)
@@ -4463,8 +4475,8 @@ getQuote_ts <- function(stocks,begT,endT,variables,Cycle="cy_day()",Rate=0,RateD
   }
   if(!split){
     re <- subfun(stocks,begT,endT,variables,Cycle,Rate,RateDay,melt)
-  } else {    
-    Ngroup <- length(stocks) %/% splitNbin +1  
+  } else {
+    Ngroup <- length(stocks) %/% splitNbin +1
     Ngroup <-  if(Ngroup>1) Ngroup else Ngroup+1
     bby <- cut(1:length(stocks),Ngroup,labels=FALSE)
     warning(paste('Possibly dealing with a big quote data. The process is split to ',Ngroup,'groups.'))
@@ -4479,16 +4491,16 @@ getQuote_ts <- function(stocks,begT,endT,variables,Cycle="cy_day()",Rate=0,RateD
       } else {
         re <- rbind(re,qt)
       }
-    } 
+    }
   }
-  return(re) 
+  return(re)
 }
 
 
 
 
 #' getQuote
-#' 
+#'
 #' get Quote series of stocks, indexs, futures in certain period
 #' @aliases getQuote getIndexQuote getIFquote
 #' @param stocks a charactor vector of stockID or indexID.
@@ -4513,48 +4525,48 @@ getQuote_ts <- function(stocks,begT,endT,variables,Cycle="cy_day()",Rate=0,RateD
 #' stocks <- getIndexComp("EI000300")
 #' system.time(uu2 <- getQuote(stocks,begT,endT,variables,datasrc="local",split=FALSE))
 #' system.time(uu1 <- getQuote(stocks,begT,endT,variables,datasrc="local",split=TRUE))
-getQuote <- function(stocks, begT=as.Date("1990-12-19"), endT=Sys.Date(), 
-                     variables = select.list(CT_TechVars(datasrc=datasrc,secuCate="EQ",tableName=tableName)[["varName"]],graphics=TRUE,multiple=TRUE), 
+getQuote <- function(stocks, begT=as.Date("1990-12-19"), endT=Sys.Date(),
+                     variables = select.list(CT_TechVars(datasrc=datasrc,secuCate="EQ",tableName=tableName)[["varName"]],graphics=TRUE,multiple=TRUE),
                      melt=FALSE,
                      split = if(length(stocks) > splitNbin) TRUE else FALSE,
                      splitNbin = 300,
                      tableName = "QT_DailyQuote2",
                      datasrc=defaultDataSRC()){
-  
+
   begT <- rdate2int(begT)
-  endT <- rdate2int(endT)  
+  endT <- rdate2int(endT)
   if(begT>endT){
     stop(paste("begT ",begT,"is later then endT ",endT))
   }
-  techVars <- CT_TechVars(datasrc=datasrc,secuCate="EQ",tableName=tableName,vars=variables)  
+  techVars <- CT_TechVars(datasrc=datasrc,secuCate="EQ",tableName=tableName,vars=variables)
   if(NROW(techVars)==0){
     stop(paste("No fields matched in table", QT(tableName),"in datasrc",QT(datasrc),"!"))
-  }  
-  
+  }
+
   subfun <- function(stocks,melt){
-    stocks_char <- paste("(",paste(QT(stocks),collapse=","),")",sep="") 
+    stocks_char <- paste("(",paste(QT(stocks),collapse=","),")",sep="")
     vars <- techVars
-    vars <- paste(vars$func,"as",QT(vars$varName), collapse=", ")      
-    querychar <- paste("select ID as stockID,TradingDay as date,",vars,"from",tableName ,"where ID in", stocks_char, "and TradingDay >=", begT, "and TradingDay <=" ,endT)  
-    
-    if(datasrc=="quant"){  
+    vars <- paste(vars$func,"as",QT(vars$varName), collapse=", ")
+    querychar <- paste("select ID as stockID,TradingDay as date,",vars,"from",tableName ,"where ID in", stocks_char, "and TradingDay >=", begT, "and TradingDay <=" ,endT)
+
+    if(datasrc=="quant"){
       qt <- queryAndClose.odbc(db.quant(),querychar)
-    } else if(datasrc=="local"){      
+    } else if(datasrc=="local"){
       qt <- queryAndClose.dbi(db.local(),querychar)
     }
-    
+
     qt$date <- intdate2r(qt$date)
     if(melt){
       qt <- reshape2::melt(qt,id.vars=c("stockID","date"))
     }
     return(qt)
-  } 
-  
-  
+  }
+
+
   if(!split){
     re <- subfun(stocks,melt)
   } else {
-    Ngroup <- length(stocks) %/% splitNbin +1  
+    Ngroup <- length(stocks) %/% splitNbin +1
     #     Ngroup <-  if(Ngroup>1) Ngroup else Ngroup+1
     bby <- cut(1:length(stocks),Ngroup,labels=FALSE)
     warning(paste('Possibly dealing with a big data. The process is splited to ',Ngroup,'groups.'))
@@ -4569,11 +4581,11 @@ getQuote <- function(stocks, begT=as.Date("1990-12-19"), endT=Sys.Date(),
         re <- rbind(re,qt)
       }
     }
-  } 
-  
-  rslt <- re 
-  
-  return(rslt)  
+  }
+
+  rslt <- re
+
+  return(rslt)
 }
 
 
@@ -4588,30 +4600,30 @@ getQuote <- function(stocks, begT=as.Date("1990-12-19"), endT=Sys.Date(),
 #' variables <- c("close","pct_chg")
 #' re <- getIndexQuote(indexs,begT,endT,variables,datasrc="local")
 #' re <- getIndexQuote(indexs,begT,endT,variables,datasrc="jy")
-getIndexQuote <- function(stocks, 
-                          begT=as.Date("1990-12-19"), endT=Sys.Date(), 
-                          variables = select.list(CT_TechVars(datasrc=datasrc,secuCate="EI",tableName="QT_IndexQuote")[["varName"]],graphics=TRUE,multiple=TRUE), 
+getIndexQuote <- function(stocks,
+                          begT=as.Date("1990-12-19"), endT=Sys.Date(),
+                          variables = select.list(CT_TechVars(datasrc=datasrc,secuCate="EI",tableName="QT_IndexQuote")[["varName"]],graphics=TRUE,multiple=TRUE),
                           melt=FALSE,
                           datasrc=defaultDataSRC()){
   begT <- rdate2int(begT)
   endT <- rdate2int(endT)
-  vars <- CT_TechVars(datasrc=datasrc,secuCate="EI",tableName="QT_IndexQuote",vars=variables)   
+  vars <- CT_TechVars(datasrc=datasrc,secuCate="EI",tableName="QT_IndexQuote",vars=variables)
   if(NROW(vars)==0){
     stop(paste("No fields matched in table 'QT_IndexQuote' in datasrc",QT(datasrc),"!"))
-  }  
-  
+  }
+
   subfun <- function(stocks,melt){
-    stocks_char <- paste("(",paste(QT(stocks),collapse=","),")",sep="")    
-    vars <- paste(vars$func,"as",QT(vars$varName), collapse=", ")      
-    querychar <- paste("select ID as stockID,TradingDay as date,",vars,"from QT_IndexQuote where ID in", stocks_char, "and TradingDay >=", begT, "and TradingDay <=" ,endT) 
-    
-    if(datasrc=="quant"){  
+    stocks_char <- paste("(",paste(QT(stocks),collapse=","),")",sep="")
+    vars <- paste(vars$func,"as",QT(vars$varName), collapse=", ")
+    querychar <- paste("select ID as stockID,TradingDay as date,",vars,"from QT_IndexQuote where ID in", stocks_char, "and TradingDay >=", begT, "and TradingDay <=" ,endT)
+
+    if(datasrc=="quant"){
       con <- db.quant()
       qt <- queryAndClose.odbc(db.quant(),querychar)
-    } else if(datasrc=="local"){      
+    } else if(datasrc=="local"){
       qt <- queryAndClose.dbi(db.local(),querychar)
     }else if(datasrc=="jy"){
-      stocks_char <- paste("(",paste(QT(substr(stocks,3,8)),collapse=","),")",sep="")  
+      stocks_char <- paste("(",paste(QT(substr(stocks,3,8)),collapse=","),")",sep="")
       begT <- intdate2r(begT)
       endT <- intdate2r(endT)
       querychar <- paste("SELECT 'EI'+s.SecuCode 'stockID',CONVERT(varchar,TradingDay,112) 'date',",
@@ -4621,15 +4633,15 @@ getIndexQuote <- function(stocks,
       qt <- queryAndClose.odbc(db.jy(),querychar)
       qt <- dplyr::arrange(qt,stockID,date)
     }
-    
+
     qt$date <- intdate2r(qt$date)
     if(melt){
       qt <- reshape2::melt(qt,id.vars=c("stockID","date"))
     }
     return(qt)
-  }    
-  re <- subfun(stocks,melt)   
-  return(re)  
+  }
+  re <- subfun(stocks,melt)
+  return(re)
 }
 
 
@@ -4661,7 +4673,7 @@ getIndexQuote <- function(stocks,
 #' system.time(re1 <- getPeriodrtn(SP,datasrc="local"))  # 1.94
 #' system.time(re <- getPeriodrtn(SP,tradeType = "nextavg",datasrc="ts")) # 10.80
 #' system.time(re1 <- getPeriodrtn(SP,tradeType = "nextavg",datasrc="local")) # 16.7
-#' 
+#'
 #' #-- with combination of vector stockID, begT and endT
 #' getPeriodrtn(stockID="EQ000001",begT=as.Date("2012-01-01"), endT=as.Date("2012-01-01")+c(10,20,30))
 #' getPeriodrtn(stockID=c("EQ000001","EQ000002","EQ000004"),begT=as.Date("2012-01-01"), endT=as.Date("2013-01-01"))
@@ -4676,15 +4688,15 @@ getPeriodrtn <- function(SP, stockID, begT, endT,
     stop("Param SP and combination of stockID, begT and endT should only have one!")
   }
   if (missing(SP)){
-    SP <- data.frame(stockID=stockID,begT=begT,endT=endT) 
-  }   
+    SP <- data.frame(stockID=stockID,begT=begT,endT=endT)
+  }
   check.SP(SP)
   if("periodrtn" %in% names(SP)){
     warning("Column 'periodrtn' is already exist. It will be drop!")
     SP$periodrtn <- NULL
   }
-  
-  
+
+
   if(datasrc=="ts"){
     tmpdat <- transform(SP, stockID = stockID2stockID(stockID,from="local",to="ts"),
                         begT = as.character(begT),
@@ -4695,26 +4707,26 @@ getPeriodrtn <- function(SP, stockID, begT, endT,
     periodrtn <- tsRemoteCallFunc("getperiodrtn",list(tmpcsv,tradeType))
     periodrtn <- plyr::laply(periodrtn,as.array)
     re <- cbind(SP, periodrtn)
-  } 
-  
+  }
+
   if(datasrc %in% c("quant","local")){
     # -- deal with the trading days
     if(tradeType=="close"){
       tmpdat <- transform(SP[,c("stockID","begT","endT")], begT = trday.nearest(begT), endT = trday.nearest(endT))
       tmpdat <- transform(tmpdat, begT = rdate2int(begT), endT = rdate2int(endT))
-      tmpdat$PK_ <- 1:NROW(tmpdat) 
+      tmpdat$PK_ <- 1:NROW(tmpdat)
     } else {
       begT_ <- trday.nearby(TS = dplyr::select(SP,date=begT,stockID),by = 1,drop = TRUE)
       endT_ <- trday.nearby(TS = dplyr::select(SP,date=endT,stockID),by = 1,drop = TRUE)
       tmpdat <- data.frame(stockID=SP$stockID,begT=begT_,endT=endT_)
       tmpdat <- transform(tmpdat, begT = rdate2int(begT), endT = rdate2int(endT))
       tmpdat$PK_ <- 1:NROW(tmpdat)
-    }         
+    }
     # -- query
     if(tradeType=="close"){
       qr <- "select a.*,b.RRClosePrice as P0,c.RRClosePrice as P1
       from yrf_tmp a left join QT_DailyQuote2 b
-      on a.begT=b.TradingDay and a.stockID=b.ID  
+      on a.begT=b.TradingDay and a.stockID=b.ID
       left join QT_DailyQuote2 as c
       on a.endT=c.TradingDay and a.stockID=c.ID"
     } else if(tradeType=="nextopen"){
@@ -4730,12 +4742,12 @@ getPeriodrtn <- function(SP, stockID, begT, endT,
       on a.begT=b.TradingDay and a.stockID=b.ID
       left join QT_DailyQuote2 as c
       on a.endT=c.TradingDay and a.stockID=c.ID"
-    }   
+    }
     # -- fetch
     if(datasrc=="quant"){
       con <- db.quant()
       sqlDrop(con,sqtable="yrf_tmp",errors=FALSE)
-      sqlSave(con,dat=tmpdat,tablename="yrf_tmp",safer=FALSE,rownames=FALSE)  
+      sqlSave(con,dat=tmpdat,tablename="yrf_tmp",safer=FALSE,rownames=FALSE)
       re <- sqlQuery(con,query=qr)
       odbcClose(con)
     } else if (datasrc=="local"){
@@ -4745,23 +4757,23 @@ getPeriodrtn <- function(SP, stockID, begT, endT,
       create_idx2 <- dbGetQuery(con, 'CREATE INDEX [IX2_yrf_tmp] ON [yrf_tmp]([endT],[stockID]);')
       re <- dbGetQuery(con,qr)
       dbDisconnect(con)
-    }  
+    }
     re <- dplyr::arrange(re,PK_)[,c("P0","P1")]
     re <- re$P1/re$P0-1
     re <- cbind(SP,periodrtn=re)
-  }  
+  }
   if(drop){
     return(re[,"periodrtn"])
   } else {
     return(re)
-  }  
+  }
 }
 
 
 
 #' @rdname getPeriodrtn
 #' @export
-#' @examples 
+#' @examples
 #' # -- getPeriodrtn_EI
 #' getPeriodrtn_EI(stockID="EI000300",begT=as.Date("2012-01-01"), endT=as.Date("2012-01-01")+c(10,20,30))
 getPeriodrtn_EI <- function(SP, stockID, begT, endT, drop=FALSE,
@@ -4773,10 +4785,10 @@ getPeriodrtn_EI <- function(SP, stockID, begT, endT, drop=FALSE,
     stop("Param SP and combination of stockID, begT and endT should only have one!")
   }
   if (missing(SP)){
-    SP <- data.frame(stockID=stockID,begT=begT,endT=endT) 
-  }   
+    SP <- data.frame(stockID=stockID,begT=begT,endT=endT)
+  }
   check.SP(SP)
-  
+
   if(datasrc=="ts"){
     tmpdat <- transform(SP, stockID = stockID2stockID(stockID,from="local",to="ts"),
                         begT = as.character(begT),
@@ -4787,28 +4799,28 @@ getPeriodrtn_EI <- function(SP, stockID, begT, endT, drop=FALSE,
     periodrtn <- tsRemoteCallFunc("getperiodrtn",list(tmpcsv,"close"))
     periodrtn <- plyr::laply(periodrtn,as.array)
     re <- cbind(SP, periodrtn)
-  } 
-  
+  }
+
   if(datasrc %in% c("quant","local")){
     # -- deal with the trading days
     if(TRUE){
       tmpdat <- transform(SP[,c("stockID","begT","endT")], begT = trday.nearest(begT), endT = trday.nearest(endT))
       tmpdat <- transform(tmpdat, begT = rdate2int(begT), endT = rdate2int(endT))
-      tmpdat$PK_ <- 1:NROW(tmpdat) 
-    }          
+      tmpdat$PK_ <- 1:NROW(tmpdat)
+    }
     # -- query
     if(TRUE){
       qr <- "select a.*,b.ClosePrice as P0,c.ClosePrice as P1
       from yrf_tmp a left join QT_IndexQuote b
-      on a.begT=b.TradingDay and a.stockID=b.ID  
+      on a.begT=b.TradingDay and a.stockID=b.ID
       left join QT_IndexQuote as c
       on a.endT=c.TradingDay and a.stockID=c.ID"
-    }   
+    }
     # -- fetch
     if(datasrc=="quant"){
       con <- db.quant()
       sqlDrop(con,sqtable="yrf_tmp",errors=FALSE)
-      sqlSave(con,dat=tmpdat,tablename="yrf_tmp",safer=FALSE,rownames=FALSE)  
+      sqlSave(con,dat=tmpdat,tablename="yrf_tmp",safer=FALSE,rownames=FALSE)
       re <- sqlQuery(con,query=qr)
       odbcClose(con)
     } else if (datasrc=="local"){
@@ -4816,21 +4828,21 @@ getPeriodrtn_EI <- function(SP, stockID, begT, endT, drop=FALSE,
       dbWriteTable(con,name="yrf_tmp",value=tmpdat,row.names = FALSE,overwrite = TRUE)
       re <- dbGetQuery(con,qr)
       dbDisconnect(con)
-    }  
+    }
     re <- dplyr::arrange(re,PK_)[,c("P0","P1")]
     re <- re$P1/re$P0-1
     re <- cbind(SP,periodrtn=re)
-    }  
+    }
   if(drop){
     return(re[,"periodrtn"])
   } else {
     return(re)
-  }  
+  }
 }
 
 #' @rdname getPeriodrtn
 #' @export
-#' @examples 
+#' @examples
 #' # -- getPeriodrtn_FU
 #' getPeriodrtn_FU(stockID="FUIF00",begT=as.Date("2012-01-01"), endT=as.Date("2012-01-01")+c(10,20,30))
 getPeriodrtn_FU <- function(SP, stockID, begT, endT, drop=FALSE,
@@ -4842,10 +4854,10 @@ getPeriodrtn_FU <- function(SP, stockID, begT, endT, drop=FALSE,
     stop("Param SP and combination of stockID, begT and endT should only have one!")
   }
   if (missing(SP)){
-    SP <- data.frame(stockID=stockID,begT=begT,endT=endT) 
-  }   
+    SP <- data.frame(stockID=stockID,begT=begT,endT=endT)
+  }
   check.SP(SP)
-  
+
   if(datasrc=="ts"){# todo
     # tmpdat <- transform(SP, stockID = stockID2stockID(stockID,from="local",to="ts"),
     #                     begT = as.character(begT),
@@ -4855,16 +4867,16 @@ getPeriodrtn_FU <- function(SP, stockID, begT, endT, drop=FALSE,
     # periodrtn <- tsRemoteCallFunc("getperiodrtn",list(tmpcsv,"close"))
     # periodrtn <- plyr::laply(periodrtn,as.array)
     # re <- cbind(SP, periodrtn)
-  } 
-  
+  }
+
   if(datasrc %in% c("quant","local")){
-    
-  }  
+
+  }
   if(drop){
     return(re[,"periodrtn"])
   } else {
     return(re)
-  }  
+  }
 }
 
 
@@ -4881,14 +4893,14 @@ getPeriodrtn_FU <- function(SP, stockID, begT, endT, drop=FALSE,
 #' @rdname getfactor
 #' @export
 gf.free_float_shares <- function(TS){
-  
+
   qr <- "select b.date, b.stockID,a.freeShares as 'factorscore'
   from QT_FreeShares a, yrf_tmp b
   where a.rowid=(
   select rowid from QT_FreeShares
   where stockID=b.stockID and date<=b.date
   order by date desc limit 1)"
-  
+
   con <- db.local()
   TS$date <- rdate2int(TS$date)
   dbWriteTable(con,name="yrf_tmp",value=TS,row.names = FALSE,overwrite = TRUE)

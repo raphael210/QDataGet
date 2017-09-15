@@ -8,7 +8,7 @@
 \usage{
 getSectorID(TS, stockID, endT = Sys.Date(),
   sectorAttr = defaultSectorAttr(), ret = c("ID", "name"), drop = FALSE,
-  datasrc = defaultDataSRC())
+  datasrc = defaultDataSRC(), fillNA = FALSE)
 
 gf_sector(TS, sectorAttr)
 

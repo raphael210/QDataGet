@@ -6,9 +6,6 @@
 \usage{
 getIFcontinuousCode(begT = as.Date("2010-04-16"), endT = Sys.Date())
 }
-\arguments{
-\item{endT}{}
-}
 \value{
 a datafame with cols:tradingday,IF00,IF01,IF02,IF03,IF04,firstday,lastday...
 }

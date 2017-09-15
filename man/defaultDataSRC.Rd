@@ -15,7 +15,7 @@ get the default datasrc. You can reset the default value by eg. \code{options(da
 \examples{
 # -- get the default datasrc
 defaultDataSRC()
-# -- reset 
+# -- reset
 options(datasrc="quant")
 # -- reget
 defaultDataSRC()

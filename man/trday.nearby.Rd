@@ -25,8 +25,8 @@ get the nearby tradingday by shifting forward or backward.If the argument dateli
 \examples{
 (datelist <- as.Date(c("2012-07-21","2012-07-22","2012-07-23","2013-01-30")))
 trday.nearby(datelist,-20) # the tradingday 20 days earlyer than datelist
-trday.nearby(datelist,20) # the tradingday 20 days later than datelist 
-trday.nearby(datelist,20,stockID="EQ000527") 
+trday.nearby(datelist,20) # the tradingday 20 days later than datelist
+trday.nearby(datelist,20,stockID="EQ000527")
 }
 \author{
 Ruifei.Yin

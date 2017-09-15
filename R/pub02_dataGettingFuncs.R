@@ -2644,8 +2644,9 @@ plateID2name <- function(plateID){
 getSectorID <- function(TS, stockID, endT=Sys.Date(),
                         sectorAttr=defaultSectorAttr(),ret=c("ID","name"),
                         drop=FALSE,
-                        datasrc=defaultDataSRC()){
-
+                        datasrc=defaultDataSRC(),
+                        fillNA=FALSE){
+  
   if(identical(sectorAttr,"existing") | is.null(sectorAttr)){
     return(TS)
   }
@@ -2666,14 +2667,14 @@ getSectorID <- function(TS, stockID, endT=Sys.Date(),
     warning('There is already a "sector" field in TS, it will be overwritten!')
     TS$sector <- NULL
   }
-
+  
   loop <- length(sectorAttr$std)
   # start looping
   for( i in 1:loop) {
     if(is.numeric(sectorAttr$std[[i]])){
       sectorSTD <- sectorAttr$std[[i]] # 33
       level <- sectorAttr$level[[i]] # 1
-
+      
       if(datasrc %in% c("quant","local")){
         TS$date <- rdate2int(TS$date)
         sectorvar <- if (ret=="ID") paste("Code",level,sep="") else paste("Name",level,sep="")
@@ -2698,24 +2699,27 @@ getSectorID <- function(TS, stockID, endT=Sys.Date(),
         TS <- merge.x(TS,re,by=c("date","stockID"))
         TS$date <- intdate2r(TS$date)
       }
-    }else{
-      factorList <- sectorAttr$std[[i]]
-      level <- sectorAttr$level[[i]]
-      tmpTS <- TS[,c("date","stockID")]
-      tmpTSF <- getTSF(TS = tmpTS, FactorList = factorList)
-      tmpTSF <- dplyr::group_by(tmpTSF, date)
-      tmpTSF <- dplyr::mutate(tmpTSF,sector_=cut(rank(-factorscore,na.last="keep"),breaks =level,labels=FALSE))
-      tmpTSF <- dplyr::select(tmpTSF,-factorscore)
-      TS <- merge.x(TS,tmpTSF, by=c("date","stockID"))
-    }
+      if(fillNA){
+        TS$sector_ <- sector_NA_fill(sector = TS$sector_, sectorAttr = list(std = sectorSTD, level = level))
+      }
+  }else{
+    factorList <- sectorAttr$std[[i]]
+    level <- sectorAttr$level[[i]]
+    tmpTS <- TS[,c("date","stockID")]
+    tmpTSF <- getTSF(TS = tmpTS, FactorList = factorList)
+    tmpTSF <- dplyr::group_by(tmpTSF, date)
+    tmpTSF <- dplyr::mutate(tmpTSF,sector_=cut(rank(-factorscore,na.last="keep"),breaks =level,labels=FALSE))
+    tmpTSF <- dplyr::select(tmpTSF,-factorscore)
+    TS <- merge.x(TS,tmpTSF, by=c("date","stockID"))
+  }
     if(i==1L){
       TS <-  renameCol(TS,"sector_","sector")
     } else {
       TS$sector <- paste(TS$sector, TS$sector_, sep="_")
       TS <- dplyr::select(TS,-sector_)
     }
-  }
-
+}
+  
   # return
   if(drop){
     return(TS[,"sector"])
@@ -2814,14 +2818,15 @@ stockID2indexID <- function(TS, stockID, withsector = FALSE){
 #' @param TSS a dataframe with a "sector" colume
 #' @param sectorAttr
 #' @export
-sectorNA_fill <- function(TSS,sectorAttr=defaultSectorAttr()){
-  Standard=c(	3,	3,	3,	9,	9,	9,	9,	9,	33,	33,	33)
-  Level=c(	1,	2,	3,	1,	2,	3,	98,	99,	1,	2,	3)
-  IndustryID=c(	'ES0370',	'ES037010',	'ES03701010',	'ES09510000',	'ES09510100',	'ES09510101',	'ES0951000098',	'ES0951000099',	'ES33510000')
-  rp <- IndustryID[Standard==sectorAttr[[1]]&Level==sectorAttr[[2]]]
-  TSS[is.na(TSS$sector),'sector'] <- rp
-  return(TSS)
+sector_NA_fill <- function(sector, sectorAttr=defaultSectorAttr()){
+  Standard=c( 3,      3,      3,      9,      9,      9,      9,      9,      33,   33, 33, 336)
+  Level=c(        1,      2,      3,      1,      2,      3,      98,   99,   1,      2,      3,  1)
+  IndustryID=c(       'ES0370',  'ES037010',      'ES03701010',  'ES09510000',  'ES09510100',  'ES09510101',  'ES0951000098',         'ES0951000099',      'ES33510000','ES33510100','ES33510101', 'ES6')
+  replace_sec_value <- IndustryID[Standard==sectorAttr[[1]]&Level==sectorAttr[[2]]]
+  sector[is.na(sector)] <- replace_sec_value
+  return(sector)
 }
+
 
 
 
@@ -2830,11 +2835,11 @@ sectorNA_fill <- function(TSS,sectorAttr=defaultSectorAttr()){
 #' @rdname getSectorID
 #' @export
 gf_sector <- function(TS, sectorAttr) {
-  TSS <- getSectorID(TS,sectorAttr = sectorAttr)
-  TSS <- sectorNA_fill(TSS,sectorAttr=sectorAttr)
+  TSS <- getSectorID(TS,sectorAttr = sectorAttr, fillNA = TRUE)
   re <- cast_sector(TSS)
   return(re)
 }
+
 
 #' @rdname getSectorID
 #' @param TSS a dataframe, with cols: date,stockID,and some dummy variables of sectors.

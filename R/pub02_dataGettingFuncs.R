@@ -1047,7 +1047,7 @@ lcdb.update.QT_FactorScore <- function(endT=Sys.Date()){
     factorFun <- factorLists[i,"factorFun"]
     factorPar <- factorLists[i,"factorPar"]    
     cat("Factor",factorName,"getting ...\n")
-    subTSF <- inner_getRawFactor(TS=TS,factorFun=factorFun,factorPar=factorPar)
+    subTSF <- getRawFactor(TS=TS,factorFun=factorFun,factorPar=factorPar)
     subTSF <- renameCol(subTSF,src="factorscore",tgt=factorID)
     if(i==1L){
       re <- subTSF[,c("date","stockID",factorID)]
@@ -1073,47 +1073,6 @@ lcdb.update.QT_FactorScore <- function(endT=Sys.Date()){
 
 
 
-# This function comes from package RFactorModel
-inner_getRawFactor <- function (TS,factorFun,factorPar) {
-  if("factorscore" %in% names(TS)){
-    stop("There has existed a 'factorscore' field in the TS object. Please remove or rename it first!")
-  }
-  if(missing(factorPar)){
-    TSF <- do.call(factorFun,c(list(TS)))
-  } else if(is.list(factorPar)){
-    TSF <- do.call(factorFun,c(list(TS),factorPar))    
-  } else if(is.character(factorPar)){
-    if(is.na(factorPar)||factorPar==""){
-      funchar <- paste(factorFun,"(TS)")
-    } else {
-      funchar <- paste(factorFun,"(","TS,",factorPar,")")
-    }    
-    TSF <- eval(parse(text=funchar))
-  } else {
-    stop("The factorPar must be a list or a character string!")
-  }
-  if(!("factorscore" %in% names(TSF))){
-    stop("There must be a 'factorscore' field in the TSF result!")
-  }
-  return(TSF)
-}
-
-# This function comes from package RFactorModel
-inner_default.factorName <- function (factorFun, factorPar, factorDir) {
-  f.fun <- substring(factorFun,4)
-  if(is.list(factorPar)){
-    f.par <- paste(factorPar,collapse="_")
-  } else if(is.character(factorPar)){
-    factorPar <- gsub("\\w*=","",factorPar)
-    f.par <- gsub("\'","",gsub("\"","",gsub(",","_",factorPar)))
-  } else {
-    stop("The factorPar must be a list or a character string!")
-  }
-  factorName <- if(f.par != "") paste(f.fun,f.par,sep="_") else f.fun
-  f.dir <- if(missing(factorDir) || factorDir==1L) "" else "_"
-  factorName <- paste(factorName,f.dir,sep="")
-  return(factorName)
-}
 
 
 
@@ -1233,7 +1192,7 @@ lcfs.update <- function(factorID,begT,endT,stockID,
     dates <- paste(Ti,collapse=",")
     TS <- dbGetQuery(con,paste("select TradingDay as date, ID as stockID from QT_FactorScore where TradingDay in (",dates,") and",pool_filt))
     TS$date <- intdate2r(TS$date)    
-    TSF <- inner_getRawFactor(TS,factorFun,factorPar)
+    TSF <- getRawFactor(TS,factorFun,factorPar)
     TSF$date <- rdate2int(TSF$date)
     TSF <- renameCol(TSF,src="factorscore",tgt=factorID)
     
@@ -1279,7 +1238,7 @@ lcfs.add <- function(factorFun,
                      factorPar="", 
                      factorDir,
                      factorID,                      
-                     factorName = inner_default.factorName(factorFun,factorPar,factorDir),                      
+                     factorName = default.factorName(factorFun,factorPar,factorDir),                      
                      factorType = "", 
                      factorDesc = "",
                      splitNbin = "month"){   
@@ -2611,13 +2570,52 @@ plateID2name <- function(plateID){
 }
 
 
+#' sectorID2indexID
+#' @export
+#' @examples 
+#' sctID <- getSectorID(stockID = "EQ000001",drop=TRUE)
+#' sectorID2indexID(sctID)
+sectorID2indexID <- function(sectorID){
+  tmpdat2 <- queryAndClose.odbc(db.jy(),
+                                "select A.*, B.SecuCode
+                                from JYDB.dbo.LC_CorrIndexIndustry A,
+                                JYDB.dbo.SecuMain B
+                                where A.IndexCode = B.InnerCode")
+  tmpdat2 <- subset(tmpdat2, IndustryStandard == 24 )
+  tmpdat2 <- subset(tmpdat2, substr(SecuCode,1,3) == "801")
+  tmpdat2 <- tmpdat2[,c("IndustryCode", "SecuCode")]
+  tmpdat2 <- renameCol(tmpdat2, "IndustryCode", "sector")
+  tmpdat2$sector <- paste0("ES33",tmpdat2$sector)
+  # output
+  sectorID_df <- data.frame("sector" = sectorID)
+  re <- merge.x(sectorID_df, tmpdat2, by = "sector")
+  re$SecuCode <- paste0("EI",re$SecuCode)
+  return(re$SecuCode)
+}
+
+#' stockID2indexID
+#' @export
+#' @examples 
+#' stockID2indexID(stockID = "EQ000001")
+stockID2indexID <- function(TS, stockID, withsector = FALSE){
+  re <- getSectorID(TS = TS, stockID = stockID)
+  re$indexID <- sectorID2indexID(re$sector)
+  if(!withsector){
+    re <- dplyr::select(re, -sector)
+  }
+  return(re)
+}
+
+
+
+
 #' getSectorID
 #'
 #' get the sectorID of the stocks on specific dates.
 #' @param TS  a \bold{TS} object
 #' @param stockID a vector of stockID
 #' @param endT a vector of Date
-#' @param sectorAttr a list with two elements: \code{std}, a integer ID number, indicating the sector standard(9 for SHENWAN sector,3 for ZHONGXIN sector.See more by \code{\link{CT_sectorSTD}}; \code{level}, a integer, giving the level of sector,the default is 1.
+#' @param sectorAttr a list(See more in \code{\link{defaultSectorAttr}}) or NULL,or "existing". 
 #' @param ret a charactor string,could be one of "ID" or "name",indicating sectorID or sectorName returned.
 #' @param drop a logical. Shoud the \code{TS} be exculded in the result?
 #' @param datasrc
@@ -2637,12 +2635,16 @@ plateID2name <- function(plateID){
 #' getSectorID(stockID=c("EQ000001","EQ000002","EQ000004"), endT=as.Date("2010-01-01"), sectorAttr=list(3,1), ret="name")
 #' getSectorID(stockID=c("EQ000001","EQ000002","EQ000004"), endT=as.Date("2010-01-01"), sectorAttr=list(3,2), ret="name")
 #' # -- combined sectorAttr
-#' factorList1 <- buildFactorList(factorFun = "gf.mkt_cap",factorRefine=refinePar_default("robust",NULL))
-#' test <- getSectorID(TS, sectorAttr= list(std=list(factorList1),level=list(5))) # cut by mkt_cap, group_1 is the max-mkt_cap-group,etc.
+#' test <- getSectorID(TS, sectorAttr= defaultSectorAttr("fct",fct_level = 5))
+#' test <- getSectorID(TS, sectorAttr= defaultSectorAttr("ind_fct",ind_std = 33,ind_level = 1,fct_level = 5))
+#' test <- getSectorID(TS, sectorAttr= defaultSectorAttr("ind_fct",ind_std = c(336,33),ind_level = 1,fct_level = 5))
+#' test <- getSectorID(TS, sectorAttr= defaultSectorAttr("fct",fct_std = buildFactorLists_lcfs(c("F000001","F000006"),factorRefine = refinePar_default("none",NULL)),fct_level = 5))
+#' factorList1 <- buildFactorList(factorFun = "gf_cap",factorRefine=refinePar_default("robust",NULL))
 #' test2 <- getSectorID(TS, sectorAttr= list(std=list(factorList1,33),level=list(5,1)))
 getSectorID <- function(TS, stockID, endT=Sys.Date(),
                         sectorAttr=defaultSectorAttr(),ret=c("ID","name"),
                         drop=FALSE,
+                        fillNA=FALSE,
                         datasrc=defaultDataSRC()){
   
   if(identical(sectorAttr,"existing") | is.null(sectorAttr)){
@@ -2696,6 +2698,9 @@ getSectorID <- function(TS, stockID, endT=Sys.Date(),
         }
         TS <- merge.x(TS,re,by=c("date","stockID"))
         TS$date <- intdate2r(TS$date)
+      }
+      if(fillNA){
+        TS$sector_ <- sector_NA_fill(sector = TS$sector_, sectorAttr = list(std = sectorSTD, level = level))
       }
     }else{
       factorList <- sectorAttr$std[[i]]
@@ -2769,58 +2774,23 @@ is_component <- function(TS, stockID, endT=Sys.Date(),
 
 
 
-#' sectorID2indexID
-#' @export
-#' @examples 
-#' sctID <- getSectorID(stockID = "EQ000001",drop=TRUE)
-#' sectorID2indexID(sctID)
-sectorID2indexID <- function(sectorID){
-  tmpdat2 <- queryAndClose.odbc(db.jy(),
-                                "select A.*, B.SecuCode
-                                from JYDB.dbo.LC_CorrIndexIndustry A,
-                                JYDB.dbo.SecuMain B
-                                where A.IndexCode = B.InnerCode")
-  tmpdat2 <- subset(tmpdat2, IndustryStandard == 24 )
-  tmpdat2 <- subset(tmpdat2, substr(SecuCode,1,3) == "801")
-  tmpdat2 <- tmpdat2[,c("IndustryCode", "SecuCode")]
-  tmpdat2 <- renameCol(tmpdat2, "IndustryCode", "sector")
-  tmpdat2$sector <- paste0("ES33",tmpdat2$sector)
-  # output
-  sectorID_df <- data.frame("sector" = sectorID)
-  re <- merge.x(sectorID_df, tmpdat2, by = "sector")
-  re$SecuCode <- paste0("EI",re$SecuCode)
-  return(re$SecuCode)
-}
-
-#' stockID2indexID
-#' @export
-#' @examples 
-#' stockID2indexID(stockID = "EQ000001")
-stockID2indexID <- function(TS, stockID, withsector = FALSE){
-  re <- getSectorID(TS = TS, stockID = stockID)
-  re$indexID <- sectorID2indexID(re$sector)
-  if(!withsector){
-    re <- dplyr::select(re, -sector)
-  }
-  return(re)
-}
-
 
 
 #' deal with the NA value of sectorID
 #' 
 #' replace the NA value of sectorID with an "OTHER" sector
-#' @param TSS a dataframe with a "sector" colume
+#' @param sector a charactor vector of sectorID
 #' @param sectorAttr
 #' @export
-sectorNA_fill <- function(TSS,sectorAttr=defaultSectorAttr()){
-  Standard=c(	3,	3,	3,	9,	9,	9,	9,	9,	33,	33,	33)
-  Level=c(	1,	2,	3,	1,	2,	3,	98,	99,	1,	2,	3)
-  IndustryID=c(	'ES0370',	'ES037010',	'ES03701010',	'ES09510000',	'ES09510100',	'ES09510101',	'ES0951000098',	'ES0951000099',	'ES33510000')
-  rp <- IndustryID[Standard==sectorAttr[[1]]&Level==sectorAttr[[2]]]
-  TSS[is.na(TSS$sector),'sector'] <- rp
-  return(TSS)
+sector_NA_fill <- function(sector, sectorAttr=defaultSectorAttr()){
+  Standard=c( 3,      3,      3,      9,      9,      9,      9,      9,      33,   33, 33, 336)
+  Level=c(        1,      2,      3,      1,      2,      3,      98,   99,   1,      2,      3,  1)
+  IndustryID=c(       'ES0370',  'ES037010',      'ES03701010',  'ES09510000',  'ES09510100',  'ES09510101',  'ES0951000098',         'ES0951000099',      'ES33510000','ES33510100','ES33510101', 'ES6')
+  replace_sec_value <- IndustryID[Standard==sectorAttr[[1]]&Level==sectorAttr[[2]]]
+  sector[is.na(sector)] <- replace_sec_value
+  return(sector)
 }
+
 
 
 
@@ -2829,8 +2799,7 @@ sectorNA_fill <- function(TSS,sectorAttr=defaultSectorAttr()){
 #' @rdname getSectorID
 #' @export
 gf_sector <- function(TS, sectorAttr) {
-  TSS <- getSectorID(TS,sectorAttr = sectorAttr)
-  TSS <- sectorNA_fill(TSS,sectorAttr=sectorAttr)
+  TSS <- getSectorID(TS,sectorAttr = sectorAttr,fillNA = TRUE)
   re <- cast_sector(TSS)
   return(re)
 }
@@ -2858,24 +2827,69 @@ check.colnames_sectorfs <- function(data){
   }
 }
 
+
+
+
 #' defaultSectorAttr
 #' 
-#' get the default sectorAttr. You can reset the default value by eg. \code{options(sectorAttr=list(std=3,level=2))}
-#' @return a list, the value of the default sectorAttr
+#' get the sectorAttr list. 
+#' @param type Currently supporting types : ind, fct, ind_fct, fct_ind
+#' @param ind_std vector of integer.
+#' @param ind_level vector of integer
+#' @param fct_std a \bold{FactorLists} object
+#' @param fct_level vector of integer. The number of fct splitted groups.
+#' @return A \bold{sectorAttr} object. A list with two items: 
+#' \itemize{
+#' \item std: a list( or a vector, if sector standards only include industry, not include factors) of sector standard;
+#' \item level: a vector of sector level
+#' }
 #' @export
-#' @examples
-#' # -- get the default sectorAttr
+#' @examples 
 #' defaultSectorAttr()
-#' # -- reset 
-#' options(sectorAttr=list(std=3,level=2))
-#' # -- reget
-#' defaultSectorAttr()
-#' # -- combined sectorAttr
-#' factorList1 <- buildFactorList(factorFun = "gf.mkt_cap", factorRefine=refinePar_default(type="none"))
-#' options(sectorAttr= list(std=list(factorList1,33),level=list(5,1)))
-#' defaultSectorAttr()
-defaultSectorAttr <- function(){
-  getOption("sectorAttr",default=list(std=33,level=1))
+#' defaultSectorAttr("ind",ind_std=c(3,33))
+#' defaultSectorAttr("fct") 
+#' defaultSectorAttr("ind_fct")
+#' defaultSectorAttr("fct_ind")
+#' defaultSectorAttr("ind_fct",fct_level=5)
+#' defaultSectorAttr("ind_fct",fct_std = RFactorModel::buildFactorLists_lcfs(c("F000001","F000006")),fct_level=c(2,3))
+defaultSectorAttr <- function(type = c("ind","fct","ind_fct","fct_ind"), 
+                              ind_std = 33, 
+                              ind_level=1,
+                              fct_std = list(
+                                list(
+                                  factorFun = "gf_cap",
+                                  factorPar = list(),  
+                                  factorDir = 1  ,
+                                  factorRefine = list(
+                                    outlier=list(method = "none", par=NULL, sectorAttr= NULL),
+                                    std=list(method = "none", log=FALSE, sectorAttr=NULL, regLists=NULL),
+                                    na=list(method = "none", sectorAttr="median")
+                                  ),   
+                                  factorName = "mkt_cap",  
+                                  factorID = "",
+                                  factorType = "",
+                                  factorDesc = ""
+                                )
+                              ), 
+                              fct_level = 3){
+  
+  type <- match.arg(type)
+  if(length(ind_std)>length(ind_level)){
+    ind_level <- rep(ind_level,length(ind_std))
+  }
+  if(length(fct_std)>length(fct_level)){
+    fct_level <- rep(fct_level,length(fct_std))
+  }
+  if(type == "ind"){
+    re <- list(std = ind_std, level = ind_level)
+  } else if(type =="fct"){
+    re <- list(std = fct_std, level = fct_level)
+  } else if(type == "ind_fct"){
+    re <- list(std = c(as.list(ind_std), fct_std), level = c(ind_level, fct_level))
+  } else if (type == "fct_ind"){
+    re <- list(std = c(fct_std, as.list(ind_std)), level = c(fct_level, ind_level))
+  }
+  return(re)
 }
 
 
@@ -3564,9 +3578,54 @@ rptDate.get <- function(begT, endT, freq=c("q","y","h"), dir=0L){
   return(re)
 }
 
-rptDate.publ <- function(rptDate,stockID){
+
+
+#' rptDate.publ
+#'
+#' @export
+#' @author Aming.Tao
+#' @examples
+#' rptTS <- getrptTS(begT=as.Date("2016-02-06"),endT=as.Date("2017-8-23"),univ='EI000300')
+#' re <- rptDate.publ(rptTS)
+#' rptDate <- rptDate.get(as.Date("2011-02-06"),as.Date("2013-10-23"))
+#' re <- rptDate.publ(rptDate=rptDate,stockID=c("EQ000001","EQ000002"))
+rptDate.publ <- function(rptTS,rptDate,stockID,datasrc=defaultDataSRC()){
+  if (missing(rptTS) && any(missing(stockID),missing(rptDate))) {
+    stop("Param rptTS and combination of stockID and rptDate should at least have one!")
+  }
+  if (!missing(rptTS) && !all(missing(stockID),missing(rptDate))) {
+    stop("Param rptTS and combination of stockID and rptDate should only have one!")
+  }
+  if (missing(rptTS)){
+    rptTS <- expand.grid(rptDate=rptDate, stockID=stockID,stringsAsFactors = FALSE)
+  }
+  check.rptTS(rptTS)
   
+  if(datasrc=="quant"){
+    rptTS <- transform(rptTS,rptDate=rdate2int(rptDate))
+    con <- db.quant()
+    qr <- paste("select a.*,b.PublDate from yrf_tmp a left join LC_RptDate b on a.stockID=b.stockID and a.rptDate=b.EndDate")
+    sqlDrop(con,sqtable="yrf_tmp",errors=FALSE)
+    sqlSave(con,dat=rptTS,tablename="yrf_tmp",safer=FALSE,rownames=FALSE)    
+    re <- sqlQuery(con,query=qr)
+    odbcClose(con)
+    re <- transform(re,rptDate=intdate2r(rptDate))
+  }else if(datasrc=="local"){
+    rptTS <- transform(rptTS,rptDate=rdate2int(rptDate))
+    con <- db.local()
+    dbWriteTable(con,name="yrf_tmp",value=rptTS,row.names = FALSE,overwrite = TRUE)
+    qr <- paste("select a.*,b.PublDate from yrf_tmp a left join LC_RptDate b on a.stockID=b.stockID and a.rptDate=b.EndDate")
+    re <- dbGetQuery(con,qr)
+    dbDisconnect(con)
+    re <- transform(re,rptDate=intdate2r(rptDate))
+  }else if(datasrc=="ts"){
+    re <- rptTS.getFin_ts(rptTS,'"PublDate",report(128006,RDate)')
+  }
+  re <- transform(re,PublDate=intdate2r(PublDate))
+  return(re)
 }
+
+
 
 
 # --------------------  ~~ rptTS funcs ----------------
@@ -3732,13 +3791,17 @@ rptTS.getFinSeri_ts <- function(rptTS, N, freq, funchar,varname, ...){
 #' @examples
 #' # calcFinStat
 #' FinStat <- calcFinStat(FinSeri,"mean")
-calcFinStat <- function(FinSeri,stat=c('mean','sum','slope','sd','mean/sd'),fname){
+calcFinStat <- function(FinSeri,stat=c('mean','sum','slope','sd','mean/sd'),fname,rm_N){
   if(missing(fname)){
     fname <- guess_factorNames(FinSeri,no_factorname = c("stockID", "rptDate","lagN","lag_rptDate","ipoDate"),is_factorname = "factorscore")
   }
   # melt & group_by
   FinSeri <- reshape2::melt(FinSeri,measure.vars=fname,variable.name = "fname", value.name = "value")
   FinSeri <- dplyr::group_by(FinSeri,fname,stockID,rptDate)
+  if(!missing(rm_N)){ # remove the  too short seri
+    FinSeri <- FinSeri %>% dplyr::filter(n() > rm_N)
+  }
+  
   # get rptTS_stat
   if(stat=="mean"){
     rptTS_stat <- dplyr::summarise(FinSeri,value=mean(value,na.rm = TRUE))
@@ -3767,11 +3830,12 @@ calcFinStat <- function(FinSeri,stat=c('mean','sum','slope','sd','mean/sd'),fnam
 #' # rptTS.getFinStat_ts
 #' FinStat <- rptTS.getFinStat_ts(rptTS,12,"q",'"np_belongto_parcomsh",report(46078,RDate)',stat="mean")
 rptTS.getFinStat_ts <- function(rptTS, N, freq, funchar, varname, 
-                                stat=c('mean','sum','slope','sd','mean/sd'),...){
+                                stat=c('mean','sum','slope','sd','mean/sd'),
+                                rm_N, ...){
   stat <- match.arg(stat)
   check.rptTS(rptTS)
   FinSeri <- rptTS.getFinSeri_ts(rptTS = rptTS,N = N,freq = freq,funchar = funchar, varname = varname, ...)
-  rptTS_stat <- calcFinStat(FinSeri=FinSeri,stat = stat,fname = varname)
+  rptTS_stat <- calcFinStat(FinSeri=FinSeri,stat = stat,fname = varname, rm_N = rm_N)
   re <- merge.x(rptTS,rptTS_stat,by=c("stockID","rptDate"))
   return(re)
 }
@@ -4869,16 +4933,144 @@ getPeriodrtn_FU <- function(SP, stockID, begT, endT, drop=FALSE,
 
 
 
+#' getTradeList
+#' 
+#' @param port_ini a dataframe with cols: "stockID" (with EQ format),"amount".
+#' @param port_obj a dataframe with cols: "stockID","wgt"
+#' @param money_obj a numeric
+#' @param splitN a integer
+#' @return a list with 3 items: tradeList_N,tradeList_remain,summaryTable
+#' @export
+#' @author Han.Qian
+getTradeList <- function(port_ini, port_obj, money_obj, splitN=1, outputstyle = c("hs")){
+  
+  # get the cashflow and tradelist from the S_combine
+  make_tradelist_cashflow <- function(S_combine, lastday, style){
+    # calculate cash flow
+    S_money <- S_combine
+    date <- rep(lastday, length(S_money$stockID))
+    TS_money <- data.frame(date, "stockID" = S_money$stockID)
+    TS_money <- TS.getTech_ts(TS_money, funchar = "close()", varname = "close")
+    S_money$close <- TS_money$close
+    S_money$total <- S_money$diff * S_money$close
+    buy <- -sum(S_money$total[S_money$dir == 1])
+    sell <- sum(S_money$total[S_money$dir == 2])
+    net <- sell + buy
+    S_summary <- data.frame(buy, sell, net)
+    # make trade list
+    if(style == "hs"){
+      res <- S_combine
+      res$amount <- res$diff
+      res$commandPrice <- 0
+      res$priceMode <- 4
+      # res$mktCode <- getmktCode(res$stockID, format = "local")
+      secuMarket <- SecuMarket(res$stockID) 
+      res$mktCode <- ifelse(secuMarket==90L,2L,1L) # 1:SH, 2:SZ
+      res$stockID <- stockID2tradeCode(res$stockID, IDsrc = "local")
+      res <- dplyr::select(res, 
+                           stockID,
+                           dir,
+                           amount,
+                           commandPrice,
+                           priceMode,
+                           mktCode)
+    }
+    reslist <- list(res, S_summary)
+    return(reslist)
+  }
+  
+  
+  check.colnames(port_ini, c("stockID","amount"))
+  # if(sum(port_ini$wgt) != 1){stop("The weight does not sum up to 1.")} #does not work. Reason unknown.
+  check.colnames(port_obj, c("stockID","wgt"))
+  match.arg(outputstyle)
+  
+  # find nearest trading day 
+  today <- Sys.Date()
+  if(trday.is(today)){
+    lastday <- trday.nearby(today, by = -1)
+  }else{
+    lastday <- trday.nearest(today, dir = -1)
+  }
+  # contruct TS_new
+  date <- rep(lastday, length(port_obj$stockID))
+  TS_new <- data.frame(date, "stockID" = port_obj$stockID)
+  TS_new <- TS.getTech_ts(TS = TS_new, funchar = "close()",varname = "close")
+  TS_new$amount <- port_obj$wgt*money_obj/TS_new$close
+  # organize S_old and S_new
+  S_old <- data.frame("stockID" = port_ini$stockID, "amount_old" = port_ini$amount)
+  S_new <- data.frame("stockID" = TS_new$stockID, "amount_new" = TS_new$amount)
+  # merge
+  S_combine <- merge(S_old, S_new, by = "stockID", all = TRUE)
+  S_combine$amount_old[is.na(S_combine$amount_old)] <- 0
+  S_combine$amount_new[is.na(S_combine$amount_new)] <- 0
+  S_combine$diff <- (S_combine$amount_new - S_combine$amount_old)
+  S_combine$diff <- S_combine$diff / 100
+  S_combine$diff[S_combine$amount_new != 0] <- round(S_combine$diff[S_combine$amount_new != 0]) 
+  S_combine <- subset(S_combine, diff != 0)
+  S_combine$dir <- (S_combine$diff < 0) + 1L
+  S_combine$diff <- abs(S_combine$diff)
+  if(splitN > 1){
+    S_combine_N <- S_combine
+    S_combine_N$diff <- S_combine_N$diff %/% splitN
+    S_combine_N$diff <- S_combine_N$diff * 100
+    S_combine_remain <- S_combine
+    S_combine_remain$diff <- S_combine_remain$diff %% splitN
+    S_combine_remain$diff <- S_combine_remain$diff * 100
+    S_combine_remain <- subset(S_combine_remain, diff != 0)
+    if(nrow(S_combine_remain) == 0){
+      S_combine_remain <- NULL
+    }
+  }else{
+    S_combine_N <- S_combine
+    S_combine_N$diff <- S_combine_N$diff * 100
+    S_combine_remain <- NULL
+  }
+  
+  # get the cashflow and tradelist from the S_combine
+  reslist_N <- make_tradelist_cashflow(S_combine_N, lastday, outputstyle)
+  if(!is.null(S_combine_remain)){
+    reslist_remain <- make_tradelist_cashflow(S_combine_remain, lastday, outputstyle)
+  }else{
+    reslist_remain <- NULL
+  }
+  # return:
+  tradeList_N <- reslist_N[[1]]
+  split <- reslist_N[[2]]
+  if(!is.null(S_combine_remain)){
+    tradeList_remain <- reslist_remain[[1]]
+    total <- reslist_N[[2]]*splitN + reslist_remain[[2]]
+  }else{
+    tradeList_remain <- NULL
+    total <- reslist_N[[2]]*splitN
+  }
+  summaryTable <- data.frame(splitN, 
+                             "buy_total" = total$buy, 
+                             "sell_total" = total$sell, 
+                             "turnover" = (total$sell-total$buy)/money_obj/2, 
+                             "net_total" = total$net, 
+                             "buy_split" = split$buy, 
+                             "sell_split" = split$sell, 
+                             "net_split" = split$net)
+  finalres <- list("tradeList_N" = tradeList_N, "tradeList_remain" = tradeList_remain, "summaryTable" = summaryTable)
+  return(finalres)
+}
+
 
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
 # ===============    gf.xx functions     =========
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
 
 
+#' gf_cap
+#' @export
+gf_cap <- function(TS){
+  re <- getTech(TS,variables="mkt_cap")
+  re <- renameCol(re,"mkt_cap","factorscore")
+  return(re)
+}
 
-
-
-#' @rdname getfactor
+#' gf.free_float_shares
 #' @export
 gf.free_float_shares <- function(TS){
   
@@ -4900,7 +5092,7 @@ gf.free_float_shares <- function(TS){
 }
 
 
-#' @rdname getfactor
+#' gf.free_float_sharesMV
 #' @export
 gf.free_float_sharesMV <- function(TS){
   ffs <- gf.free_float_shares(TS)
@@ -4911,7 +5103,25 @@ gf.free_float_sharesMV <- function(TS){
   return(re)
 }
 
+# ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
+# ===============    transplanted inner functions     =========
+# ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
 
-
+# copy from RFactorModel
+default.factorName <- function (factorFun, factorPar, factorDir) {
+  f.fun <- substring(factorFun,4)
+  if(is.list(factorPar)){
+    f.par <- paste(factorPar,collapse="_")
+  } else if(is.character(factorPar)){
+    factorPar <- gsub("\\w*=","",factorPar)
+    f.par <- gsub("\'","",gsub("\"","",gsub(",","_",factorPar)))
+  } else {
+    stop("The factorPar must be a list or a character string!")
+  }
+  factorName <- if(f.par != "") paste(f.fun,f.par,sep="_") else f.fun
+  f.dir <- if(missing(factorDir) || factorDir==1L) "" else "_"
+  factorName <- paste(factorName,f.dir,sep="")
+  return(factorName)
+}
 
 

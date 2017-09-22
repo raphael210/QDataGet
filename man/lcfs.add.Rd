@@ -5,7 +5,7 @@
 \title{lcfs.add}
 \usage{
 lcfs.add(factorFun, factorPar = "", factorDir, factorID,
-  factorName = inner_default.factorName(factorFun, factorPar, factorDir),
+  factorName = default.factorName(factorFun, factorPar, factorDir),
   factorType = "", factorDesc = "", splitNbin = "month")
 }
 \arguments{

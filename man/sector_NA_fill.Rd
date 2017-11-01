@@ -7,7 +7,7 @@
 sector_NA_fill(sector, sectorAttr = defaultSectorAttr())
 }
 \arguments{
-\item{TSS}{a dataframe with a "sector" colume}
+\item{sector}{a charactor vector of sectorID}
 }
 \description{
 replace the NA value of sectorID with an "OTHER" sector

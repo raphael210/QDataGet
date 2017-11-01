@@ -5,7 +5,7 @@
 \title{rptTS.getFinStat_ts}
 \usage{
 rptTS.getFinStat_ts(rptTS, N, freq, funchar, varname, stat = c("mean", "sum",
-  "slope", "sd", "mean/sd"), ...)
+  "slope", "slope/mean", "sd", "mean/sd"), rm_N, ...)
 }
 \description{
 rptTS.getFinStat_ts

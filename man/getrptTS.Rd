@@ -14,7 +14,7 @@ getrptTS(begT, endT, freq = c("q", "y", "h"), dir = 0, univ, rptDates,
 a \bold{rptTS} object.a dataframe,with cols:
   \itemize{
   \item date: the rptDates
-  \item stockID: the stockID
+  \item stockID: the stockID 
   }.IF rptDates or stocks is not missing then use them directly, else get rptDates and stocks by \code{\link{rptDate.get}} and \code{\link{getComps}}.
 }
 \description{

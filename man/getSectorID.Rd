@@ -8,7 +8,7 @@
 \usage{
 getSectorID(TS, stockID, endT = Sys.Date(),
   sectorAttr = defaultSectorAttr(), ret = c("ID", "name"), drop = FALSE,
-  datasrc = defaultDataSRC(), fillNA = FALSE)
+  fillNA = FALSE, datasrc = defaultDataSRC())
 
 gf_sector(TS, sectorAttr)
 
@@ -21,7 +21,7 @@ cast_sector(TSS)
 
 \item{endT}{a vector of Date}
 
-\item{sectorAttr}{a list with two elements: \code{std}, a integer ID number, indicating the sector standard(9 for SHENWAN sector,3 for ZHONGXIN sector.See more by \code{\link{CT_sectorSTD}}; \code{level}, a integer, giving the level of sector,the default is 1.}
+\item{sectorAttr}{a list(See more in \code{\link{defaultSectorAttr}}) or NULL,or "existing".}
 
 \item{ret}{a charactor string,could be one of "ID" or "name",indicating sectorID or sectorName returned.}
 
@@ -50,8 +50,11 @@ getSectorID(stockID=c("EQ000001","EQ000002","EQ000004"), endT=as.Date("2010-01-0
 getSectorID(stockID=c("EQ000001","EQ000002","EQ000004"), endT=as.Date("2010-01-01"), sectorAttr=list(3,1), ret="name")
 getSectorID(stockID=c("EQ000001","EQ000002","EQ000004"), endT=as.Date("2010-01-01"), sectorAttr=list(3,2), ret="name")
 # -- combined sectorAttr
-factorList1 <- buildFactorList(factorFun = "gf.mkt_cap",factorRefine=refinePar_default("robust",NULL))
-test <- getSectorID(TS, sectorAttr= list(std=list(factorList1),level=list(5))) # cut by mkt_cap, group_1 is the max-mkt_cap-group,etc.
+test <- getSectorID(TS, sectorAttr= defaultSectorAttr("fct",fct_level = 5))
+test <- getSectorID(TS, sectorAttr= defaultSectorAttr("ind_fct",ind_std = 33,ind_level = 1,fct_level = 5))
+test <- getSectorID(TS, sectorAttr= defaultSectorAttr("ind_fct",ind_std = c(336,33),ind_level = 1,fct_level = 5))
+test <- getSectorID(TS, sectorAttr= defaultSectorAttr("fct",fct_std = buildFactorLists_lcfs(c("F000001","F000006"),factorRefine = refinePar_default("none",NULL)),fct_level = 5))
+factorList1 <- buildFactorList(factorFun = "gf_cap",factorRefine=refinePar_default("robust",NULL))
 test2 <- getSectorID(TS, sectorAttr= list(std=list(factorList1,33),level=list(5,1)))
 }
 \author{

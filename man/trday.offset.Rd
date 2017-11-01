@@ -27,7 +27,7 @@ offset the datelist by months,quarters,ect. then get the nearest tradingday
 trday.offset(datelist,months(1)) # the tradingdays 1 month after the datelist
 trday.offset(datelist,months(-1)) # the tradingdays 1 month before the datelist
 trday.offset(datelist,years(1))
-trday.offset(datelist,months(-1),stockID="EQ000527")
+trday.offset(datelist,months(-1),stockID="EQ000527") 
 }
 \author{
 Ruifei.Yin

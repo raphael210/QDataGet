@@ -8,7 +8,17 @@ is_component(TS, stockID, endT = Sys.Date(), sectorID, drop = FALSE,
   datasrc = defaultDataSRC())
 }
 \arguments{
+\item{TS}{}
+
+\item{stockID}{}
+
+\item{endT}{}
+
 \item{sectorID}{a character string. The ID of the index, sector or plate. See detail in \code{\link{getComps}}}
+
+\item{drop}{}
+
+\item{datasrc}{}
 }
 \value{
 a dataframe or a vector(if drop==TRUE)

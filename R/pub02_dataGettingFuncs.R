@@ -5100,10 +5100,10 @@ gf_cap <- function(TS,
     if(var=="free_cap"){
       re <- gf.free_float_sharesMV(re)
       re <- renameCol(re,"factorscore","cap")
-      re$cap <- re$cap/10000  # 100 million
     } else {
       re <- getTech(TS,variables=var)
       re <- renameCol(re,var,"cap")
+      re$cap <- re$cap/10000  # 100 million
     }
   } else if(datasrc=="memory"){
     # to do...

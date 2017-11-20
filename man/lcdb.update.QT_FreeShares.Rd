@@ -4,7 +4,7 @@
 \alias{lcdb.update.QT_FreeShares}
 \title{lcdb.build.QT_FreeShares}
 \usage{
-lcdb.update.QT_FreeShares()
+lcdb.update.QT_FreeShares(begT, endT, Freq = "week")
 }
 \description{
 lcdb.build.QT_FreeShares

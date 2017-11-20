@@ -22,9 +22,8 @@ factor_refine
 \examples{
 rawTSF <- gf.NP_YOY(TS, src = "fin")
 refinePar_lists <- list(refinePar_default(type = "none"),
-                        refinePar_default(type = "old_fashion"),
-                        refinePar_default(type = "old_robust"),
-                        refinePar_default(type = "new_fashion"))
+                        refinePar_default(type = "reg"),
+                        refinePar_default(type = "scale"))
 factor_refine_MF(rawTSF, refinePar_lists)
 }
 \author{

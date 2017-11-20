@@ -4,13 +4,18 @@
 \alias{refinePar_default}
 \title{refinePar_default}
 \usage{
-refinePar_default(type = c("none", "old_fashion", "old_robust",
-  "new_fashion"), sectorAttr = defaultSectorAttr())
+refinePar_default(type = c("none", "reg", "scale"),
+  sectorAttr = defaultSectorAttr(), log = FALSE,
+  regLists = list(fl_cap(log = TRUE)))
 }
 \arguments{
-\item{type}{Could be none, old_fashion, old_robust, new_fashion.}
+\item{type}{Could be "none", "reg", "scale."}
 
 \item{sectorAttr}{could be a sectorAttr list, or NULL(means no grouping by sector).}
+
+\item{log}{TRUE or FALSE}
+
+\item{regLists}{a \bold{factorLists}}
 }
 \description{
 refinePar_default

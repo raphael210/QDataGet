@@ -8,7 +8,7 @@
 \usage{
 getSectorID(TS, stockID, endT = Sys.Date(),
   sectorAttr = defaultSectorAttr(), ret = c("ID", "name"), drop = FALSE,
-  fillNA = FALSE, datasrc = defaultDataSRC())
+  fillNA = FALSE, ungroup = NULL, datasrc = defaultDataSRC())
 
 gf_sector(TS, sectorAttr)
 
@@ -54,7 +54,7 @@ test <- getSectorID(TS, sectorAttr= defaultSectorAttr("fct",fct_level = 5))
 test <- getSectorID(TS, sectorAttr= defaultSectorAttr("ind_fct",ind_std = 33,ind_level = 1,fct_level = 5))
 test <- getSectorID(TS, sectorAttr= defaultSectorAttr("ind_fct",ind_std = c(336,33),ind_level = 1,fct_level = 5))
 test <- getSectorID(TS, sectorAttr= defaultSectorAttr("fct",fct_std = buildFactorLists_lcfs(c("F000001","F000006"),factorRefine = refinePar_default("none",NULL)),fct_level = 5))
-factorList1 <- buildFactorList(factorFun = "gf_cap",factorRefine=refinePar_default("robust",NULL))
+factorList1 <- buildFactorList(factorFun = "gf_cap",factorRefine=refinePar_default("scale",NULL))
 test2 <- getSectorID(TS, sectorAttr= list(std=list(factorList1,33),level=list(5,1)))
 }
 \author{

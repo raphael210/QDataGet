@@ -973,53 +973,55 @@ lcdb.init.indexquote000985 <- function(windCode='000985.CSI'){
 #' @examples
 #' lcdb.update.QT_FreeShares()
 #' @export
-lcdb.update.QT_FreeShares <- function(){
+lcdb.update.QT_FreeShares <-  function(begT,endT,Freq='week') {
   con <- db.local()
   re <- dbReadTable(con,'QT_FreeShares')
   
-  begT <- intdate2r(max(re$date))
-  begT <- trday.nearby(begT,1)
-  endT <- trday.nearest(Sys.Date()-1)
-  if(trday.nearby(begT,5)>endT){
-    return('Done!')
-  }else{
-    # dates <- getRebDates(begT,endT,rebFreq = 'week')
-    dates <- trday.get(begT,endT)
-    dates <- as.Date(unique(cut.Date2(dates,"week")))
-    
-    # lcdb.add.LC_IndexComponent('EI801003')
-    TS <- getIndexComp(indexID = 'EI801003',endT = dates, drop = FALSE)
-    TS$stockID <- stockID2stockID(TS$stockID,'local','wind')
-    float_shares <- data.frame()
+  if(missing(begT)){
+    begT <- intdate2r(max(re$date))
+    begT <- rdate2int(trday.nearby(begT,1))
+  }
+  if(missing(endT)){
+    endT <- rdate2int(trday.nearest(Sys.Date()-1))
+  }
+  
+  if(begT<endT){
+    dates <- getRebDates(intdate2r(begT),intdate2r(endT),rebFreq = Freq)
     require(WindR)
     WindR::w.start(showmenu = FALSE)
-    for(i in dates){
-      i <- as.Date(i,origin = '1970-01-01')
-      tmp <-WindR::w.wss(TS[TS$date==i,'stockID'],'free_float_shares',tradeDate=i)[[2]]
-      tmp$date <- c(i)
-      float_shares <- rbind(float_shares,tmp)
+    for(i in 1:length(dates)){
+      TS <- w.wset('sectorconstituent',date=dates[i],sectorid='a001010100000000')[[2]]
+      float_shares_ <- WindR::w.wss(TS$wind_code,'free_float_shares',tradeDate=dates[i])[[2]]
+      float_shares_ <- cbind(data.frame(date=dates[i]),float_shares_)
+      if(i==1){
+        float_shares <- float_shares_
+      }else{
+        float_shares <- rbind(float_shares,float_shares_)
+      }
     }
-    colnames(float_shares) <- c("stockID","freeShares","date")
-    float_shares$freeShares <- float_shares$freeShares/100000000
-    float_shares$date <- rdate2int(float_shares$date)
-    float_shares$stockID <- stockID2stockID(float_shares$stockID,'wind','local')
-    float_shares <- float_shares[,c( "date","stockID","freeShares")]
-    alldata <- rbind(re,float_shares)
-    alldata <- alldata %>% dplyr::group_by(stockID,freeShares) %>% dplyr::summarise(date=min(date))
-    alldata <- alldata[,c("date","stockID","freeShares")]
-    alldata <- dplyr::arrange(alldata,date,stockID)
-    alldata <- as.data.frame(alldata)
-    dbWriteTable(con,'QT_FreeShares',alldata,overwrite=T,append=F,row.names=F)
-    dbDisconnect(con)
-    return('Done!')
+    colnames(float_shares) <- c("date","stockID","freeShares")
+    float_shares <- transform(float_shares,
+                              date=rdate2int(date),
+                              stockID=stringr::str_c("EQ",substr(stockID,1,6)),
+                              freeShares=freeShares/1e8)
+    float_shares <- rbind(float_shares,re[re$date>=begT & re$date<=endT,])
+    float_shares <- float_shares %>% group_by(stockID,freeShares) %>% summarise(date=min(date)) %>% dplyr::ungroup()
+    float_shares <- float_shares[,c("date","stockID","freeShares")]
+    
+    re_ <- re %>% filter(date<begT | date>endT) %>% arrange(stockID,desc(date)) %>% group_by(stockID) %>% slice(1) %>% dplyr::ungroup()
+    re_ <- dplyr::rename(re_,dateold=date,freeSharesold=freeShares)
+    float_shares <- dplyr::left_join(float_shares,re_,by='stockID')
+    float_shares <- rbind(float_shares %>% dplyr::filter(!is.na(freeSharesold)) %>% dplyr::filter(date!=dateold & freeShares!=freeSharesold),
+                          float_shares %>% dplyr::filter(is.na(freeSharesold)))
+    float_shares <- float_shares[,c("date","stockID","freeShares")]
+    float_shares <- arrange(float_shares,date,stockID)
+    re <- dbGetQuery(con,paste("delete from QT_FreeShares where date >=",begT,"and date<=",endT))
+    dbWriteTable(con,'QT_FreeShares',float_shares,overwrite=FALSE,append=TRUE,row.names=FALSE)
+    
   }
+  dbDisconnect(con)
+  return('Done!')
 }
-
-
-
-
-
-
 
 
 
@@ -2618,6 +2620,8 @@ stockID2indexID <- function(TS, stockID, withsector = FALSE){
 #' @param sectorAttr a list(See more in \code{\link{defaultSectorAttr}}) or NULL,or "existing". 
 #' @param ret a charactor string,could be one of "ID" or "name",indicating sectorID or sectorName returned.
 #' @param drop a logical. Shoud the \code{TS} be exculded in the result?
+#' @param fillNA
+#' @param ungroup
 #' @param datasrc
 #' @return a data.frame,with the same cols of TS,added by "\code{sector}". Or a vector if \code{drop} is TRUE. You can get more sector infomation by \code{\link{CT_industryList}}
 #' @note param TS and combination of stockID and endT should  at least have one and only have one. The combination of vector stockID and endT could be different length, which abide by the recycling rule.
@@ -2639,12 +2643,14 @@ stockID2indexID <- function(TS, stockID, withsector = FALSE){
 #' test <- getSectorID(TS, sectorAttr= defaultSectorAttr("ind_fct",ind_std = 33,ind_level = 1,fct_level = 5))
 #' test <- getSectorID(TS, sectorAttr= defaultSectorAttr("ind_fct",ind_std = c(336,33),ind_level = 1,fct_level = 5))
 #' test <- getSectorID(TS, sectorAttr= defaultSectorAttr("fct",fct_std = buildFactorLists_lcfs(c("F000001","F000006"),factorRefine = refinePar_default("none",NULL)),fct_level = 5))
-#' factorList1 <- buildFactorList(factorFun = "gf_cap",factorRefine=refinePar_default("robust",NULL))
+#' factorList1 <- buildFactorList(factorFun = "gf_cap",factorRefine=refinePar_default("scale",NULL))
 #' test2 <- getSectorID(TS, sectorAttr= list(std=list(factorList1,33),level=list(5,1)))
 getSectorID <- function(TS, stockID, endT=Sys.Date(),
-                        sectorAttr=defaultSectorAttr(),ret=c("ID","name"),
+                        sectorAttr=defaultSectorAttr(),
+                        ret=c("ID","name"),
                         drop=FALSE,
                         fillNA=FALSE,
+                        ungroup=NULL,
                         datasrc=defaultDataSRC()){
   
   if(identical(sectorAttr,"existing") | is.null(sectorAttr)){
@@ -2668,13 +2674,13 @@ getSectorID <- function(TS, stockID, endT=Sys.Date(),
     TS$sector <- NULL
   }
   
+  # looping
   loop <- length(sectorAttr$std)
-  # start looping
   for( i in 1:loop) {
-    if(is.numeric(sectorAttr$std[[i]])){
-      sectorSTD <- sectorAttr$std[[i]] # 33
-      level <- sectorAttr$level[[i]] # 1
-      
+    
+    if(is.numeric(sectorAttr$std[[i]])){ # by industrys
+      sectorSTD <- sectorAttr$std[[i]] 
+      level <- sectorAttr$level[[i]]
       if(datasrc %in% c("quant","local")){
         TS$date <- rdate2int(TS$date)
         sectorvar <- if (ret=="ID") paste("Code",level,sep="") else paste("Name",level,sep="")
@@ -2702,7 +2708,7 @@ getSectorID <- function(TS, stockID, endT=Sys.Date(),
       if(fillNA){
         TS$sector_ <- sector_NA_fill(sector = TS$sector_, sectorAttr = list(std = sectorSTD, level = level))
       }
-    }else{
+    } else { # by factors
       factorList <- sectorAttr$std[[i]]
       level <- sectorAttr$level[[i]]
       tmpTS <- TS[,c("date","stockID")]
@@ -2712,12 +2718,19 @@ getSectorID <- function(TS, stockID, endT=Sys.Date(),
       tmpTSF <- dplyr::select(tmpTSF,-factorscore)
       TS <- merge.x(TS,tmpTSF, by=c("date","stockID"))
     }
+    
+    # join together
     if(i==1L){
       TS <-  renameCol(TS,"sector_","sector")
     } else {
       TS$sector <- paste(TS$sector, TS$sector_, sep="_")
       TS <- dplyr::select(TS,-sector_)
     }
+  }
+  
+  # ungroup
+  if(!is.null(ungroup)){
+    TS <- sector_ungroup(TS,N=ungroup)
   }
   
   # return
@@ -2792,7 +2805,22 @@ sector_NA_fill <- function(sector, sectorAttr=defaultSectorAttr()){
 }
 
 
-
+# inner-func
+# Turn two-stage group ID to one-stage when group members is less than a certain number.
+sector_ungroup <- function(TSS,N=10){
+  if(stringr::str_detect(TSS[1,"sector"],'_') && substr(TSS_$sector,1,2)=="ES"){
+    nsector <- TSS %>% group_by(date,sector) %>% summarise(num=n()) %>% ungroup()
+    if(any(nsector$num<N)){
+      nsector <- tidyr::separate(nsector,'sector',c("ind","fct"),sep="_",remove=FALSE)
+      nsector <- nsector %>% group_by(date,ind) %>% mutate(minnum=min(num)) %>% ungroup()
+      nsector <- transform(nsector,
+                           sectornew=ifelse(minnum<N,ind,stringr::str_c(ind,fct,sep="_")))
+      TSS <- dplyr::left_join(TSS,nsector[,c("date","sector","sectornew")],by=c('date','sector'))
+      TSS <- transform(TSS,sector=sectornew,sectornew=NULL)
+    }
+  }
+  return(TSS)
+}
 
 
 
@@ -2855,22 +2883,7 @@ check.colnames_sectorfs <- function(data){
 defaultSectorAttr <- function(type = c("ind","fct","ind_fct","fct_ind"), 
                               ind_std = 33, 
                               ind_level=1,
-                              fct_std = list(
-                                list(
-                                  factorFun = "gf_cap",
-                                  factorPar = list(),  
-                                  factorDir = 1  ,
-                                  factorRefine = list(
-                                    outlier=list(method = "none", par=NULL, sectorAttr= NULL),
-                                    std=list(method = "none", log=FALSE, sectorAttr=NULL, regLists=NULL),
-                                    na=list(method = "none", sectorAttr="median")
-                                  ),   
-                                  factorName = "mkt_cap",  
-                                  factorID = "",
-                                  factorType = "",
-                                  factorDesc = ""
-                                )
-                              ), 
+                              fct_std = list(fl_cap()), 
                               fct_level = 3){
   
   type <- match.arg(type)
@@ -3284,6 +3297,7 @@ MF_getStockPort <- function(fundID,rptDate,mode=c("all","top10"),datasrc = c("jy
     tmpdat <- tmpdat[tmpdat$rptDate %in% rptDate,]
   }
   re <- tmpdat[,c("fundID","rptDate","stockID","wgt")]
+  re <- renameCol(re,"rptDate","date")
   rownames(re) <- NULL
   return(re)
 }
@@ -3791,7 +3805,7 @@ rptTS.getFinSeri_ts <- function(rptTS, N, freq, funchar,varname, ...){
 #' @examples
 #' # calcFinStat
 #' FinStat <- calcFinStat(FinSeri,"mean")
-calcFinStat <- function(FinSeri,stat=c('mean','sum','slope','sd','mean/sd'),fname,rm_N){
+calcFinStat <- function(FinSeri,stat=c('mean','sum','slope','slope/mean','sd','mean/sd'),fname,rm_N){
   if(missing(fname)){
     fname <- guess_factorNames(FinSeri,no_factorname = c("stockID", "rptDate","lagN","lag_rptDate","ipoDate"),is_factorname = "factorscore")
   }
@@ -3811,12 +3825,23 @@ calcFinStat <- function(FinSeri,stat=c('mean','sum','slope','sd','mean/sd'),fnam
     rptTS_stat <- dplyr::summarise(FinSeri,value=sd(value,na.rm = TRUE))
   } else if (stat=="mean/sd"){
     rptTS_stat <- dplyr::summarise(FinSeri,value=mean(value,na.rm = TRUE)/sd(value,na.rm = TRUE))
-  } else if (stat=="slope"){
+  } else if (stat %in% c("slope","slope/mean")){
     FinSeri$lagN <- as.integer(substr(FinSeri$lagN,2,1000))
-    rptTS_stat <- dplyr::do(FinSeri,mod = lm(value ~ lagN, data = .))
-    rptTS_stat <- broom::tidy(rptTS_stat,mod)
-    rptTS_stat <- rptTS_stat[rptTS_stat$term=='lagN',c("fname","stockID","rptDate","estimate")]
-    rptTS_stat <- renameCol(rptTS_stat,"estimate","value")
+    if(stat=="slope"){
+      rptTS_stat <- dplyr::do(FinSeri,mod = lm(value ~ lagN, data = .))
+      rptTS_stat <- broom::tidy(rptTS_stat,mod)
+      rptTS_stat <- rptTS_stat[rptTS_stat$term=='lagN',c("fname","stockID","rptDate","estimate")]
+      rptTS_stat <- renameCol(rptTS_stat,"estimate","value")
+    }else{
+      FinSeri <- FinSeri %>% dplyr::mutate(value2=value/dplyr::lead(value)-1)
+      FinSeri <- FinSeri %>% dplyr::filter(!is.na(value2))
+      rptTS_stat1 <- dplyr::summarise(FinSeri,value2=mean(value2,na.rm = TRUE))
+      rptTS_stat2 <- dplyr::do(FinSeri,mod = lm(value ~ lagN, data = .))
+      rptTS_stat2 <- broom::tidy(rptTS_stat2,mod)
+      rptTS_stat2 <- rptTS_stat2[rptTS_stat2$term=='lagN',c("fname","stockID","rptDate","estimate")]
+      rptTS_stat <- dplyr::left_join(rptTS_stat1,rptTS_stat2,by=c("fname","stockID","rptDate"))
+      rptTS_stat <- transform(rptTS_stat,value=estimate/value2,estimate=NULL,value2=NULL)
+    }
   }
   # cast
   re <- reshape2::dcast(rptTS_stat,stockID+rptDate~fname)
@@ -3830,7 +3855,7 @@ calcFinStat <- function(FinSeri,stat=c('mean','sum','slope','sd','mean/sd'),fnam
 #' # rptTS.getFinStat_ts
 #' FinStat <- rptTS.getFinStat_ts(rptTS,12,"q",'"np_belongto_parcomsh",report(46078,RDate)',stat="mean")
 rptTS.getFinStat_ts <- function(rptTS, N, freq, funchar, varname, 
-                                stat=c('mean','sum','slope','sd','mean/sd'),
+                                stat=c('mean','sum','slope','slope/mean','sd','mean/sd'),
                                 rm_N, ...){
   stat <- match.arg(stat)
   check.rptTS(rptTS)
@@ -5064,9 +5089,54 @@ getTradeList <- function(port_ini, port_obj, money_obj, splitN=1, outputstyle = 
 
 #' gf_cap
 #' @export
-gf_cap <- function(TS){
-  re <- getTech(TS,variables="mkt_cap")
-  re <- renameCol(re,"mkt_cap","factorscore")
+gf_cap <- function(TS,
+                   log=FALSE,
+                   var=c("mkt_cap","float_cap","free_cap"),
+                   na_fill=TRUE,
+                   varname="factorscore",
+                   datasrc=defaultDataSRC()){
+  var <- match.arg(var)
+  if(datasrc=="local"){
+    if(var=="free_cap"){
+      re <- gf.free_float_sharesMV(re)
+      re <- renameCol(re,"factorscore","cap")
+      re$cap <- re$cap/10000  # 100 million
+    } else {
+      re <- getTech(TS,variables=var)
+      re <- renameCol(re,var,"cap")
+    }
+  } else if(datasrc=="memory"){
+    # to do...
+  }
+  
+  if(log){
+    re$cap <- log(re$cap)
+  }
+  if(na_fill){
+    re[is.na(re$cap),"cap"] <- median(re$cap, na.rm = TRUE)
+  }
+  re <- renameCol(re,"cap",varname)
+  return(re)
+}
+
+
+#' fl_cap
+#' @export
+fl_cap <- function(log=FALSE,var="mkt_cap",na_fill=TRUE){
+  re <- list(
+    factorFun = "gf_cap",
+    factorPar = list(log=log, var=var, na_fill=na_fill),
+    factorDir = 1  ,
+    factorRefine = list(
+      outlier=list(method = "none", par=NULL, sectorAttr= NULL),
+      std=list(method = "none", log=FALSE, sectorAttr=NULL, regLists=NULL),
+      na=list(method = "none", sectorAttr=NULL)
+    ),   
+    factorName = if(log) "ln_cap" else "cap",
+    factorID = "",
+    factorType = "",
+    factorDesc = ""
+  )
   return(re)
 }
 
@@ -5097,7 +5167,7 @@ gf.free_float_shares <- function(TS){
 gf.free_float_sharesMV <- function(TS){
   ffs <- gf.free_float_shares(TS)
   close <- getTech(TS,variables='close')
-  re <- merge(ffs,close,by=c('date','stockID'))
+  re <- merge.x(ffs,close,by=c('date','stockID'))
   re$factorscore <- re$factorscore*re$close
   re <- re[,c("date","stockID","factorscore")]
   return(re)

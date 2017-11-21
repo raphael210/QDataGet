@@ -830,6 +830,11 @@ factor_na <- function (TSF, method=c("none","mean","median"),
   }
   # batch processing
   TSF <- dplyr::do(TSF, na_sub_fun(., method))
+  if(sum(is.na(TSF$factorscore))>0){ # If sector is too small, ungroup it.
+    TSF <- as.data.frame(TSF)
+    TSF <- dplyr::group_by(TSF, date)
+    TSF <- dplyr::do(TSF, na_sub_fun(., method))
+  }
   TSF <- as.data.frame(TSF)
   # remove sector column if its not from the input
   if(!identical(sectorAttr, "existing") & !is.null(sectorAttr)){

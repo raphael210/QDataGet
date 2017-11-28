@@ -13,7 +13,7 @@ getRebDates(begT, endT, rebFreq = "month", shiftby = 0, dates = NULL)
 
 \item{rebFreq}{the rebalancing freq. an interval specification, one of "day", "week", "month", "quarter" and "year", optionally preceded by an integer and a space, or followed by "s". (See \code{\link{cut.Date}} for detail.) Or a character string of "allspan". "allspan" means no rebalance during the whole period between begT and endT, which could be realized also by a very large interval specification, eg. "100 year".}
 
-\item{shiftby}{a integer,how many days the rebalancing date be shifted afterward}
+\item{shiftby}{a integer,how many days the rebalancing date be shifted foreward}
 
 \item{dates}{a vector of class Date.}
 }
@@ -21,7 +21,7 @@ getRebDates(begT, endT, rebFreq = "month", shiftby = 0, dates = NULL)
 a \bold{RebDates} object giving the rebalancing dates list,a vector with class of \code{Date}. If dates is not null, then return the dates themselves.
 }
 \description{
-get the rebalance dates(a \bold{RebDates} object) between begT and endT, and then shift it afterward if necessary.
+get the rebalance dates(a \bold{RebDates} object) between begT and endT, and then shift it foreward if necessary.
 }
 \examples{
 RebDates <- getRebDates(as.Date('2010-01-01'),as.Date('2012-06-30'),'3 month', 10)

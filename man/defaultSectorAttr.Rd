@@ -5,12 +5,7 @@
 \title{defaultSectorAttr}
 \usage{
 defaultSectorAttr(type = c("ind", "fct", "ind_fct", "fct_ind"),
-  ind_std = 33, ind_level = 1, fct_std = list(list(factorFun = "gf_cap",
-  factorPar = list(), factorDir = 1, factorRefine = list(outlier = list(method =
-  "none", par = NULL, sectorAttr = NULL), std = list(method = "none", log =
-  FALSE, sectorAttr = NULL, regLists = NULL), na = list(method = "none",
-  sectorAttr = "median")), factorName = "mkt_cap", factorID = "", factorType =
-  "", factorDesc = "")), fct_level = 3)
+  ind_std = 33, ind_level = 1, fct_std = list(fl_cap()), fct_level = 3)
 }
 \arguments{
 \item{type}{Currently supporting types : ind, fct, ind_fct, fct_ind}

@@ -70,9 +70,9 @@ TSF.multi <- getMultiFactor(TS,FactorLists,wgts)
 
 # -- 2. get the "clean and standardized" combined-factor-score
 # --- 2.1 by \\code{getTSF}
-TSF.multi2 <- getTSF(TS,factorFun="getMultiFactor",factorPar=list(FactorLists,wgts),factorRefine=setrefinePar(refinePar_default(),std_method="norm"))
+TSF.multi2 <- getTSF(TS,factorFun="getMultiFactor",factorPar=list(FactorLists,wgts),factorRefine=refinePar_default("scale"))
 # --- 2.2 by \\code{Model.TSF}
-modelPar <- modelPar.factor(modelPar.default(),factorFun="getMultiFactor",factorPar=list(FactorLists,wgts),factorRefine=setrefinePar(refinePar_default(),std_method="norm"))
+modelPar <- modelPar.factor(modelPar.default(),factorFun="getMultiFactor",factorPar=list(FactorLists,wgts),factorRefine=refinePar_default("scale"))
 TSF.multi3 <- Model.TSF(modelPar)
 TSF.multi4 <- Model.TSF_byTS(modelPar, TS)
 # -- get multi-factor by TSFs 

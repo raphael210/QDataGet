@@ -7,11 +7,11 @@
 
 #' getRebDates
 #'
-#' get the rebalance dates(a \bold{RebDates} object) between begT and endT, and then shift it afterward if necessary.
+#' get the rebalance dates(a \bold{RebDates} object) between begT and endT, and then shift it foreward if necessary.
 #' @param begT the begin date of class Date
 #' @param endT the end date of class Date
 #' @param rebFreq the rebalancing freq. an interval specification, one of "day", "week", "month", "quarter" and "year", optionally preceded by an integer and a space, or followed by "s". (See \code{\link{cut.Date}} for detail.) Or a character string of "allspan". "allspan" means no rebalance during the whole period between begT and endT, which could be realized also by a very large interval specification, eg. "100 year".
-#' @param shiftby a integer,how many days the rebalancing date be shifted afterward
+#' @param shiftby a integer,how many days the rebalancing date be shifted foreward
 #' @param dates a vector of class Date. 
 #' @return a \bold{RebDates} object giving the rebalancing dates list,a vector with class of \code{Date}. If dates is not null, then return the dates themselves.
 #' @author Ruifei.Yin
@@ -39,7 +39,7 @@ getRebDates <- function(begT,endT,rebFreq="month",shiftby=0, dates=NULL){
     if(rebdays[1] != begT){
       rebdays <- c(begT,rebdays) 
     } 
-    # shift the rebalancing dates afterward
+    # shift the rebalancing dates foreward
     re <- trday.nearby(rebdays,shiftby)
   }
   
@@ -370,9 +370,9 @@ getRawFactor <- function (TS,factorFun,factorPar) {
 #' 
 #' # -- 2. get the "clean and standardized" combined-factor-score
 #' # --- 2.1 by \code{getTSF}
-#' TSF.multi2 <- getTSF(TS,factorFun="getMultiFactor",factorPar=list(FactorLists,wgts),factorRefine=setrefinePar(refinePar_default(),std_method="norm"))
+#' TSF.multi2 <- getTSF(TS,factorFun="getMultiFactor",factorPar=list(FactorLists,wgts),factorRefine=refinePar_default("scale"))
 #' # --- 2.2 by \code{Model.TSF}
-#' modelPar <- modelPar.factor(modelPar.default(),factorFun="getMultiFactor",factorPar=list(FactorLists,wgts),factorRefine=setrefinePar(refinePar_default(),std_method="norm"))
+#' modelPar <- modelPar.factor(modelPar.default(),factorFun="getMultiFactor",factorPar=list(FactorLists,wgts),factorRefine=refinePar_default("scale"))
 #' TSF.multi3 <- Model.TSF(modelPar)
 #' TSF.multi4 <- Model.TSF_byTS(modelPar, TS)
 getMultiFactor <- function(TS,FactorLists,wgts){ 
@@ -630,7 +630,7 @@ mTSF2TSFs <- function(mTSF, factorNames = guess_factorNames(mTSF)){
 #' TS <- getTS(RebDates,'EI000300')
 #' TSF <- gf.NP_YOY(TS)
 #' TSF <- factor_outlier(TSF, method = "mad", par = 1.5)
-factor_outlier <- function (TSF, method=c("none","sd","mad","boxplot"), par,
+factor_outlier <- function (TSF, method=c("none","sd","mad","boxplot","percentage"), par,
                             sectorAttr=defaultSectorAttr()) {
   method <- match.arg(method)
   # direct return
@@ -658,6 +658,9 @@ factor_outlier <- function (TSF, method=c("none","sd","mad","boxplot"), par,
       boxplot_stat <- boxplot.stats(TSF$factorscore, coef = par)[[1]]
       outlier_u <- max(boxplot_stat)
       outlier_l <- min(boxplot_stat)
+    }else if(method == "percentage"){
+      outlier_u <- quantile(TSF$factorscore, probs = 1-par/100, na.rm = TRUE)
+      outlier_l <- quantile(TSF$factorscore, probs = 0+par/100, na.rm = TRUE)
     }
     TSF <- transform(TSF,factorscore = ifelse(factorscore > outlier_u, outlier_u,
                                               ifelse(factorscore < outlier_l, outlier_l, factorscore)))
@@ -676,7 +679,7 @@ factor_outlier <- function (TSF, method=c("none","sd","mad","boxplot"), par,
 
 #' factor_std
 #' 
-#' @param method Currently supporting four types : none, norm, robustNorm, reg.
+#' @param method Currently supporting four types : none, scale, robustScale, reg.
 #' @param log Logical value. Default FALSE.
 #' @param sectorAttr could be a sectorAttr list or NULL.
 #' @param regLists factorLists. This argument will be put into use when method is reg. The factors in regLists will be stripped off from the factorscore.
@@ -686,24 +689,23 @@ factor_outlier <- function (TSF, method=c("none","sd","mad","boxplot"), par,
 #' RebDates <- getRebDates(as.Date('2011-03-17'),as.Date('2012-04-17'),'month')
 #' TS <- getTS(RebDates,'EI000300')
 #' TSF <- gf.NP_YOY(TS)
-#' regLists <- buildFactorLists(buildFactorList(factorFun = 'gf.PE_ttm',factorDir = -1,factorRefine=refinePar_default("robust")))
+#' regLists <- buildFactorLists(buildFactorList(factorFun = 'gf.PE_ttm',factorDir = -1,factorRefine=refinePar_default("scale")))
 #' TSF <- factor_std(TSF, method = "reg", log = FALSE, regLists = regLists)
-factor_std <- function(TSF,method=c("none","norm","robustNorm","reg"),
+factor_std <- function(TSF,method=c("none","scale","robustScale","reg"),
                        log=FALSE, sectorAttr=defaultSectorAttr(),
                        regLists=NULL){
   method <- match.arg(method)
-  # direct return
-  if(method == "none"){
-    return(TSF)
-  }
+  
   # log
   if(log){
     TSF$factorscore <- log(TSF$factorscore)
   }
-  # reg part 
-  if(method == "reg"){
-    TSF <- renameCol(TSF, "factorscore", "Y_for_reg")
+  
+  if(method == "none"){ # do nothing
+    return(TSF)
     
+  }else if(method == "reg"){ # reg part
+    TSF <- renameCol(TSF, "factorscore", "Y_for_reg")
     # subsetting not NA part
     ind_ <- is.na(TSF$Y_for_reg)
     TSF_core <- TSF[!ind_,]
@@ -750,13 +752,11 @@ factor_std <- function(TSF,method=c("none","norm","robustNorm","reg"),
     # output
     return(TSF)
     
-  }else{
-    # group splitting part 
+  }else{ # group splitting part
     # sector splitting
     if(!is.null(sectorAttr)){
       if(!identical(sectorAttr,"existing") ){
-        TSF <- getSectorID(TS = TSF, sectorAttr = sectorAttr, fillNA = TRUE)
-        TSF <- TSSregroup(TSF)
+        TSF <- getSectorID(TS = TSF, sectorAttr = sectorAttr, fillNA = TRUE, ungroup=10)
       }
       TSF <- dplyr::group_by(TSF, date, sector)
     }else{
@@ -764,9 +764,9 @@ factor_std <- function(TSF,method=c("none","norm","robustNorm","reg"),
     }
     # sub fun
     std_sub_fun <- function(TSF, method){
-      if(method == "norm"){
+      if(method == "scale"){
         TSF$factorscore <- as.numeric(scale(TSF$factorscore))
-      }else if(method == "robustNorm"){
+      }else if(method == "robustScale"){
         median_ <- median(TSF$factorscore, na.rm = TRUE)
         sd_ <- sd(TSF$factorscore, na.rm = TRUE)
         TSF$factorscore <- (TSF$factorscore - median_)/sd_
@@ -785,24 +785,6 @@ factor_std <- function(TSF,method=c("none","norm","robustNorm","reg"),
   }
 }
 
-# TSSregroup
-#
-# add to factor_std
-TSSregroup <- function(TSS,N=10){
-  TSS_ <- dplyr::sample_n(TSS,1)
-  if(stringr::str_detect(TSS_$sector,'_') && substr(TSS_$sector,1,2)=="ES"){
-    nsector <- TSS %>% group_by(date,sector) %>% summarise(num=n()) %>% ungroup()
-    if(any(nsector$num<N)){
-      nsector <- tidyr::separate(nsector,'sector',c("ind","fct"),sep="_",remove=FALSE)
-      nsector <- nsector %>% group_by(date,ind) %>% mutate(minnum=min(num)) %>% ungroup()
-      nsector <- transform(nsector,
-                           sectornew=ifelse(minnum<N,ind,stringr::str_c(ind,fct,sep="_")))
-      TSS <- dplyr::left_join(TSS,nsector[,c("date","sector","sectornew")],by=c('date','sector'))
-      TSS <- transform(TSS,sector=sectornew,sectornew=NULL)
-    }
-  }
-  return(TSS)
-}
 
 
 
@@ -853,6 +835,7 @@ factor_na <- function (TSF, method=c("none","mean","median"),
     TSF <- dplyr::group_by(TSF, date)
     TSF <- dplyr::do(TSF, na_sub_fun(., method))
   }
+  
   TSF <- as.data.frame(TSF)
   # remove sector column if its not from the input
   if(!identical(sectorAttr, "existing") & !is.null(sectorAttr)){
@@ -907,9 +890,8 @@ factor_refine <- function(TSF, refinePar=refinePar_default(),drop_sector=TRUE){
 #' @examples 
 #' rawTSF <- gf.NP_YOY(TS, src = "fin")
 #' refinePar_lists <- list(refinePar_default(type = "none"),
-#'                         refinePar_default(type = "old_fashion"),
-#'                         refinePar_default(type = "old_robust"),
-#'                         refinePar_default(type = "new_fashion"))
+#'                         refinePar_default(type = "reg"),
+#'                         refinePar_default(type = "scale"))
 #' factor_refine_MF(rawTSF, refinePar_lists)
 factor_refine_MF <- function(TSF, refinePar_lists, refinePar_names){
   # ARGUMENTS CHECKING
@@ -940,51 +922,46 @@ factor_refine_MF <- function(TSF, refinePar_lists, refinePar_names){
 
 #' refinePar_default
 #' 
-#' @param type Could be none, old_fashion, old_robust, new_fashion.
+#' @param type Could be "none", "reg", "scale."
 #' @param sectorAttr could be a sectorAttr list, or NULL(means no grouping by sector).
+#' @param log TRUE or FALSE
+#' @param regLists a \bold{factorLists}
 #' @export
 #' @author Han.Qian
-refinePar_default <- function(type=c("none","old_fashion","old_robust","new_fashion"), sectorAttr=defaultSectorAttr()){
+refinePar_default <- function(type=c("none","reg","scale"), 
+                              sectorAttr=defaultSectorAttr(),
+                              log=FALSE,
+                              regLists=list(fl_cap(log=TRUE))
+                              ){
   type <- match.arg(type)
   if(type=="none"){
     re <- list(outlier=list(method = "none",
                             par=NULL,
                             sectorAttr= NULL),
                std=list(method = "none",
-                        log=FALSE, 
+                        log=log, 
                         sectorAttr=NULL,
                         regLists=NULL),
                na=list(method = "none", 
                        sectorAttr=NULL)
                )
-  }else if(type=="old_fashion"){
+  }else if(type=="reg"){
     re <- list(outlier=list(method = "boxplot",
                             par=1.5,
                             sectorAttr= NULL),
-               std=list(method = "norm",
-                        log=FALSE, 
+               std=list(method = "reg",
+                        log=log, 
                         sectorAttr=sectorAttr,
-                        regLists=NULL),
+                        regLists=regLists),
                na=list(method = "median", 
                        sectorAttr=sectorAttr)
                )
-  }else if(type=="old_robust"){
+  }else if(type=="scale"){
     re <- list(outlier=list(method = "boxplot",
                             par=1.5,
                             sectorAttr= NULL),
-               std=list(method = "robustNorm",
-                        log=FALSE, 
-                        sectorAttr=sectorAttr,
-                        regLists=NULL),
-               na=list(method = "median", 
-                       sectorAttr=sectorAttr)
-               )
-  }else if(type=="new_fashion"){
-    re <- list(outlier=list(method = "boxplot",
-                            par=2,
-                            sectorAttr= sectorAttr),
-               std=list(method = "robustNorm",
-                        log=FALSE, 
+               std=list(method = "robustScale",
+                        log=log, 
                         sectorAttr=sectorAttr,
                         regLists=NULL),
                na=list(method = "median", 
@@ -1101,7 +1078,7 @@ rm_blacklist <- function(TS){
   TS <- TS[!TS_$is_blacklist,]
 }
 
-rm_whitelist <- function(TS){
+rm_not_in_whitelist <- function(TS){
   
 }
 rm_ST <- function(TS){

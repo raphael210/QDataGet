@@ -4,11 +4,11 @@
 \alias{factor_std}
 \title{factor_std}
 \usage{
-factor_std(TSF, method = c("none", "norm", "robustNorm", "reg"),
+factor_std(TSF, method = c("none", "scale", "robustScale", "reg"),
   log = FALSE, sectorAttr = defaultSectorAttr(), regLists = NULL)
 }
 \arguments{
-\item{method}{Currently supporting four types : none, norm, robustNorm, reg.}
+\item{method}{Currently supporting four types : none, scale, robustScale, reg.}
 
 \item{log}{Logical value. Default FALSE.}
 
@@ -23,7 +23,7 @@ factor_std
 RebDates <- getRebDates(as.Date('2011-03-17'),as.Date('2012-04-17'),'month')
 TS <- getTS(RebDates,'EI000300')
 TSF <- gf.NP_YOY(TS)
-regLists <- buildFactorLists(buildFactorList(factorFun = 'gf.PE_ttm',factorDir = -1,factorRefine=refinePar_default("robust")))
+regLists <- buildFactorLists(buildFactorList(factorFun = 'gf.PE_ttm',factorDir = -1,factorRefine=refinePar_default("scale")))
 TSF <- factor_std(TSF, method = "reg", log = FALSE, regLists = regLists)
 }
 \author{

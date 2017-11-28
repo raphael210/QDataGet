@@ -4,7 +4,8 @@
 \alias{gf_cap}
 \title{gf_cap}
 \usage{
-gf_cap(TS)
+gf_cap(TS, log = FALSE, var = c("mkt_cap", "float_cap", "free_cap"),
+  na_fill = TRUE, varname = "factorscore", datasrc = defaultDataSRC())
 }
 \description{
 gf_cap

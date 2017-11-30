@@ -2808,7 +2808,7 @@ sector_NA_fill <- function(sector, sectorAttr=defaultSectorAttr()){
 # inner-func
 # Turn two-stage group ID to one-stage when group members is less than a certain number.
 sector_ungroup <- function(TSS,N=10){
-  if(stringr::str_detect(TSS[1,"sector"],'_') && substr(TSS_$sector,1,2)=="ES"){
+  if(stringr::str_detect(TSS[1,"sector"],'_') && substr(TSS$sector,1,2)=="ES"){
     nsector <- TSS %>% group_by(date,sector) %>% summarise(num=n()) %>% ungroup()
     if(any(nsector$num<N)){
       nsector <- tidyr::separate(nsector,'sector',c("ind","fct"),sep="_",remove=FALSE)

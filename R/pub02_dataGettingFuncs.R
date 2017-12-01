@@ -1008,7 +1008,7 @@ lcdb.update.QT_FreeShares <-  function(begT,endT,Freq='week') {
     float_shares <- float_shares %>% group_by(stockID,freeShares) %>% summarise(date=min(date)) %>% dplyr::ungroup()
     float_shares <- float_shares[,c("date","stockID","freeShares")]
     
-    re_ <- re %>% filter(date<begT | date>endT) %>% arrange(stockID,desc(date)) %>% group_by(stockID) %>% slice(1) %>% dplyr::ungroup()
+    re_ <- re %>% dplyr::filter(date<begT | date>endT) %>% arrange(stockID,desc(date)) %>% group_by(stockID) %>% slice(1) %>% dplyr::ungroup()
     re_ <- dplyr::rename(re_,dateold=date,freeSharesold=freeShares)
     float_shares <- dplyr::left_join(float_shares,re_,by='stockID')
     float_shares <- rbind(float_shares %>% dplyr::filter(!is.na(freeSharesold)) %>% dplyr::filter(date!=dateold & freeShares!=freeSharesold),

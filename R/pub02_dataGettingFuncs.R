@@ -973,7 +973,7 @@ lcdb.init.indexquote000985 <- function(windCode='000985.CSI'){
 #' @examples
 #' lcdb.update.QT_FreeShares()
 #' @export
-lcdb.update.QT_FreeShares <- function(begT,endT,Freq='week') {
+lcdb.update.QT_FreeShares <-  function(begT,endT,Freq='week') {
   con <- db.local()
   re <- dbReadTable(con,'QT_FreeShares')
   
@@ -1008,7 +1008,7 @@ lcdb.update.QT_FreeShares <- function(begT,endT,Freq='week') {
     float_shares <- float_shares %>% group_by(stockID,freeShares) %>% summarise(date=min(date)) %>% dplyr::ungroup()
     float_shares <- float_shares[,c("date","stockID","freeShares")]
     
-    re_ <- re %>% dplyr::filter(date<begT | date>endT) %>% dplyr::arrange(stockID,desc(date)) %>% dplyr::group_by(stockID) %>% dplyr::slice(1) %>% dplyr::ungroup()
+    re_ <- re %>% filter(date<begT | date>endT) %>% arrange(stockID,desc(date)) %>% group_by(stockID) %>% slice(1) %>% dplyr::ungroup()
     re_ <- dplyr::rename(re_,dateold=date,freeSharesold=freeShares)
     float_shares <- dplyr::left_join(float_shares,re_,by='stockID')
     float_shares <- rbind(float_shares %>% dplyr::filter(!is.na(freeSharesold)) %>% dplyr::filter(date!=dateold & freeShares!=freeSharesold),
@@ -2808,7 +2808,7 @@ sector_NA_fill <- function(sector, sectorAttr=defaultSectorAttr()){
 # inner-func
 # Turn two-stage group ID to one-stage when group members is less than a certain number.
 sector_ungroup <- function(TSS,N=10){
-  if(stringr::str_detect(TSS[1,"sector"],'_') && substr(TSS_$sector,1,2)=="ES"){
+  if(stringr::str_detect(TSS[1,"sector"],'_') && substr(TSS$sector,1,2)=="ES"){
     nsector <- TSS %>% group_by(date,sector) %>% summarise(num=n()) %>% ungroup()
     if(any(nsector$num<N)){
       nsector <- tidyr::separate(nsector,'sector',c("ind","fct"),sep="_",remove=FALSE)

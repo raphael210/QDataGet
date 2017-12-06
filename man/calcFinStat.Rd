@@ -4,8 +4,8 @@
 \alias{calcFinStat}
 \title{calcFinStat}
 \usage{
-calcFinStat(FinSeri, stat = c("mean", "sum", "slope", "slope/mean", "sd",
-  "mean/sd"), fname, rm_N)
+calcFinStat(FinSeri, stat = c("mean", "sum", "slope", "slope/mean",
+  "slope/growthmean", "sd", "mean/sd"), fname, rm_N)
 }
 \description{
 calcFinStat

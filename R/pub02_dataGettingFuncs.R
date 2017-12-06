@@ -1008,7 +1008,7 @@ lcdb.update.QT_FreeShares <-  function(begT,endT,Freq='week') {
     float_shares <- float_shares %>% group_by(stockID,freeShares) %>% summarise(date=min(date)) %>% dplyr::ungroup()
     float_shares <- float_shares[,c("date","stockID","freeShares")]
     
-    re_ <- re %>% filter(date<begT | date>endT) %>% arrange(stockID,desc(date)) %>% group_by(stockID) %>% slice(1) %>% dplyr::ungroup()
+    re_ <- re %>% dplyr::filter(date<begT | date>endT) %>% arrange(stockID,desc(date)) %>% group_by(stockID) %>% slice(1) %>% dplyr::ungroup()
     re_ <- dplyr::rename(re_,dateold=date,freeSharesold=freeShares)
     float_shares <- dplyr::left_join(float_shares,re_,by='stockID')
     float_shares <- rbind(float_shares %>% dplyr::filter(!is.na(freeSharesold)) %>% dplyr::filter(date!=dateold & freeShares!=freeSharesold),
@@ -3805,7 +3805,7 @@ rptTS.getFinSeri_ts <- function(rptTS, N, freq, funchar,varname, ...){
 #' @examples
 #' # calcFinStat
 #' FinStat <- calcFinStat(FinSeri,"mean")
-calcFinStat <- function(FinSeri,stat=c('mean','sum','slope','slope/mean','sd','mean/sd'),fname,rm_N){
+calcFinStat <- function(FinSeri,stat=c('mean','sum','slope','slope/mean','slope/growthmean','sd','mean/sd'),fname,rm_N){
   if(missing(fname)){
     fname <- guess_factorNames(FinSeri,no_factorname = c("stockID", "rptDate","lagN","lag_rptDate","ipoDate"),is_factorname = "factorscore")
   }
@@ -3825,17 +3825,22 @@ calcFinStat <- function(FinSeri,stat=c('mean','sum','slope','slope/mean','sd','m
     rptTS_stat <- dplyr::summarise(FinSeri,value=sd(value,na.rm = TRUE))
   } else if (stat=="mean/sd"){
     rptTS_stat <- dplyr::summarise(FinSeri,value=mean(value,na.rm = TRUE)/sd(value,na.rm = TRUE))
-  } else if (stat %in% c("slope","slope/mean")){
+  } else if (stat %in% c("slope","slope/mean","slope/growthmean")){
     FinSeri$lagN <- as.integer(substr(FinSeri$lagN,2,1000))
     if(stat=="slope"){
       rptTS_stat <- dplyr::do(FinSeri,mod = lm(value ~ lagN, data = .))
       rptTS_stat <- broom::tidy(rptTS_stat,mod)
       rptTS_stat <- rptTS_stat[rptTS_stat$term=='lagN',c("fname","stockID","rptDate","estimate")]
       rptTS_stat <- renameCol(rptTS_stat,"estimate","value")
-    }else{
-      FinSeri <- FinSeri %>% dplyr::mutate(value2=value/dplyr::lead(value)-1)
-      FinSeri <- FinSeri %>% dplyr::filter(!is.na(value2))
-      rptTS_stat1 <- dplyr::summarise(FinSeri,value2=mean(value2,na.rm = TRUE))
+    }else if(stat %in% c("slope/mean","slope/growthmean")){
+      if(stat=="slope/mean"){
+        rptTS_stat1 <- FinSeri %>% dplyr::summarise(value2=mean(value,na.rm = TRUE))
+      }else{
+        FinSeri <- FinSeri %>% dplyr::mutate(value2=value/dplyr::lead(value)-1)
+        FinSeri <- FinSeri %>% dplyr::filter(!is.na(value2))
+        rptTS_stat1 <- dplyr::summarise(FinSeri,value2=mean(value2,na.rm = TRUE))
+      }
+      
       rptTS_stat2 <- dplyr::do(FinSeri,mod = lm(value ~ lagN, data = .))
       rptTS_stat2 <- broom::tidy(rptTS_stat2,mod)
       rptTS_stat2 <- rptTS_stat2[rptTS_stat2$term=='lagN',c("fname","stockID","rptDate","estimate")]
@@ -3855,7 +3860,7 @@ calcFinStat <- function(FinSeri,stat=c('mean','sum','slope','slope/mean','sd','m
 #' # rptTS.getFinStat_ts
 #' FinStat <- rptTS.getFinStat_ts(rptTS,12,"q",'"np_belongto_parcomsh",report(46078,RDate)',stat="mean")
 rptTS.getFinStat_ts <- function(rptTS, N, freq, funchar, varname, 
-                                stat=c('mean','sum','slope','slope/mean','sd','mean/sd'),
+                                stat=c('mean','sum','slope','slope/mean','slope/growthmean','sd','mean/sd'),
                                 rm_N, ...){
   stat <- match.arg(stat)
   check.rptTS(rptTS)

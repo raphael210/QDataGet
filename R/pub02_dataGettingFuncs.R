@@ -452,7 +452,8 @@ lcdb.update.LC_PerformanceGrowth <- function(begT,endT){
 lcdb.add.LC_IndexComponent <- function(indexID){
   qr1 <- paste("select ID,InnerCode,CompanyCode,'EI'+SecuCode 'SecuCode',SecuAbbr,
                SecuMarket,ListedSector,ListedState,JSID 'UpdateTime',
-               SecuCode 'StockID_TS',SecuCategory,ListedDate,SecuCode 'StockID_wind'
+               SecuCode 'StockID_TS',SecuCategory,
+               convert(varchar,ListedDate,112) 'ListedDate',SecuCode 'StockID_wind'
                from SecuMain WHERE SecuCode=",QT(substr(indexID,3,8)),
                " and SecuCategory=4",sep='')
   indexInfo <- queryAndClose.odbc(db.jy(),qr1,stringsAsFactors=FALSE)
@@ -2337,12 +2338,23 @@ getComps <- function(ID, endT=Sys.Date(), drop=TRUE, datasrc=defaultDataSRC()){
 #' tmp <- getIndexComp("EI000300",drop=FALSE) # get the latest components, a dataframe
 #' tmp <- getIndexComp("EI000300",as.Date("2012-12-31")) # get the components on single day,a vector
 #' tmp <- getIndexComp("EI000300",as.Date(c("2011-12-31","2012-12-31"))) # get the components on multi-days, a data frame
+#' tmp <- getIndexComp("EI000300",as.Date(c("2005-12-31","2012-12-31"))) # get the components before index's pubdate, a data frame
 getIndexComp <- function(indexID, endT=Sys.Date(), drop=TRUE, datasrc=defaultDataSRC()){
+  pubdate <- trday.IPO(indexID)
+  
+  endTdf <- data.frame(dateori=endT,date=endT)
+  if(indexID!='EI000985' && (!is.na(pubdate)) && min(endT)<pubdate){
+    warning(paste("min(endT):",min(endT)," is earlier than index's published date:",pubdate,". The early components would be approximated!",sep=""))
+    endT[endT<pubdate] <- pubdate
+    endTdf <- transform(endTdf,date=endT)
+    endT <- unique(endT)
+  }
+  
   if(datasrc %in% c("quant","local")){   
     endT <- rdate2int(endT)
     tmpdat <- data.frame(endT=endT)    
     qr <- paste("SELECT a.endT as date, b.SecuID as stockID from yrf_tmp a, LC_IndexComponent b
-                  where b.IndexID=", QT(indexID), 
+                where b.IndexID=", QT(indexID), 
                 "and InDate<=endT and (OutDate>endT or OutDate IS NULL)")      
     if(datasrc=="quant"){
       con <- db.quant()
@@ -2373,14 +2385,25 @@ getIndexComp <- function(indexID, endT=Sys.Date(), drop=TRUE, datasrc=defaultDat
     re <- plyr::ldply(endT,subfun)  
   }
   
+  endT <- endTdf$dateori
+  
+  if(indexID!='EI000985' && (!is.na(pubdate)) && min(endT)<pubdate){
+    re <- endTdf %>% dplyr::full_join(re,by='date') %>% dplyr::select(-date) %>% dplyr::rename(date=dateori)
+    ipo <- data.frame(stockID=unique(re$stockID),stringsAsFactors = FALSE)
+    ipo$ipoday <- trday.IPO(ipo$stockID)
+    re <- re %>% dplyr::left_join(ipo,by='stockID') %>% dplyr::mutate(gap=date-ipoday) %>% 
+      dplyr::filter(gap>=90) %>% dplyr::select(-ipoday,-gap)
+  }
+  
   re <- dplyr::arrange(re,date,stockID)
+  
   if(length(endT)==1 && drop==TRUE){
     return(re$stockID)
   } else {
     return(re)
   }
-  
 }
+
 
 
 #' getIndexCompWgt
@@ -3805,9 +3828,9 @@ rptTS.getFinSeri_ts <- function(rptTS, N, freq, funchar,varname, ...){
 #' @examples
 #' # calcFinStat
 #' FinStat <- calcFinStat(FinSeri,"mean")
-calcFinStat <- function(FinSeri,stat=c('mean','sum','slope','slope/mean','sd','mean/sd'),fname,rm_N){
+calcFinStat <- function(FinSeri,stat=c('mean','sum','slope','slope/mean','slope/growthsd','sd','mean/sd'),fname,rm_N){
   if(missing(fname)){
-    fname <- guess_factorNames(FinSeri,no_factorname = c("stockID", "rptDate","lagN","lag_rptDate","ipoDate"),is_factorname = "factorscore")
+    fname <- guess_factorNames(FinSeri,no_factorname = c("stockID", "rptDate","lagN","lag_rptDate","ipoDate"),is_factorname = "factorscore",silence = TRUE)
   }
   # melt & group_by
   FinSeri <- reshape2::melt(FinSeri,measure.vars=fname,variable.name = "fname", value.name = "value")
@@ -3825,17 +3848,22 @@ calcFinStat <- function(FinSeri,stat=c('mean','sum','slope','slope/mean','sd','m
     rptTS_stat <- dplyr::summarise(FinSeri,value=sd(value,na.rm = TRUE))
   } else if (stat=="mean/sd"){
     rptTS_stat <- dplyr::summarise(FinSeri,value=mean(value,na.rm = TRUE)/sd(value,na.rm = TRUE))
-  } else if (stat %in% c("slope","slope/mean")){
+  } else if (stat %in% c("slope","slope/mean","slope/growthsd")){
     FinSeri$lagN <- as.integer(substr(FinSeri$lagN,2,1000))
     if(stat=="slope"){
       rptTS_stat <- dplyr::do(FinSeri,mod = lm(value ~ lagN, data = .))
       rptTS_stat <- broom::tidy(rptTS_stat,mod)
       rptTS_stat <- rptTS_stat[rptTS_stat$term=='lagN',c("fname","stockID","rptDate","estimate")]
       rptTS_stat <- renameCol(rptTS_stat,"estimate","value")
-    }else{
-      FinSeri <- FinSeri %>% dplyr::mutate(value2=value/dplyr::lead(value)-1)
-      FinSeri <- FinSeri %>% dplyr::filter(!is.na(value2))
-      rptTS_stat1 <- dplyr::summarise(FinSeri,value2=mean(value2,na.rm = TRUE))
+    }else if(stat %in% c("slope/mean","slope/growthsd")){
+      if(stat=="slope/mean"){
+        rptTS_stat1 <- FinSeri %>% dplyr::summarise(value2=mean(value,na.rm = TRUE))
+      }else{
+        FinSeri <- FinSeri %>% dplyr::mutate(value2=value/dplyr::lead(value)-1)
+        FinSeri <- FinSeri %>% dplyr::filter(!is.na(value2))
+        rptTS_stat1 <- dplyr::summarise(FinSeri,value2=sd(value2,na.rm = TRUE))
+      }
+      
       rptTS_stat2 <- dplyr::do(FinSeri,mod = lm(value ~ lagN, data = .))
       rptTS_stat2 <- broom::tidy(rptTS_stat2,mod)
       rptTS_stat2 <- rptTS_stat2[rptTS_stat2$term=='lagN',c("fname","stockID","rptDate","estimate")]
@@ -3855,7 +3883,7 @@ calcFinStat <- function(FinSeri,stat=c('mean','sum','slope','slope/mean','sd','m
 #' # rptTS.getFinStat_ts
 #' FinStat <- rptTS.getFinStat_ts(rptTS,12,"q",'"np_belongto_parcomsh",report(46078,RDate)',stat="mean")
 rptTS.getFinStat_ts <- function(rptTS, N, freq, funchar, varname, 
-                                stat=c('mean','sum','slope','slope/mean','sd','mean/sd'),
+                                stat=c('mean','sum','slope','slope/mean','slope/growthsd','sd','mean/sd'),
                                 rm_N, ...){
   stat <- match.arg(stat)
   check.rptTS(rptTS)

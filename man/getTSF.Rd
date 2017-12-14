@@ -9,7 +9,7 @@
 getTSF(TS, factorFun, factorPar = list(), factorDir = 1,
   factorRefine = refinePar_default("none"), FactorList, splitbin = 100000L)
 
-getRawFactor(TS, factorFun, factorPar)
+getRawFactor(TS, factorFun, factorPar, FactorList)
 
 gf_lcfs(TS, factorID)
 }

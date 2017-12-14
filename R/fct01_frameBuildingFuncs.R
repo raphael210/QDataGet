@@ -260,7 +260,7 @@ getTSF <- function(TS,factorFun,factorPar=list(),factorDir=1,
     factorPar <- FactorList$factorPar
     factorName <- FactorList$factorName
     factorDir <- FactorList$factorDir
-    factorRefine <- FactorList$factorRefine 
+    factorRefine <- FactorList$factorRefine
   }
   if(! factorDir %in% c(1L,-1L)) stop("unsupported \"factorDir\" argument!")
   cat(paste("Function getTSF: getting the factorscore ....\n"))
@@ -310,9 +310,13 @@ getTSF <- function(TS,factorFun,factorPar=list(),factorDir=1,
 #' @examples
 #' # -- get 'raw' factorscore
 #' TSF_raw <- getRawFactor(TS,"gf.pct_chg_per","20")
-getRawFactor <- function (TS,factorFun,factorPar) {
+getRawFactor <- function (TS,factorFun,factorPar,FactorList) {
   if("factorscore" %in% names(TS)){
     stop("There has existed a 'factorscore' field in the TS object. Please remove or rename it first!")
+  }
+  if(!missing(FactorList)){
+    factorFun <- FactorList$factorFun
+    factorPar <- FactorList$factorPar
   }
   if(missing(factorPar)){
     TSF <- do.call(factorFun,c(list(TS)))
@@ -613,7 +617,34 @@ mTSF2TSFs <- function(mTSF, factorNames = guess_factorNames(mTSF)){
 }
 
 
-
+#' TS_filter
+#' 
+#' sample or filter the TS by date.
+#' 
+#' @param TS a TS, TSF, TSFR ...
+#' @param sample_N integer. size of sample days
+#' @export
+#' @examples
+#' re <- TS_filter(ts,sample_N=8)
+#' re <- TS_filter(ts,as.Date("2010-01-01"),as.Date("2011-01-01"))
+TS_filter <- function(TS, begT, endT, sample_N){
+  if(!missing(sample_N) && (!missing(begT) | !missing(endT))){
+    stop("sample_N and begT should have only one!")
+  }
+  if(!missing(sample_N)){
+    dates <- unique(TS$date)
+    dates <- sample(dates,min(sample_N, length(dates)))
+    TS <- dplyr::filter(TS,date %in% dates)
+  } else {
+    begT <- if(missing(begT)) as.Date("1900-01-01") else  begT
+    endT <- if(missing(endT)) as.Date("9999-01-01") else  endT
+    TS <- dplyr::filter(TS, date>=begT & date<=endT)
+  }
+  # if(!missing(begT)){
+  #   TS <- dplyr::filter(TS, date>=begT & date<=endT)
+  # }
+  return(TS)
+}
 
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
 # --------------------  factor refining functions ------------
@@ -744,15 +775,15 @@ factor_std <- function(TSF,method=c("none","scale","robustScale","reg"),
     TSF_core <- factor_orthogon_single(TSF_core, y = "Y_for_reg", sectorAttr = "existing")
     TSF_core <- TSF_core[,c("date","stockID","Y_for_reg")]
     TSF_core <- renameCol(TSF_core, "Y_for_reg", "factorscore")
-    
     # merge back
     TSF <- TSF[,setdiff(colnames(TSF), "Y_for_reg")]
     TSF <- merge.x(TSF, TSF_core, by = c("date","stockID"))
-    
+    # scale to 0 median and 1 sd
+    TSF <- factor_std(TSF,method="robustScale",sectorAttr=NULL)
     # output
     return(TSF)
     
-  }else{ # group splitting part
+  }else{ # scale part
     # sector splitting
     if(!is.null(sectorAttr)){
       if(!identical(sectorAttr,"existing") ){
@@ -851,6 +882,9 @@ factor_na <- function (TSF, method=c("none","mean","median"),
 #' @export
 #' @author Han.Qian
 factor_refine <- function(TSF, refinePar=refinePar_default(),drop_sector=TRUE){
+  if(is.null(refinePar)){
+    return(TSF)
+  }
   sector_outlier <- refinePar$outlier$sectorAttr
   sector_std <- refinePar$std$sectorAttr
   sector_na <- refinePar$na$sectorAttr
@@ -896,7 +930,10 @@ factor_refine_MF <- function(TSF, refinePar_lists, refinePar_names){
   # ARGUMENTS CHECKING
   loop_length <- length(refinePar_lists)
   if(missing(refinePar_names)){
-    refinePar_names <- paste0("refinePar_",1:loop_length)
+    refinePar_names <- names(refinePar_lists)
+    if(is.null(refinePar_names)){
+      refinePar_names <- paste0("refinePar_",1:loop_length)
+    }
   }else{
     if(length(refinePar_lists) != length(refinePar_names)){
       stop("The length of refinePar_names does not match the length of refinePar_lists.")
@@ -928,7 +965,7 @@ factor_refine_MF <- function(TSF, refinePar_lists, refinePar_names){
 #' @export
 #' @author Han.Qian
 refinePar_default <- function(type=c("none","reg","scale"), 
-                              sectorAttr=defaultSectorAttr(),
+                              sectorAttr=NULL,
                               log=FALSE,
                               regLists=list(fl_cap(log=TRUE))
                               ){

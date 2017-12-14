@@ -25,4 +25,5 @@ tmp <- getIndexComp("EI000300") # get the latest components, a vector
 tmp <- getIndexComp("EI000300",drop=FALSE) # get the latest components, a dataframe
 tmp <- getIndexComp("EI000300",as.Date("2012-12-31")) # get the components on single day,a vector
 tmp <- getIndexComp("EI000300",as.Date(c("2011-12-31","2012-12-31"))) # get the components on multi-days, a data frame
+tmp <- getIndexComp("EI000300",as.Date(c("2005-12-31","2012-12-31"))) # get the components before index's pubdate, a data frame
 }

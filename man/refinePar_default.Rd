@@ -4,9 +4,8 @@
 \alias{refinePar_default}
 \title{refinePar_default}
 \usage{
-refinePar_default(type = c("none", "reg", "scale"),
-  sectorAttr = defaultSectorAttr(), log = FALSE,
-  regLists = list(fl_cap(log = TRUE)))
+refinePar_default(type = c("none", "reg", "scale"), sectorAttr = NULL,
+  log = FALSE, regLists = list(fl_cap(log = TRUE)))
 }
 \arguments{
 \item{type}{Could be "none", "reg", "scale."}

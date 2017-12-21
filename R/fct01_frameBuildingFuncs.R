@@ -670,9 +670,7 @@ factor_outlier <- function (TSF, method=c("none","sd","mad","boxplot","percentag
   }
   # sector splitting
   if(!is.null(sectorAttr)){
-    if(!identical(sectorAttr,"existing")){
-      TSF <- getSectorID(TS = TSF,sectorAttr = sectorAttr, fillNA = TRUE)
-    }
+    TSF <- getSectorID(TS = TSF,sectorAttr = sectorAttr, fillNA = TRUE)
     TSF <- dplyr::group_by(TSF, date, sector)
   }else{
     TSF <- dplyr::group_by(TSF, date)
@@ -722,73 +720,71 @@ factor_outlier <- function (TSF, method=c("none","sd","mad","boxplot","percentag
 #' TSF <- gf.NP_YOY(TS)
 #' regLists <- buildFactorLists(buildFactorList(factorFun = 'gf.PE_ttm',factorDir = -1,factorRefine=refinePar_default("scale")))
 #' TSF <- factor_std(TSF, method = "reg", log = FALSE, regLists = regLists)
-factor_std <- function(TSF,method=c("none","scale","robustScale","reg"),
+factor_std <- function(TSF,method=c("none","scale","robustScale","reg","reg2","reg_tmp"),
                        log=FALSE, sectorAttr=defaultSectorAttr(),
                        regLists=NULL){
   method <- match.arg(method)
   
   # log
   if(log){
-    TSF$factorscore <- log(TSF$factorscore)
+    TSF <- dplyr::mutate(TSF, factorscore=ifelse(factorscore==0,NA,log(factorscore)))
   }
   
   if(method == "none"){ # do nothing
     return(TSF)
     
-  }else if(method == "reg"){ # reg part
+  }else if(method == "reg_tmp"){ # reg part
     TSF <- renameCol(TSF, "factorscore", "Y_for_reg")
-    # subsetting not NA part
-    ind_ <- is.na(TSF$Y_for_reg)
-    TSF_core <- TSF[!ind_,]
     
-    # what if its sector matrix ???? 
-    # to do ...
-    
-    # subset useful columns and get sector
-    if(is.null(sectorAttr)){
-      TSF_core <- TSF_core[,c("date","stockID","Y_for_reg")]
-    }else if(identical(sectorAttr, "existing")){
-      TSF_core <- TSF_core[,c("date","stockID","Y_for_reg","sector")]
-      TSF_core <- cast_sector(TSF_core)
+    # shrink columns (merge back later)
+    if(identical(sectorAttr, "existing")){
+      TSF_core <- TSF[,c("date","stockID","Y_for_reg","sector")]
     }else{
-      TSF_core <- TSF_core[,c("date","stockID","Y_for_reg")]
-      TSF_core <- getSectorID(TSF_core, sectorAttr = sectorAttr, fillNA = TRUE)
-      TSF_core <- cast_sector(TSF_core)
+      TSF_core <- TSF[,c("date","stockID","Y_for_reg")]
     }
     
     # get regList 
     if(!is.null(regLists)){
       TSF_core <- getMultiFactor(TSF_core, FactorLists = regLists)
-      # NA manipulating
       fnames_list <- sapply(regLists, '[[', 'factorName')
-      if(!all(complete.cases(TSF_core))){
-        warning("There is NA in X variables. The NA will be filled with median.")
-        for(i in 1:length(fnames_list)){
-          fname_tmp_ <- fnames_list[i]
-          TSF_core <- renameCol(TSF_core, fname_tmp_, "factorscore")
-          TSF_core <- factor_na(TSF, method = "median", sectorAttr = NULL)
-          TSF_core <- renameCol(TSF_core, "factorscore", fname_tmp_)
+      for(i in 1:length(fnames_list)){# deal with NAs in X
+        fname_tmp_ <- fnames_list[i]
+        if(any(is.na(TSF_core[,fname_tmp_]))){
+          warning("There is NA in X variables. The NA will be filled with median.")
         }
+        TSF_core <- renameCol(TSF_core, fname_tmp_, "factorscore")
+        TSF_core <- factor_na(TSF, method = "median", sectorAttr = NULL)
+        TSF_core <- renameCol(TSF_core, "factorscore", fname_tmp_)
       }
     }
-    # processing: strip the X varialbes from Y
-    TSF_core <- factor_orthogon_single(TSF_core, y = "Y_for_reg", sectorAttr = "existing")
+    
+    # orthogon
+    TSF_core <- factor_orthogon_single(TSF_core, y = "Y_for_reg", sectorAttr = sectorAttr)
     TSF_core <- TSF_core[,c("date","stockID","Y_for_reg")]
     TSF_core <- renameCol(TSF_core, "Y_for_reg", "factorscore")
     # merge back
     TSF <- TSF[,setdiff(colnames(TSF), "Y_for_reg")]
     TSF <- merge.x(TSF, TSF_core, by = c("date","stockID"))
-    # scale to 0 median and 1 sd
-    TSF <- factor_std(TSF,method="robustScale",sectorAttr=NULL)
+    
     # output
+    return(TSF)
+    
+  }else if(method == "reg"){
+    # orthogon first (including sectors) then scale to N(0,1)
+    TSF <- factor_std(TSF, method = "reg_tmp", sectorAttr = sectorAttr, regLists = regLists)
+    TSF <- factor_std(TSF, method = "robustScale", sectorAttr = NULL, regLists = NULL)
+    return(TSF)
+    
+  }else if(method == "reg2"){
+    # scale first (including sectors) then orthogon
+    TSF <- factor_std(TSF, method = "robustScale", sectorAttr = sectorAttr, regLists = NULL)
+    TSF <- factor_std(TSF, method = "reg_tmp", sectorAttr = NULL, regLists = regLists)
     return(TSF)
     
   }else{ # scale part
     # sector splitting
     if(!is.null(sectorAttr)){
-      if(!identical(sectorAttr,"existing") ){
-        TSF <- getSectorID(TS = TSF, sectorAttr = sectorAttr, fillNA = TRUE, ungroup=10)
-      }
+      TSF <- getSectorID(TS = TSF, sectorAttr = sectorAttr, fillNA = TRUE, ungroup=10)
       TSF <- dplyr::group_by(TSF, date, sector)
     }else{
       TSF <- dplyr::group_by(TSF, date)
@@ -819,6 +815,7 @@ factor_std <- function(TSF,method=c("none","scale","robustScale","reg"),
 
 
 
+
 #' factor_na
 #' 
 #' @param method Currently support three types : none, mean, median.
@@ -839,9 +836,7 @@ factor_na <- function (TSF, method=c("none","mean","median"),
   }
   # sector splitting
   if(!is.null(sectorAttr)){
-    if(!identical(sectorAttr,"existing")){
-      TSF <- getSectorID(TS = TSF,sectorAttr = sectorAttr, fillNA = TRUE)
-    }
+    TSF <- getSectorID(TS = TSF,sectorAttr = sectorAttr, fillNA = TRUE)
     TSF <- dplyr::group_by(TSF, date, sector)
   }else{
     TSF <- dplyr::group_by(TSF, date)
@@ -964,7 +959,7 @@ factor_refine_MF <- function(TSF, refinePar_lists, refinePar_names){
 #' @param regLists a \bold{factorLists}
 #' @export
 #' @author Han.Qian
-refinePar_default <- function(type=c("none","reg","scale"), 
+refinePar_default <- function(type=c("none","reg","scale","reg2"), 
                               sectorAttr=NULL,
                               log=FALSE,
                               regLists=list(fl_cap(log=TRUE))
@@ -1003,6 +998,17 @@ refinePar_default <- function(type=c("none","reg","scale"),
                na=list(method = "median", 
                        sectorAttr=sectorAttr)
                )
+  }else if(type=="reg2"){
+    re <- list(outlier=list(method = "boxplot",
+                            par=1.5,
+                            sectorAttr= NULL),
+               std=list(method = "reg2",
+                        log=log, 
+                        sectorAttr=sectorAttr,
+                        regLists=regLists),
+               na=list(method = "median", 
+                       sectorAttr=sectorAttr)
+    )
   }
   return(re)
 }

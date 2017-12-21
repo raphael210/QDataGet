@@ -4,8 +4,9 @@
 \alias{factor_std}
 \title{factor_std}
 \usage{
-factor_std(TSF, method = c("none", "scale", "robustScale", "reg"),
-  log = FALSE, sectorAttr = defaultSectorAttr(), regLists = NULL)
+factor_std(TSF, method = c("none", "scale", "robustScale", "reg", "reg2",
+  "reg_tmp"), log = FALSE, sectorAttr = defaultSectorAttr(),
+  regLists = NULL)
 }
 \arguments{
 \item{method}{Currently supporting four types : none, scale, robustScale, reg.}

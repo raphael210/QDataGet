@@ -379,32 +379,23 @@ getRawFactor <- function (TS,factorFun,factorPar,FactorList) {
 #' modelPar <- modelPar.factor(modelPar.default(),factorFun="getMultiFactor",factorPar=list(FactorLists,wgts),factorRefine=refinePar_default("scale"))
 #' TSF.multi3 <- Model.TSF(modelPar)
 #' TSF.multi4 <- Model.TSF_byTS(modelPar, TS)
-getMultiFactor <- function(TS,FactorLists,wgts){ 
-
+getMultiFactor <- function(TS,FactorLists,wgts,silence=FALSE){
   # ---- get all the single-factor-scores
-  warnings_std <- c()
-  warnings_na <- c()
   for(i in 1:length(FactorLists)){
     factorFun <- FactorLists[[i]]$factorFun
     factorPar <- FactorLists[[i]]$factorPar
     factorName <- FactorLists[[i]]$factorName
     factorDir <- FactorLists[[i]]$factorDir
-    factorRefine <- FactorLists[[i]]$factorRefine 
-    cat(paste("Function getMultiFactor: getting the score of factor",factorName,"....\n"))
+    factorRefine <- FactorLists[[i]]$factorRefine
+    if(!silence){
+      cat(paste("Function getMultiFactor: getting the score of factor",factorName,"....\n"))
+    }
     # ---- get the raw factorscore
     TSF <- getRawFactor(TS,factorFun,factorPar) 
     # ---- adjust the direction
     TSF$factorscore <- TSF$factorscore*factorDir
     # ---- standardize the factorscore 
     TSF <- factor_refine(TSF,refinePar = factorRefine)
-    factorStd <- factorRefine$std$method
-    factorNA <- factorRefine$na$method
-    if(factorStd=="none"){
-      warnings_std <- c(warnings_std,factorName)
-    }
-    if(factorNA=="none"){
-      warnings_na <- c(warnings_na,factorName)
-    }
     # ---- merge
     TSF <- renameCol(TSF,"factorscore",factorName)
     if(i==1L){
@@ -413,13 +404,6 @@ getMultiFactor <- function(TS,FactorLists,wgts){
       re <- merge.x(re,TSF[,c("date","stockID",factorName)],by=c("date","stockID"))
     }
   }
-  if(length(warnings_std)>0){
-    warning(paste("'factorStd' of factor:",paste(warnings_std,collapse = ","), " is 'none'. It might make mistake when computing the combined-factorscore or testing by regression method!"))
-  }
-  if(length(warnings_na)>0){
-    warning(paste("'factorNA' of factor:",paste(warnings_na,collapse = ","), "is 'na'. It might make mistake when computing the combined-factorscore or testing by regression method!")) 
-  }
-  
   # ---- get the combi-factor-score
   factorNames <- sapply(FactorLists,"[[","factorName")
   if(!missing(wgts)){
@@ -558,23 +542,9 @@ TSFs2mTSF <- function(TSFs, factorNames = names(TSFs)){
     stop("NROWs of TSFs are not all equal!\n")
     print(nrows)
   }
-  warnings_std <- c()
-  warnings_na <- c()
   for(i in 1:length(TSFs)){
     factorName <- factorNames[i]
     TSF <- TSFs[[i]]
-    if(TRUE){ # -- factorStd & factorNA
-      if(!is.null(attr(TSF,"MP"))) {
-        factorStd <- attr(TSF,"MP")$factor$factorRefine$std$method
-        factorNA <- attr(TSF,"MP")$factor$factorRefine$na$method
-        if(factorStd=="none"){
-          warnings_std <- c(warnings_std,factorName) 
-        }
-        if(factorNA=="none"){
-          warnings_na <- c(warnings_na,factorName) 
-        }
-      }
-    }
     TSF <- renameCol(TSF,"factorscore",factorNames[i])
     if(i==1L){
       kept_cols <- colnames(TSF)[is_usualcols(colnames(TSF))]
@@ -583,12 +553,6 @@ TSFs2mTSF <- function(TSFs, factorNames = names(TSFs)){
       re <- merge.x(re,TSF[, c("date","stockID",factorNames[i])], by=c("date","stockID"))
     }
   } 
-  if(length(warnings_std)>0){
-    warning(paste("'factorStd' of factor:",paste(warnings_std,collapse = ","), " is 'none'. It might make mistake when computing the combined-factorscore or testing by regression method!"))
-  }
-  if(length(warnings_na)>0){
-    warning(paste("'factorNA' of factor:",paste(warnings_na,collapse = ","), "is 'na'. It might make mistake when computing the combined-factorscore or testing by regression method!")) 
-  }
   return(re)
 }
 
@@ -745,16 +709,17 @@ factor_std <- function(TSF,method=c("none","scale","robustScale","reg","reg2","r
     
     # get regList 
     if(!is.null(regLists)){
-      TSF_core <- getMultiFactor(TSF_core, FactorLists = regLists)
+      TSF_core <- getMultiFactor(TSF_core, FactorLists = regLists,silence = TRUE)
+      # deal with NAs in X
       fnames_list <- sapply(regLists, '[[', 'factorName')
-      for(i in 1:length(fnames_list)){# deal with NAs in X
+      for(i in 1:length(fnames_list)){
         fname_tmp_ <- fnames_list[i]
         if(any(is.na(TSF_core[,fname_tmp_]))){
           warning("There is NA in X variables. The NA will be filled with median.")
+          TSF_core <- renameCol(TSF_core, fname_tmp_, "factorscore")
+          TSF_core <- factor_na(TSF_core, method = "median", sectorAttr = NULL)
+          TSF_core <- renameCol(TSF_core, "factorscore", fname_tmp_)
         }
-        TSF_core <- renameCol(TSF_core, fname_tmp_, "factorscore")
-        TSF_core <- factor_na(TSF, method = "median", sectorAttr = NULL)
-        TSF_core <- renameCol(TSF_core, "factorscore", fname_tmp_)
       }
     }
     

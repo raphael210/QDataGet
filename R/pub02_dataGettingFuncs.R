@@ -143,7 +143,10 @@ lcdb.updatetime <- function () {
   return(data.frame(table,updatetime))
 }
 
-
+# to do....
+lcdb.init <- function(){
+  # initialize all the tables in lcdb.
+}
 
 #' update the local database
 #' @return NULL
@@ -1048,7 +1051,7 @@ lcdb.update.QT_FactorScore <- function(endT=Sys.Date()){
     factorName <- factorLists[i,"factorName"]
     factorID <- factorLists[i,"factorID"]
     factorFun <- factorLists[i,"factorFun"]
-    factorPar <- factorLists[i,"factorPar"]    
+    factorPar <- factorLists[i,"factorPar"]
     cat("Factor",factorName,"getting ...\n")
     subTSF <- getRawFactor(TS=TS,factorFun=factorFun,factorPar=factorPar)
     subTSF <- renameCol(subTSF,src="factorscore",tgt=factorID)

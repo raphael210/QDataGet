@@ -9,7 +9,7 @@
 \alias{mTSF2TSFs}
 \title{get multiFactors}
 \usage{
-getMultiFactor(TS, FactorLists, wgts)
+getMultiFactor(TS, FactorLists, wgts, silence = FALSE)
 
 getMultiFactorbyTSFs(TSFs, wgts, factorNames = names(TSFs))
 

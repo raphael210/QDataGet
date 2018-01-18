@@ -4,11 +4,12 @@
 \alias{refinePar_default}
 \title{refinePar_default}
 \usage{
-refinePar_default(type = c("none", "reg", "scale", "reg2"),
-  sectorAttr = NULL, log = FALSE, regLists = list(fl_cap(log = TRUE)))
+refinePar_default(type = c("none", "scale", "reg", "reg_glm"),
+  sectorAttr = NULL, log = FALSE, regLists = list(fl_cap(bc_lambda =
+  "auto")))
 }
 \arguments{
-\item{type}{Could be "none", "reg", "scale."}
+\item{type}{Could be "none", "reg", "scale"}
 
 \item{sectorAttr}{could be a sectorAttr list, or NULL(means no grouping by sector).}
 

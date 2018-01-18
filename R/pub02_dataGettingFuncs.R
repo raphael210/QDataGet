@@ -1,1451 +1,6 @@
 
 
 
-
-
-
-# ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ======================
-# ===================== Database Operation  ===========================
-# ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ======================
-
-#' defaultDataSRC
-#' 
-#' get the default datasrc. You can reset the default value by eg. \code{options(datasrc="quant")}
-#' @return a character string, the value of the default datasrc. 
-#' @export
-#' @examples
-#' # -- get the default datasrc
-#' defaultDataSRC()
-#' # -- reset 
-#' options(datasrc="quant")
-#' # -- reget
-#' defaultDataSRC()
-defaultDataSRC <- function(){
-  getOption("datasrc",default="local")
-}
-
-#' origin_sql
-#' @export
-origin_sql <- function(){
-  return("1970-01-01")
-}
-
-
-#' Database connection
-#' 
-#' connect database wind, quant, cs, jy, local, ...
-#' @rdname db.connection
-#' @return a database connection.
-#' @export
-db.local <- function(dbname = "D:/sqlitedb/QTlite.db"){
-  driver = DBI::dbDriver("SQLite")
-  dbConnect(driver, dbname = dbname)
-}
-#' @rdname db.connection
-#' @export
-db.quant <- function(){
-  odbcConnect("jyquant", uid = "wsread",pwd = "wsread")
-}
-#' @rdname db.connection
-#' @export
-db.cs <- function(){
-  odbcConnect("csdb", uid = "wsread",pwd = "wsread")
-}
-#' @rdname db.connection
-#' @export
-db.jy <- function(){
-  odbcConnect("jy", uid = "jyread",pwd = "jyread")
-}
-#' @rdname db.connection
-#' @export
-db.wind <- function(){
-  odbcConnect("wind", uid = "wsread",pwd = "wsread")
-}
-
-# db.lite <- function(){ # connect SQLite by ODBC
-#   odbcConnect("lite")
-# }
-
-
-
-
-#' queryAndClose.odbc
-#'
-#' read data from a ODBC data source with a query
-#' @param db a ODBC database object
-#' @param query a character string,indicating the query to execute 
-#' @return a dataframe
-#' @author Ruifei.Yin
-#' @export
-#' @examples 
-#' queryAndClose.odbc(db.quant(),"select top 10 * from QT_DailyQuote")
-queryAndClose.odbc <- function (db, query, as.is=FALSE, ...) {
-  table = sqlQuery(db, query, as.is = as.is, ...)
-  odbcClose(db)
-  return(table) 
-}
-
-
-#' queryAndClose.dbi
-#'
-#' read data from a DBI data source with a query
-#' @param db a DBI data source object
-#' @param query a character string,indicating the query to execute 
-#' @return a dataframe
-#' @author Ruifei.Yin
-#' @export
-#' @examples 
-#' queryAndClose.dbi(db.local(),"select * from QT_DailyQuote limit 10")
-queryAndClose.dbi <- function (db, query, ...) {
-  table = dbGetQuery(db, query, ...)
-  dbDisconnect(db)
-  return(table) 
-}
-
-
-
-#' lcdb.updatetime
-#' 
-#' get the updatetime of tables in lcdb
-#' @return a datafrme, with cols: "table", "updatetime".
-#' @export
-lcdb.updatetime <- function () {
-  con <- db.local()
-  updatetime <- c(    
-    rdate2int(as.Date(as.POSIXct(dbGetQuery(con,"select max(updateTime) from SecuMain")[[1]],origin = origin_sql()),tz="")),
-    rdate2int(as.Date(as.POSIXct(dbGetQuery(con,"select max(updateTime) from CT_IndustryList")[[1]],origin = origin_sql()),tz="")),
-    rdate2int(as.Date(as.POSIXct(dbGetQuery(con,"select max(updateTime) from LC_ExgIndustry")[[1]],origin = origin_sql()),tz="")),
-    rdate2int(as.Date(as.POSIXct(dbGetQuery(con,"select max(updateTime) from LC_IndexComponent")[[1]],origin =origin_sql()),tz="")),
-    dbGetQuery(con,"select max(EndDate) from LC_IndexComponentsWeight")[[1]],
-    # dbGetQuery(con,"select max(TradingDay) from QT_UnTradingDay")[[1]]      ,
-    dbGetQuery(con,"select max(TradingDay) from QT_IndexQuote")[[1]]        ,
-    dbGetQuery(con,"select max(TradingDay) from QT_DailyQuote")[[1]]        ,
-    dbGetQuery(con,"select max(TradingDay) from QT_DailyQuote2")[[1]]       ,
-    dbGetQuery(con,"select max(TradingDay) from QT_FactorScore")[[1]]       ,
-    dbGetQuery(con,"select max(PublDate) from LC_RptDate")[[1]]             ,
-    dbGetQuery(con,"select max(InfoPublDate) from LC_PerformanceGrowth")[[1]]             
-    )
-  table <- c(
-    "SecuMain",
-    "CT_IndustryList",
-    "LC_ExgIndustry",
-    "LC_IndexComponent",
-    "LC_IndexComponentsWeight",
-    # "QT_UnTradingDay",
-    "QT_IndexQuote",
-    "QT_DailyQuote",
-    "QT_DailyQuote2",
-    "QT_FactorScore",
-    "LC_RptDate",
-    "LC_PerformanceGrowth"
-    )
-  dbDisconnect(con)
-  return(data.frame(table,updatetime))
-}
-
-# to do....
-lcdb.init <- function(){
-  # initialize all the tables in lcdb.
-}
-
-#' update the local database
-#' @return NULL
-#' @export
-lcdb.update <- function(){
-  lcdb.update.SecuMain()                 ;  cat("lcdb.update.SecuMain()... Done \n");
-  lcdb.update.QT_DailyQuote()            ;  cat("lcdb.update.QT_DailyQuote()... Done \n");
-  lcdb.update.QT_DailyQuote2()           ;  cat("lcdb.update.QT_DailyQuote2()... Done \n");
-  lcdb.update.QT_TradingDay()            ;  cat("lcdb.update.QT_TradingDay()... Done\n");
-  lcdb.update.QT_sus_res()               ;  cat("lcdb.update.QT_sus_res()... Done\n");
-  lcdb.update.CT_SystemConst()           ;  cat("lcdb.update.CT_SystemConst()... Done\n");
-  lcdb.update.CT_IndustryList()          ;  cat("lcdb.update.CT_IndustryList()... Done\n");
-  lcdb.update.LC_ExgIndustry()           ;  cat("lcdb.update.LC_ExgIndustry()... Done\n");
-  lcdb.fix.swindustry()                  ;  cat("lcdb.fix.swindustry()... Done\n");
-  lcdb.fix.ezindustry()                  ;  cat("lcdb.fix.ezindustry()... Done\n");
-  lcdb.update.LC_IndexComponent()        ;  cat("lcdb.update.LC_IndexComponent()... Done \n");
-  lcdb.add.LC_IndexComponent("EI000985") ;  cat("lcdb.add.LC_IndexComponent('EI000985')... Done \n");
-  lcdb.update.LC_IndexComponentsWeight() ;  cat("lcdb.update.LC_IndexComponentsWeight()... Done\n");
-  # lcdb.update.QT_UnTradingDay()          ;  cat("lcdb.update.QT_UnTradingDay()... Done \n");
-  lcdb.update.QT_IndexQuote()            ;  cat("lcdb.update.QT_IndexQuote()... Done \n");
-  lcdb.update.IndexQuote_000985E()       ;  cat("lcdb.update.IndexQuote_000985E()... Done \n");
-  
-  lcdb.update.LC_RptDate()               ;  cat("lcdb.update.LC_RptDate()... Done \n");
-  lcdb.update.LC_PerformanceGrowth()     ;  cat("lcdb.update.LC_PerformanceGrowth()... Done \n");
-  lcdb.update.QT_FreeShares()            ;  cat("lcdb.update.QT_FreeShares()... Done \n");
-  lcdb.update.QT_FactorScore()           ;  cat("lcdb.update.QT_FactorScore()... Done \n");
-  
-}
-
-#' @rdname lcdb.update
-#' @export
-lcdb.update.SecuMain <- function(){
-  tb.from <- queryAndClose.odbc(db.quant(),query="select * from SecuMain", as.is=4)
-  con <- db.local()
-  dbWriteTable(con,"SecuMain",tb.from,overwrite=TRUE,append=FALSE,row.names=FALSE)
-  res <- dbSendQuery(con,"CREATE UNIQUE INDEX IX_SecuMain ON SecuMain (ID)")
-  dbClearResult(res)
-  dbDisconnect(con)
-}
-#' @rdname lcdb.update
-#' @export
-lcdb.update.QT_TradingDay <- function(){
-  tb.from <- queryAndClose.odbc(db.quant(),query="select * from QT_TradingDay")
-  con <- db.local()
-  dbWriteTable(con,"QT_TradingDay",tb.from,overwrite=TRUE,append=FALSE,row.names=FALSE)
-  res <- dbSendQuery(con,"CREATE UNIQUE  INDEX IX_QT_TradingDay ON QT_TradingDay (TradingDate, SecuMarket)")
-  dbClearResult(res)
-  dbDisconnect(con)
-}
-#' @rdname lcdb.update
-#' @export
-lcdb.update.CT_SystemConst <- function(){
-  tb.from <- queryAndClose.odbc(db.quant(),query="select * from CT_SystemConst")
-  con <- db.local()
-  dbWriteTable(con,"CT_SystemConst",tb.from,overwrite=TRUE,append=FALSE,row.names=FALSE)
-  res <- dbSendQuery(con,"CREATE UNIQUE INDEX [IX_CT_SystemConst] ON [CT_SystemConst] ([LB], [DM])")
-  dbClearResult(res)
-  dbDisconnect(con)
-}
-#' @rdname lcdb.update
-#' @export
-lcdb.update.CT_IndustryList <- function(){
-  tb.from <- queryAndClose.odbc(db.quant(),query="select * from CT_IndustryList")
-  con <- db.local()
-  dbWriteTable(con,"CT_IndustryList",tb.from,overwrite=TRUE,append=FALSE,row.names=FALSE)
-  res <- dbSendQuery(con,"CREATE UNIQUE INDEX IX_CT_IndustryList ON CT_IndustryList (Standard, IndustryID)")
-  dbClearResult(res)
-  dbDisconnect(con)
-}
-#' @rdname lcdb.update
-#' @export
-lcdb.update.LC_ExgIndustry <- function(){
-  tb.from <- queryAndClose.odbc(db.quant(),query="select * from LC_ExgIndustry")
-  con <- db.local()
-  #   dbSendQuery(con,"delete from LC_ExgIndustry")
-  dbWriteTable(con,"LC_ExgIndustry",tb.from,overwrite=TRUE,append=FALSE,row.names=FALSE)
-  res <- dbSendQuery(con,"CREATE unique INDEX IX_LC_ExgIndustry ON LC_ExgIndustry (Standard, stockID, InDate)")
-  dbClearResult(res)
-  dbDisconnect(con)
-}
-#' @rdname lcdb.update
-#' @export
-lcdb.update.LC_IndexComponent <- function(){
-  tb.from <- queryAndClose.odbc(db.quant(),query="select * from LC_IndexComponent")
-  con <- db.local()
-  #   dbSendQuery(con,"delete from LC_IndexComponent")
-  dbWriteTable(con,"LC_IndexComponent",tb.from,overwrite=TRUE,append=FALSE,row.names=FALSE)
-  res <- dbSendQuery(con,"CREATE unique INDEX IX_LC_IndexComponent ON LC_IndexComponent (IndexID, InDate,SecuID)")
-  dbClearResult(res)
-  dbDisconnect(con)
-}
-#' @rdname lcdb.update
-#' @export
-#' @param begT a numeric date. if missing, '\code{max(EndDate)}' in the lcdb.
-#' @param endT a numeric date. if missing, 99999999.
-#' @aliases indexID a vector of indexID. if missing, all the index in server database.
-#' @examples 
-#' lcdb.update.LC_IndexComponentsWeight() # update all the indexs up to date
-#' lcdb.update.LC_IndexComponentsWeight(20060101,20060330) # update all the indexs in given period
-#' lcdb.update.LC_IndexComponentsWeight(19000101,99999999,"EI000905") # update all the data of given index
-#' lcdb.update.LC_IndexComponentsWeight(20060101,20060330,"EI000905")
-lcdb.update.LC_IndexComponentsWeight <- function(begT,endT,IndexID){  
-  con <- db.local()
-  if(TRUE){
-    if(missing(begT)){
-      begT <- dbGetQuery(con,"select max(EndDate) from LC_IndexComponentsWeight")[[1]]
-    }
-    begT_filt <- paste("EndDate >=",begT)
-    if(missing(endT)){
-      endT <- 99999999
-    }
-    endT_filt <- paste("EndDate < ",endT)
-    if(missing(IndexID)){
-      pool_filt <- "1>0"
-    } else{
-      pool_filt <- paste("IndexID in",brkQT(IndexID))
-    }
-  }
-  tb.from <- queryAndClose.odbc(db.quant(),query=paste("select * from LC_IndexComponentsWeight where",begT_filt,"and",endT_filt,"and",pool_filt))  
-  if(NROW(tb.from)==0){
-    return()
-  }
-  dbGetQuery(con,paste("delete from LC_IndexComponentsWeight where",begT_filt,"and",endT_filt,"and",pool_filt))
-  dbWriteTable(con,"LC_IndexComponentsWeight",tb.from,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbDisconnect(con)
-}
-
-
-
-#' @rdname lcdb.update
-#' @export
-lcdb.update.QT_UnTradingDay <- function(){
-  con <- db.local()
-  begT <- dbGetQuery(con,"select max(TradingDay) from QT_UnTradingDay")[[1]]
-  tb.from <- queryAndClose.odbc(db.quant(),query=paste("select * from QT_UnTradingDay where TradingDay >",begT))  
-  if(NROW(tb.from)==0){
-    return()
-  }
-  dbWriteTable(con,"QT_UnTradingDay",tb.from,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbDisconnect(con)  
-}
-
-
-
-
-
-
-#' @rdname lcdb.update
-#' @export
-lcdb.update.QT_IndexQuote <- function(begT,endT,IndexID){
-  con <- db.local()
-  if(TRUE){
-    if(missing(begT)){
-      if(missing(IndexID)){
-        begT <- dbGetQuery(con,"select max(TradingDay) from QT_IndexQuote")[[1]]
-      } else {
-        begT <- dbGetQuery(con,"select min(TradingDay) from QT_IndexQuote")[[1]]
-      }
-    }
-    begT_filt <- paste("TradingDay >=",begT)
-    if(missing(endT)){
-      if(missing(IndexID)){
-        endT <- 99999999
-      } else {
-        endT <- dbGetQuery(con,"select max(TradingDay) from QT_IndexQuote")[[1]]
-      }
-    }
-    endT_filt <- paste("TradingDay < ",endT)
-    if(missing(IndexID)){
-      pool_filt <- "1>0"
-    } else{
-      pool_filt <- paste("ID in",brkQT(IndexID))
-    }
-  }
-  tb.from <- queryAndClose.odbc(db.quant(),query=paste("select * from QT_IndexQuote where ",begT_filt,"and",endT_filt,"and",pool_filt)) 
-  if(NROW(tb.from)==0){
-    return()
-  }
-  dbGetQuery(con,paste("delete from QT_IndexQuote where",begT_filt,"and",endT_filt,"and",pool_filt))
-  dbWriteTable(con,"QT_IndexQuote",tb.from,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbDisconnect(con) 
-}
-
-#' @rdname lcdb.update
-#' @export
-lcdb.update.QT_DailyQuote <- function(begT,endT,stockID){
-  con <- db.local()
-  if(TRUE){
-    if(missing(begT)){
-      if(missing(stockID)){
-        begT <- dbGetQuery(con,"select max(TradingDay) from QT_DailyQuote")[[1]]
-      } else {
-        begT <- dbGetQuery(con,"select min(TradingDay) from QT_DailyQuote")[[1]]
-      }
-    }
-    begT_filt <- paste("TradingDay >=",begT)
-    if(missing(endT)){
-      if(missing(stockID)){
-        endT <- 99999999
-      } else {
-        endT <- dbGetQuery(con,"select max(TradingDay) from QT_DailyQuote")[[1]]
-      }
-    }
-    endT_filt <- paste("TradingDay < ",endT)
-    if(missing(stockID)){
-      pool_filt <- "1>0"
-    } else{
-      pool_filt <- paste("ID in",brkQT(stockID))
-    }
-  }
-  tb.from <- queryAndClose.odbc(db.quant(),query=paste("select * from QT_DailyQuote where ",begT_filt,"and",endT_filt,"and",pool_filt))
-  if(NROW(tb.from)==0){
-    return()
-  }
-  dbGetQuery(con,paste("delete from QT_DailyQuote where",begT_filt,"and",endT_filt,"and",pool_filt))
-  dbWriteTable(con,"QT_DailyQuote",tb.from,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbDisconnect(con)
-}
-
-#' @rdname lcdb.update
-#' @export
-lcdb.update.QT_DailyQuote2 <- function(begT,endT,stockID){
-  con <- db.local()
-  if(TRUE){
-    if(missing(begT)){
-      if(missing(stockID)){
-        begT <- dbGetQuery(con,"select max(TradingDay) from QT_DailyQuote2")[[1]]
-      } else{
-        begT <- dbGetQuery(con,"select min(TradingDay) from QT_DailyQuote2")[[1]]
-      }
-    }
-    begT_filt <- paste("TradingDay >=",begT)
-    if(missing(endT)){
-      if(missing(stockID)){
-        endT <- 99999999
-      } else {
-        endT <- dbGetQuery(con,"select max(TradingDay) from QT_DailyQuote2")[[1]]
-      }
-    }
-    endT_filt <- paste("TradingDay < ",endT)
-    if(missing(stockID)){
-      pool_filt <- "1>0"
-    } else{
-      pool_filt <- paste("ID in",brkQT(stockID))
-    }
-  }
-  tb.from <- queryAndClose.odbc(db.quant(),query=paste("select * from QT_DailyQuote where ",begT_filt,"and",endT_filt,"and",pool_filt))
-  if(NROW(tb.from)==0){
-    return()
-  }
-  dbGetQuery(con,paste("delete from QT_DailyQuote2 where",begT_filt,"and",endT_filt,"and",pool_filt))
-  dbWriteTable(con,"QT_DailyQuote2",tb.from,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbDisconnect(con)
-}
-
-#' @rdname lcdb.update
-#' @export
-lcdb.update.LC_RptDate <- function(begT,endT){  
-  con <- db.local()
-  if(missing(begT)){
-    begT <- dbGetQuery(con,"select max(PublDate) from LC_RptDate")[[1]]
-  }
-  if(missing(endT)){
-    endT <- 99999999
-  }
-  tb.from <- queryAndClose.odbc(db.quant(),query=paste("select * from LC_RptDate where PublDate >=",begT,"and PublDate <=",endT))  
-  if(NROW(tb.from)==0){
-    return()
-  }
-  dbGetQuery(con,paste("delete from LC_RptDate where PublDate >=",begT,"and PublDate<=",endT))
-  dbWriteTable(con,"LC_RptDate",tb.from,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbDisconnect(con)
-}
-
-
-
-#' @rdname lcdb.update
-#' @export
-lcdb.update.LC_PerformanceGrowth <- function(begT,endT){
-  con <- db.local()
-  if(missing(begT)){
-    begT <- dbGetQuery(con,"select max(InfoPublDate) from LC_PerformanceGrowth")[[1]]
-  } 
-  if(missing(endT)){
-    endT <- 99999999
-  }
-  tb.from <- queryAndClose.odbc(db.quant(),query=paste("select * from LC_PerformanceGrowth where InfoPublDate>=",begT,"and InfoPublDate<=",endT))
-  if(NROW(tb.from)==0){
-    return()
-  }
-  dbGetQuery(con,paste("delete from LC_PerformanceGrowth where InfoPublDate >=",begT,"and InfoPublDate<=",endT))
-  dbWriteTable(con,"LC_PerformanceGrowth",tb.from,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbDisconnect(con)
-}
-
-#' add a index to local database from JY database
-#'
-#'
-#' @author Andrew Dow
-#' @param indexID is index code,such as EI000300
-#' @return nothing
-#' @examples
-#' lcdb.add.LC_IndexComponent(indexID="EI801003")
-#' lcdb.add.LC_IndexComponent(indexID="EI000985")
-#' @export
-lcdb.add.LC_IndexComponent <- function(indexID){
-  qr1 <- paste("select ID,InnerCode,CompanyCode,'EI'+SecuCode 'SecuCode',SecuAbbr,
-               SecuMarket,ListedSector,ListedState,JSID 'UpdateTime',
-               SecuCode 'StockID_TS',SecuCategory,
-               convert(varchar,ListedDate,112) 'ListedDate',SecuCode 'StockID_wind'
-               from SecuMain WHERE SecuCode=",QT(substr(indexID,3,8)),
-               " and SecuCategory=4",sep='')
-  indexInfo <- queryAndClose.odbc(db.jy(),qr1,stringsAsFactors=FALSE)
-  
-  qr2 <- paste("SELECT 'EI'+s1.SecuCode 'IndexID','EQ'+s2.SecuCode 'SecuID',
-               convert(varchar(8),l.InDate,112) 'InDate',
-               convert(varchar(8),l.OutDate,112) 'OutDate',l.Flag,l.XGRQ 'UpdateTime'
-               FROM LC_IndexComponent l inner join SecuMain s1
-               on l.IndexInnerCode=s1.InnerCode and s1.SecuCode=",QT(substr(indexID,3,8)),
-               " left join SecuMain s2 on l.SecuInnerCode=s2.InnerCode",
-               " where s2.SecuCode like '3%' or s2.SecuCode like '6%' or s2.SecuCode like '0%'")
-  indexComp <- queryAndClose.odbc(db.jy(),qr2,stringsAsFactors=FALSE)
-  
-  if(indexID=='EI000985'){
-    changeDate <- as.Date('2011-08-02')
-    
-    indexInfo <- transform(indexInfo,ID=indexID,
-                           SecuCode=substr(SecuCode,3,8),
-                           StockID_TS='SH000985',
-                           StockID_wind='000985.SH')
-    
-    #part 2 update local LC_IndexComponent
-    qr <- paste("SELECT 'EI'+s1.SecuCode 'IndexID','EQ'+s2.SecuCode 'SecuID',
-                convert(varchar(8),l.InDate,112) 'InDate',
-                convert(varchar(8),l.OutDate,112) 'OutDate',
-                convert(varchar(8),s2.ListedDate,112) 'IPODate'
-                FROM LC_IndexComponent l
-                inner join SecuMain s1 on l.IndexInnerCode=s1.InnerCode and s1.SecuCode='801003'
-                left join SecuMain s2 on l.SecuInnerCode=s2.InnerCode
-                where (s2.SecuCode like '3%' or s2.SecuCode like '6%' or s2.SecuCode like '0%')
-                and l.InDate<",QT(changeDate))
-    re <- queryAndClose.odbc(db.jy(),qr,stringsAsFactors=FALSE)
-    
-    if(TRUE){ # -- 801003
-      tmp <- transform(re,InDate=intdate2r(InDate),
-                       OutDate=intdate2r(OutDate),
-                       IPODate=intdate2r(IPODate)+90)
-      tmp[tmp$InDate<tmp$IPODate,'InDate'] <- tmp[tmp$InDate<tmp$IPODate,'IPODate']
-      tmp <- tmp[tmp$InDate < changeDate,c("SecuID","InDate","OutDate")]
-      tmp[is.na(tmp$OutDate),'OutDate'] <- changeDate
-      tmp[tmp$OutDate>changeDate,'OutDate'] <- changeDate
-      
-      qr <- paste("select 'EQ'+s.SecuCode 'SecuID',
-                  case when st.SpecialTradeType in(2,4,6) then convert(varchar(8),st.SpecialTradeTime,112)
-                  else NULL end 'InDate',
-                  case when st.SpecialTradeType in(1,3,5) then convert(varchar(8),st.SpecialTradeTime,112)
-                  else NULL end 'OutDate'
-                  from LC_SpecialTrade st,SecuMain s
-                  where st.InnerCode=s.InnerCode and s.SecuCategory=1
-                  and st.SpecialTradeTime<",QT(changeDate),
-                  " and st.SpecialTradeType in(1,2,3,4,5,6)
-                  and (s.SecuCode like '3%' or s.SecuCode like '6%' or s.SecuCode like '0%')
-                  order by s.SecuCode,st.SpecialTradeTime")
-      st <- queryAndClose.odbc(db.jy(),qr,stringsAsFactors=FALSE)
-      st <- transform(st,InDate=intdate2r(InDate),
-                      OutDate=intdate2r(OutDate))
-      st[is.na(st$OutDate),'OutDate'] <- changeDate
-      
-      tmp <- rbind(tmp[,c("SecuID","InDate","OutDate")],st)
-      tmp <- reshape2::melt(tmp,id=c('SecuID'))
-      tmp <- na.omit(tmp)
-      tmp <- unique(tmp)
-      tmp <- dplyr::arrange(tmp,SecuID,value)
-      
-      tmp$flag <- c(1)
-      for(i in 2: nrow(tmp)){
-        if(tmp$SecuID[i]==tmp$SecuID[i-1] && tmp$variable[i-1]=='InDate' && tmp$variable[i]=='InDate'){
-          tmp$flag[i-1] <- 0
-        }else if(tmp$SecuID[i]==tmp$SecuID[i-1] && tmp$variable[i-1]=='OutDate' && tmp$variable[i]=='OutDate'){
-          tmp$flag[i] <- 0
-        }else{
-          next
-        }
-      }
-      tmp <- tmp[tmp$flag==1,c("SecuID","variable","value")]
-      tmp <- cbind(tmp[tmp$variable=='InDate',c("SecuID","value")],
-                   tmp[tmp$variable=='OutDate',"value"])
-      colnames(tmp) <- c("SecuID","InDate","OutDate")
-      tmp <- transform(tmp,IndexID='EI000985',
-                       Flag=0,
-                       UpdateTime=Sys.time(),
-                       InDate=rdate2int(InDate),
-                       OutDate=rdate2int(OutDate))
-      tmp <- tmp[,c("IndexID","SecuID","InDate","OutDate","Flag","UpdateTime")]
-    }
-    indexComp <- rbind(indexComp,tmp)
-    
-  }else{
-    #part 1 update local SecuMain
-    indexInfo <- transform(indexInfo,ID=indexID,
-                           SecuCode=substr(SecuCode,3,8),
-                           StockID_TS=ifelse(is.na(stockID2stockID(indexID,'local','ts')),substr(indexID,3,8),
-                                             stockID2stockID(indexID,'local','ts')),
-                           StockID_wind=ifelse(is.na(stockID2stockID(indexID,'local','wind')),substr(indexID,3,8),
-                                               stockID2stockID(indexID,'local','wind')))
-  }
-  con <- db.local()
-  dbGetQuery(con,paste("delete from SecuMain where ID=",QT(indexID),sep=''))
-  dbGetQuery(con,paste("delete from LC_IndexComponent where IndexID=",QT(indexID),sep=''))
-  
-  dbWriteTable(con,"SecuMain",indexInfo,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbWriteTable(con,"LC_IndexComponent",indexComp,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbDisconnect(con)
-}
-
-
-#' fix shenwan new industry rule
-#'
-#' Due to the SHENWAN inustry standard changing in 2014, fix local database's shenwan industry rule's bug and make the rule keep consistent. The new industry standard is 33.  Update 3 related local tables:CT_SystemConst,CT_IndustryList and LC_ExgIndusry.  
-#' @rdname lcdb.update
-#' @author Andrew Dow
-#' @return nothing.
-#' @examples
-#' lcdb.fix.swindustry()
-#' @export
-lcdb.fix.swindustry <- function(){
-  
-  #get raw data
-  qr <- "SELECT 'EQ'+s.SecuCode 'stockID',l.CompanyCode,l.FirstIndustryCode 'Code1',l.FirstIndustryName 'Name1',
-  l.SecondIndustryCode 'Code2',l.SecondIndustryName 'Name2',l.ThirdIndustryCode 'Code3',
-  l.ThirdIndustryName 'Name3',convert(varchar, l.InfoPublDate, 112) 'InDate',
-  convert(varchar, l.CancelDate, 112) 'OutDate',l.InfoSource,l.Standard,l.Industry,
-  l.IfPerformed 'Flag',convert(float,l.XGRQ) 'UpdateTime'
-  FROM LC_ExgIndustry l,SecuMain s
-  where l.CompanyCode=s.CompanyCode and s.SecuCategory=1
-  and s.SecuMarket in(83,90) and l.Standard in(9,24)"
-  re <- queryAndClose.odbc(db.jy(),qr,as.is = TRUE)
-  re <- re[substr(re$stockID,1,3) %in% c('EQ6','EQ3','EQ0'),]
-  re <- re[ifelse(is.na(re$OutDate),TRUE,re$OutDate!=re$InDate),] # remove indate==outdate wrong data
-  re <- transform(re,InDate=as.integer(InDate),
-                  OutDate=as.integer(OutDate),
-                  UpdateTime=as.double(UpdateTime))
-  
-  sw24use <- re[(re$InDate>=20140101) & (re$Standard==24),]
-  sw9use <- re[(re$InDate<20140101) & (re$Standard==9),]
-  sw9use[is.na(sw9use$OutDate) | sw9use$OutDate>20140101,'OutDate'] <- 20140101
-  sw9use[,'Flag'] <- 2
-  sw9use <- dplyr::rename(sw9use,OldCode1=Code1,OldName1=Name1,OldCode2=Code2,
-                          OldName2=Name2,OldCode3=Code3,OldName3=Name3)
-  
-  #convert old industry to new industry
-  sw24tmp <- sw24use[sw24use$InDate==20140101,c("stockID","Code1","Name1","Code2","Name2","Code3","Name3")]
-  sw9part1 <- sw9use[sw9use$OutDate==20140101,]
-  sw9part1 <- dplyr::left_join(sw9part1,sw24tmp,by='stockID')
-  hashtable <- unique(sw9part1[,c("Code1","Name1","Code2","Name2","Code3","Name3","OldCode1","OldName1","OldCode2","OldName2","OldCode3","OldName3")])
-  hashtable <- na.omit(hashtable)
-  hashtable <- plyr::ddply(hashtable,~OldName3,plyr::mutate,n=length(OldName3))
-  hashtable <- hashtable[hashtable$n==1,c("Code1","Name1","Code2","Name2","Code3","Name3","OldCode1","OldName1","OldCode2","OldName2","OldCode3","OldName3")]
-  sw9part1 <- sw9part1[,colnames(sw24use)]
-  
-  sw9part2 <- sw9use[sw9use$OutDate<20140101,]
-  sw9part2 <- dplyr::left_join(sw9part2,hashtable,by=c("OldCode1","OldName1",
-                                                       "OldCode2","OldName2",
-                                                       "OldCode3","OldName3"))
-  sw9part2 <- sw9part2[,colnames(sw24use)]
-  sw9use <- rbind(sw9part1,sw9part2)
-  
-  #fill na to zonghe industry
-  zhcn <- unique(sw24use[sw24use$Code1==510000,'Name1'])
-  sw9use[is.na(sw9use$Code1),c("Name1","Name2","Name3")] <- zhcn
-  sw9use[is.na(sw9use$Code1),"Code1"] <-510000
-  sw9use[is.na(sw9use$Code2),"Code2"] <-510100
-  sw9use[is.na(sw9use$Code3),"Code3"] <-510101
-  
-  sw33 <- rbind(sw9use,sw24use)
-  sw33 <- transform(sw33,Standard=33,
-                    Code1=paste('ES33',Code1,sep = ''),
-                    Code2=paste('ES33',Code2,sep = ''),
-                    Code3=paste('ES33',Code3,sep = ''),
-                    Code99=c(NA),
-                    Name99=c(NA),
-                    Code98=c(NA),
-                    Name98=c(NA))
-  sw33 <- dplyr::arrange(sw33,stockID,InDate)
-  
-  #deal with abnormal condition
-  #1 outdate<=indate
-  sw33 <- sw33[ifelse(is.na(sw33$OutDate),TRUE,sw33$OutDate>sw33$InDate),]
-  #2 one stock has two null outdate
-  tmp <- sw33 %>% dplyr::group_by(stockID) %>% 
-    dplyr::summarise(NANum=sum(is.na(OutDate))) %>% 
-    dplyr::ungroup() %>% dplyr::filter(NANum>1)
-  
-  if(nrow(tmp)>0){
-    tmp <- tmp$stockID
-    sw33tmp <- sw33[(sw33$stockID %in% tmp) & is.na(sw33$OutDate),]
-    sw33 <- sw33[!((sw33$stockID %in% tmp) & is.na(sw33$OutDate)),]
-    sw33tmp <- sw33tmp %>% dplyr::group_by(stockID) %>% dplyr::filter(InDate==min(InDate)) %>% dplyr::ungroup()
-    sw33 <- rbind(sw33,sw33tmp)
-    sw33 <- dplyr::arrange(sw33,stockID,InDate)
-  }
-  
-  #3 indate[i+1]!=outdate[i]
-  sw33$tmpstockID <- c(sw33$stockID[1],sw33$stockID[1:(nrow(sw33)-1)])
-  sw33$tmpOutDate <- c(NA,sw33$OutDate[1:(nrow(sw33)-1)])
-  sw33$InDate <- ifelse(ifelse(is.na(sw33$tmpOutDate),FALSE,sw33$stockID==sw33$tmpstockID & sw33$InDate!=sw33$tmpOutDate),
-                        sw33$tmpOutDate,sw33$InDate)
-  sw33 <- subset(sw33,select=-c(tmpstockID,tmpOutDate))
-  # 4 duplicate indate
-  sw33 <- sw33[ifelse(is.na(sw33$OutDate),TRUE,sw33$OutDate>sw33$InDate),]
-  sw33[!is.na(sw33$OutDate) & sw33$Flag==1,'Flag'] <- 2
-  
-  # update local database CT_IndustryList
-  qr <- "SELECT Standard,Classification 'Level','ES33'+IndustryCode 'IndustryID'
-  ,IndustryName,SectorCode 'Alias','ES33'+FirstIndustryCode 'Code1'
-  ,FirstIndustryName 'Name1','ES33'+SecondIndustryCode 'Code2'
-  ,SecondIndustryName 'Name2','ES33'+ThirdIndustryCode 'Code3'
-  ,ThirdIndustryName 'Name3',convert(float,UpdateTime) 'UpdateTime'
-  FROM CT_IndustryType where Standard=24"
-  indCon <- queryAndClose.odbc(db.jy(),qr,as.is = TRUE)
-  indCon <- transform(indCon,Standard=33,UpdateTime=as.double(UpdateTime))
-  indCon[is.na(indCon$Name2),'Code2'] <- NA
-  indCon[is.na(indCon$Name3),'Code3'] <- NA
-  
-  # update local database CT_SystemConst
-  syscon <- queryAndClose.odbc(db.jy(),"select top 1 LB, LBMC, DM ,MS  from CT_SystemConst where LB=1081",as.is = TRUE)
-  syscon <- transform(syscon,DM=33, MS="SHENWAN2014fixed")
-  
-  # update...
-  con <- db.local()
-  res <- dbSendQuery(con,"delete  from LC_ExgIndustry where Standard=33")
-  dbClearResult(res)
-  res <- dbSendQuery(con,"delete  from CT_IndustryList where Standard=33")
-  dbClearResult(res)
-  res <- dbSendQuery(con,"delete  from CT_SystemConst where LB=1081 and DM=33")
-  dbClearResult(res)
-  
-  dbWriteTable(con,'LC_ExgIndustry',sw33,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbWriteTable(con,'CT_IndustryList',indCon,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbWriteTable(con,'CT_SystemConst',syscon,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbDisconnect(con)
-  # return('Done!')
-}
-
-
-  
-#' @rdname lcdb.update
-#' @author Qian Han
-#' @return nothing.
-#' @examples
-#' lcdb.fix.ezindustry()
-#' @export
-lcdb.fix.ezindustry <- function(){
-  con <- db.local()
-  # Sec
-  seclist <- list()
-  namelist <- list()
-  seclist[[1]] <- c("ES33110000","ES33210000","ES33220000","ES33230000","ES33240000")
-  namelist[[1]] <- "BigCycle" 
-  seclist[[2]] <- c("ES33480000","ES33490000","ES33430000")
-  namelist[[2]] <- "FinRealEstate"
-  seclist[[3]] <- c("ES33710000","ES33720000","ES33730000","ES33270000")
-  namelist[[3]] <- "TMT"
-  seclist[[4]] <- c("ES33280000","ES33330000","ES33340000","ES33350000","ES33460000","ES33370000","ES33450000")
-  namelist[[4]] <- "Comsumption"
-  seclist[[5]] <- c("ES33360000","ES33630000","ES33640000","ES33610000","ES33620000","ES33650000")
-  namelist[[5]] <- "Manufacturing"
-  seclist[[6]] <- c("ES33420000","ES33410000","ES33510000")
-  namelist[[6]] <- "Others"
-  
-  # LC_ExgIndustry
-  qr <- paste(" select * from LC_ExgIndustry
-              where Standard = 33")
-  tmpdat <- DBI::dbGetQuery(con, qr)
-  for(i in 1:nrow(tmpdat)){
-    for(j in 1:6){
-      if(tmpdat$Code1[i] %in% seclist[[j]]){
-        tmpdat$Code1[i] <- paste0("ES",j)
-        tmpdat$Name1[i] <- namelist[[j]]
-      }
-    }
-  }
-  tmpdat$Standard <- 336
-  
-  # CT_SystemConst
-  tmpdat2 <- DBI::dbReadTable(con, "CT_SystemConst")
-  tmpdat2 <- subset(tmpdat2, LB == 1081 & DM == 33)
-  tmpdat2$DM <- 336
-  tmpdat2$MS <- "6EasyIndustryCategory"
-  
-  # CT_IndustryList
-  qr3 <- " select * from CT_IndustryList 
-  where Standard = 33
-  and Level = 1"
-  tmpdat3 <- DBI::dbGetQuery(con, qr3)
-  tmpdat3 <- tmpdat3[1:6,]
-  tmpdat3$Standard <- 336
-  tmpdat3$IndustryID <- paste0("ES",1:6)
-  tmpdat3$IndustryName <- unlist(namelist)
-  tmpdat3$Code1 <- tmpdat3$IndustryID
-  tmpdat3$Name1 <- tmpdat3$IndustryName
-  
-  # Update into LCDB
-  dbGetQuery(con,"delete from LC_ExgIndustry where Standard=336")
-  dbGetQuery(con,"delete from CT_IndustryList where Standard=336")
-  dbGetQuery(con,"delete from CT_SystemConst where LB=1081 and DM=336")
-  dbWriteTable(con,'LC_ExgIndustry',tmpdat,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbWriteTable(con,'CT_SystemConst',tmpdat2,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbWriteTable(con,'CT_IndustryList',tmpdat3,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbDisconnect(con)
-  return('Done!')
-}
-
-
-
-#' lcdb.init.IndexQuote_000985E
-#'
-#' @examples
-#' lcdb.init.IndexQuote_000985E()
-#' @export
-lcdb.init.IndexQuote_000985E <- function(){
-  con <- db.local()
-  qr <- "select ID,DailyReturn from QT_IndexQuote where ID='EI000985E'"
-  re <- dbGetQuery(con,qr)
-  if(nrow(re)>0){
-    return('Already in database!')
-  }else{
-    qr <- "select max(TradingDay) from QT_IndexQuote"
-    endT <- dbGetQuery(con,qr)[[1]]
-    endT <- intdate2r(endT)
-    begT <- as.Date('2005-01-04')
-    # dates <- getRebDates(begT,endT)
-    # TS <- getTS(dates,indexID = 'EI000985')
-    dates <- trday.get(begT,endT)
-    dates <- as.Date(unique(cut.Date2(dates,"month")))
-    TS <- getIndexComp(indexID = 'EI000985',endT = dates, drop = FALSE)
-    
-    index <- data.frame()
-    for(i in 1:(length(dates)-1)){
-      # tmp.dates <- getRebDates(dates[i],dates[i+1],rebFreq = 'day')
-      tmp.dates <- trday.get(dates[i],dates[i+1])
-      tmp.dates <- tmp.dates[-length(tmp.dates)]
-      cat('calculating',rdate2int(min(tmp.dates)),"~",rdate2int(max(tmp.dates)),'...\n')
-      qr <- paste("select TradingDay,ID,DailyReturn from QT_DailyQuote2
-                  where TradingDay>=",rdate2int(min(tmp.dates))," and TradingDay<=",rdate2int(max(tmp.dates)))
-      quotedf <- dbGetQuery(con,qr)
-      quotedf$TradingDay <- intdate2r(quotedf$TradingDay)
-      tmp.TS <- TS[TS$date==dates[i],]
-      quotedf <- quotedf[quotedf$ID %in% tmp.TS$stockID,]
-      
-      tmp <- quotedf %>% dplyr::group_by(TradingDay) %>%
-        dplyr::summarise(DailyReturn = mean(DailyReturn, na.rm = TRUE))
-      index <- rbind(index,tmp)
-    }
-    
-    tmp <- xts::xts(index$DailyReturn,order.by = index$TradingDay)
-    tmp <- WealthIndex(tmp)
-    close <- data.frame(TradingDay=zoo::index(tmp),close=zoo::coredata(tmp)*1000,row.names =NULL)
-    colnames(close) <- c('TradingDay','ClosePrice')
-    index <- merge(index,close,by='TradingDay')
-    index <- transform(index,TradingDay=rdate2int(TradingDay),
-                       InnerCode=c(1000985),
-                       PrevClosePrice=c(NA,index$ClosePrice[-(nrow(index))]),
-                       OpenPrice=c(NA),
-                       HighPrice=c(NA),
-                       LowPrice=c(NA),
-                       TurnoverVolume=c(NA),
-                       TurnoverValue=c(NA),
-                       TurnoverDeals=c(NA),
-                       ChangePCT=DailyReturn*100,
-                       NegotiableMV=c(NA),
-                       UpdateTime=c(Sys.Date()),
-                       ID=c('EI000985E'))
-    index <- index[,c("InnerCode","TradingDay","PrevClosePrice","OpenPrice","HighPrice",
-                      "LowPrice","ClosePrice","TurnoverVolume","TurnoverValue","TurnoverDeals",
-                      "ChangePCT","NegotiableMV","UpdateTime","DailyReturn","ID")]
-    dbWriteTable(con,'QT_IndexQuote',index,overwrite=F,append=T,row.names=F)
-  }
-  dbDisconnect(con)
-  return('Done!')
-}
-
-
-#' lcdb.update.IndexQuote_000985E
-#'
-#' @examples
-#' lcdb.update.IndexQuote_000985E()
-#' @export
-lcdb.update.IndexQuote_000985E <- function(begT,endT){
-  con <- db.local()
-  
-  if(TRUE){
-    if(missing(begT)){
-      begT <- dbGetQuery(con,"select max(TradingDay) from QT_IndexQuote where ID='EI000985E'")[[1]]
-    }
-    if(missing(endT)){
-      endT <- dbGetQuery(con,"select max(TradingDay) from QT_IndexQuote")[[1]]
-    }
-  }
-  
-  if(begT==endT){
-    return('Alread up to date!')
-  } else if(begT>endT){
-    stop("please update the 'QT_IndexQuote' table firstly!")
-  } else {
-    init_data <- dbGetQuery(con,paste("select * from QT_IndexQuote where ID='EI000985E' and TradingDay=",begT))
-    begT <- intdate2r(begT)
-    endT <- intdate2r(endT)
-    begT <- trday.nearby(begT,by=1)  # -- one day after
-    # TS <- getTS(begT,indexID = 'EI000985')
-    TS <- getIndexComp(indexID = 'EI000985',endT = begT,drop=FALSE)
-    # tmp.dates <- getRebDates(begT,endT,rebFreq = 'day')
-    tmp.dates <- trday.get(begT,endT)
-    
-    cat('calculating',rdate2int(min(tmp.dates)),"~",rdate2int(max(tmp.dates)),'...\n')
-    qr <- paste("select TradingDay,ID,DailyReturn from QT_DailyQuote2
-                where TradingDay>=",rdate2int(min(tmp.dates))," and TradingDay<=",rdate2int(max(tmp.dates)))
-    quotedf <- dbGetQuery(con,qr)
-    quotedf$TradingDay <- intdate2r(quotedf$TradingDay)
-    quotedf <- quotedf[quotedf$ID %in% TS$stockID,]
-    
-    index <- quotedf %>% dplyr::group_by(TradingDay) %>%
-      dplyr::summarise(DailyReturn = mean(DailyReturn, na.rm = TRUE))
-    
-    
-    tmp <- xts::xts(index$DailyReturn, order.by = index$TradingDay)
-    tmp <- WealthIndex(tmp)
-    close <- data.frame(TradingDay=zoo::index(tmp),close=zoo::coredata(tmp)*init_data$ClosePrice,row.names =NULL)
-    colnames(close) <- c('TradingDay','ClosePrice')
-    index <- merge(index,close,by='TradingDay')
-    index <- transform(index,TradingDay=rdate2int(TradingDay),
-                       InnerCode=c(1000985),
-                       PrevClosePrice=c(NA,index$ClosePrice[-(nrow(index))]),
-                       OpenPrice=c(NA),
-                       HighPrice=c(NA),
-                       LowPrice=c(NA),
-                       TurnoverVolume=c(NA),
-                       TurnoverValue=c(NA),
-                       TurnoverDeals=c(NA),
-                       ChangePCT=DailyReturn*100,
-                       NegotiableMV=c(NA),
-                       UpdateTime=c(Sys.Date()),
-                       ID=c('EI000985E'))
-    index <- index[,c("InnerCode","TradingDay","PrevClosePrice","OpenPrice","HighPrice",
-                      "LowPrice","ClosePrice","TurnoverVolume","TurnoverValue","TurnoverDeals",
-                      "ChangePCT","NegotiableMV","UpdateTime","DailyReturn","ID")]
-    index$PrevClosePrice[1] <- init_data$ClosePrice
-    dbGetQuery(con,paste("delete from QT_IndexQuote where ID='EI000985E' and TradingDay >=",rdate2int(begT),"and TradingDay <=",rdate2int(endT)))
-    dbWriteTable(con,'QT_IndexQuote',index,overwrite=F,append=T,row.names=F)
-  }
-  
-  dbDisconnect(con)
-  return('Done!')
-  
-}
-
-
-
-
-
-#' lcdb.init.indexquote000985
-#'
-#' initiate the quote data of index 000985 through Wind API.
-#' @examples
-#' lcdb.init.indexquote000985()
-#' @export
-lcdb.init.indexquote000985 <- function(windCode='000985.CSI'){
-  
-  con <- db.local()
-  indexCode <- paste('EI',substr(windCode,1,6),sep = '')
-  qr <- paste("select ID,DailyReturn from QT_IndexQuote where ID=",QT(indexCode))
-  re <- dbGetQuery(con,qr)
-  if(nrow(re)>0){
-    return('Already in database!')
-  }else{
-    qr <- "select max(TradingDay) from QT_IndexQuote"
-    endT <- dbGetQuery(con,qr)[[1]]
-    endT <- intdate2r(endT)
-    require(WindR)
-    WindR::w.start(showmenu = FALSE)
-    index <- w.wsd(windCode,"pre_close,open,high,low,close,volume,amt,dealnum,pct_chg","2005-01-04",endT)[[2]]
-    colnames(index) <- c("TradingDay","PrevClosePrice","OpenPrice","HighPrice", "LowPrice",
-                         "ClosePrice","TurnoverVolume","TurnoverValue","TurnoverDeals","ChangePCT")
-    
-    #get innercode
-    qr <- paste("SELECT InnerCode FROM SecuMain
-                where SecuCode=",QT(substr(windCode,1,6))," and SecuCategory=4")
-    innercode <- queryAndClose.odbc(db.jy(),qr)[[1]]
-    
-    
-    index <- transform(index,TradingDay=rdate2int(TradingDay),
-                       InnerCode=c(innercode),
-                       DailyReturn=ChangePCT/100,
-                       NegotiableMV=c(NA),
-                       UpdateTime=c(Sys.Date()),
-                       ID=c(indexCode))
-    index <- index[,c("InnerCode","TradingDay","PrevClosePrice","OpenPrice","HighPrice",
-                      "LowPrice","ClosePrice","TurnoverVolume","TurnoverValue","TurnoverDeals",
-                      "ChangePCT","NegotiableMV","UpdateTime","DailyReturn","ID")]
-    dbWriteTable(con,'QT_IndexQuote',index,overwrite=F,append=T,row.names=F)
-  }
-  
-  dbDisconnect(con)
-  return('Done!')
-}
-
-
-
-#' lcdb.build.QT_FreeShares
-#'
-#'
-#' @examples
-#' lcdb.build.QT_FreeShares(filename="D:/sqlitedb/FREE_SHARES.csv")
-#' @export
-# lcdb.build.QT_FreeShares <- function(filename="D:/sqlitedb/FREE_SHARES.csv"){
-#   re <- read.csv(filename,stringsAsFactors = F)
-#   con <- db.local()
-#   dbWriteTable(con,'QT_FreeShares',re,overwrite=T,append=F,row.names=F)
-#   dbDisconnect(con)
-#   return('Done!')
-# }
-
-
-
-#' lcdb.update.QT_FreeShares
-#'
-#' update QT_FreeShares through Wind API.
-#' @examples
-#' lcdb.update.QT_FreeShares()
-#' @export
-lcdb.update.QT_FreeShares <-  function(begT,endT,Freq='week') {
-  con <- db.local()
-  re <- dbReadTable(con,'QT_FreeShares')
-  
-  if(missing(begT)){
-    begT <- intdate2r(max(re$date))
-    begT <- rdate2int(trday.nearby(begT,1))
-  }
-  if(missing(endT)){
-    endT <- rdate2int(trday.nearest(Sys.Date()-1))
-  }
-  
-  if(begT<endT){
-    dates <- getRebDates(intdate2r(begT),intdate2r(endT),rebFreq = Freq)
-    require(WindR)
-    WindR::w.start(showmenu = FALSE)
-    for(i in 1:length(dates)){
-      TS <- w.wset('sectorconstituent',date=dates[i],sectorid='a001010100000000')[[2]]
-      float_shares_ <- WindR::w.wss(TS$wind_code,'free_float_shares',tradeDate=dates[i])[[2]]
-      float_shares_ <- cbind(data.frame(date=dates[i]),float_shares_)
-      if(i==1){
-        float_shares <- float_shares_
-      }else{
-        float_shares <- rbind(float_shares,float_shares_)
-      }
-    }
-    colnames(float_shares) <- c("date","stockID","freeShares")
-    float_shares <- transform(float_shares,
-                              date=rdate2int(date),
-                              stockID=stringr::str_c("EQ",substr(stockID,1,6)),
-                              freeShares=freeShares/1e8)
-    float_shares <- rbind(float_shares,re[re$date>=begT & re$date<=endT,])
-    float_shares <- float_shares %>% group_by(stockID,freeShares) %>% summarise(date=min(date)) %>% dplyr::ungroup()
-    float_shares <- float_shares[,c("date","stockID","freeShares")]
-    
-    re_ <- re %>% dplyr::filter(date<begT | date>endT) %>% arrange(stockID,desc(date)) %>% group_by(stockID) %>% slice(1) %>% dplyr::ungroup()
-    re_ <- dplyr::rename(re_,dateold=date,freeSharesold=freeShares)
-    float_shares <- dplyr::left_join(float_shares,re_,by='stockID')
-    float_shares <- rbind(float_shares %>% dplyr::filter(!is.na(freeSharesold)) %>% dplyr::filter(date!=dateold & freeShares!=freeSharesold),
-                          float_shares %>% dplyr::filter(is.na(freeSharesold)))
-    float_shares <- float_shares[,c("date","stockID","freeShares")]
-    float_shares <- arrange(float_shares,date,stockID)
-    re <- dbGetQuery(con,paste("delete from QT_FreeShares where date >=",begT,"and date<=",endT))
-    dbWriteTable(con,'QT_FreeShares',float_shares,overwrite=FALSE,append=TRUE,row.names=FALSE)
-    
-  }
-  dbDisconnect(con)
-  return('Done!')
-}
-
-
-
-
-
-
-#' @rdname lcdb.update
-#' @export
-lcdb.update.QT_FactorScore <- function(endT=Sys.Date()){
-  require(QFactorGet)
-  con <- db.local()
-  begT <- dbGetQuery(con,"select max(TradingDay) from QT_FactorScore")[[1]]
-  endT <- rdate2int(endT)
-  TS <- dbGetQuery(con,paste("select TradingDay as date, ID as stockID from QT_DailyQuote2 where TradingDay > ",begT," and TradingDay <=",endT))
-  if(NROW(TS)==0) {
-    return()
-  }
-  TS <- transform(TS,date=intdate2r(date))
-  TS <- dplyr::arrange(TS,date,stockID)
-  
-  factorLists <- CT_FactorLists()
-  for(i in 1:NROW(factorLists)){
-    factorName <- factorLists[i,"factorName"]
-    factorID <- factorLists[i,"factorID"]
-    factorFun <- factorLists[i,"factorFun"]
-    factorPar <- factorLists[i,"factorPar"]
-    cat("Factor",factorName,"getting ...\n")
-    subTSF <- getRawFactor(TS=TS,factorFun=factorFun,factorPar=factorPar)
-    subTSF <- renameCol(subTSF,src="factorscore",tgt=factorID)
-    if(i==1L){
-      re <- subTSF[,c("date","stockID",factorID)]
-    } else {
-      re <- merge(re,subTSF[,c("date","stockID",factorID)],by=c("date","stockID"))
-    }
-  }
-  re <- renameCol(re,c("date","stockID"),c("TradingDay","ID"))
-  re$TradingDay <- rdate2int(re$TradingDay)
-  
-  if(TRUE){ # add extra fields, and reorder the fields to fix the order of target table. 
-    targetfield <- dbListFields(con,"QT_FactorScore")
-    extrfield <- setdiff(targetfield,names(re))
-    extrdat <- as.data.frame(matrix(NA,NROW(re),length(extrfield)))
-    names(extrdat) <- extrfield
-    re <- cbind(re,extrdat)
-    re <- re[targetfield]
-  }
-  
-  dbWriteTable(con,"QT_FactorScore",re,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbDisconnect(con)
-}
-
-
-
-
-
-
-lcdb.init.QT_DailyQuote <- function(){  
-  con <- db.local()
-  dbGetQuery(con,"
-              CREATE TABLE QT_DailyQuote (
-              ID varchar(10)  NOT NULL,
-              InnerCode int NOT NULL,
-              TradingDay int NOT NULL,
-              PrevClosePrice smallmoney NULL,
-              OpenPrice smallmoney NULL,
-              HighPrice smallmoney NULL,
-              LowPrice smallmoney NULL,
-              ClosePrice smallmoney NULL,
-              TurnoverVolume decimal(20, 0) NULL,
-              TurnoverValue money NULL,
-              DailyReturn float NULL,
-              STStatus smallint NULL,
-              SecuAbbr varchar(10)  NULL,
-              RRFactor float NULL,
-              RRClosePrice smallmoney NULL,
-              TotalShares decimal(20, 4) NULL,
-              NonRestrictedShares decimal(20, 4) NULL
-              );   
-              CREATE UNIQUE INDEX [IX_QT_DailyQuote] ON [QT_DailyQuote]([ID] ,[TradingDay] DESC);
-              CREATE INDEX IX_QT_DailyQuote_TradingDay ON QT_DailyQuote (TradingDay);
-              ")  
-  all.stocks <- queryAndClose.odbc(db.quant(),"select distinct ID from QT_DailyQuote")[[1]]
-  
-  subfun <- function(stock0){
-    #   stock0 <- "EQ000001"
-    cat(paste(" ",stock0))
-    data0<- queryAndClose.odbc(db.quant(),paste("select * from QT_DailyQuote where ID=",QT(stock0)))
-    dbWriteTable(con, "QT_DailyQuote", data0, overwrite = FALSE, append=TRUE,row.names = FALSE)
-    gc()    
-  }
-  cat("Function lite.QT_DailyQuote: getting the quote ....\n")
-  l_ply(all.stocks, subfun, .progress = progress_text(style=3))  
-  dbDisconnect(con)
-}
-
-lcdb.init.QT_DailyQuote2 <- function(){  
-  dbGetQuery(con,"CREATE UNIQUE INDEX IX_QT_DailyQuote2 ON QT_DailyQuote2 (TradingDay desc ,ID)")
-  con <- db.local()
-  dbGetQuery(con,"
-              CREATE TABLE 'QT_DailyQuote2' (
-              ID varchar(10)  NOT NULL,
-              InnerCode int NOT NULL,
-              TradingDay int NOT NULL,
-              PrevClosePrice smallmoney NULL,
-              OpenPrice smallmoney NULL,
-              HighPrice smallmoney NULL,
-              LowPrice smallmoney NULL,
-              ClosePrice smallmoney NULL,
-              TurnoverVolume decimal(20, 0) NULL,
-              TurnoverValue money NULL,
-              DailyReturn float NULL,
-              STStatus smallint NULL,
-              SecuAbbr varchar(10)  NULL,
-              RRFactor float NULL,
-              RRClosePrice smallmoney NULL,
-              TotalShares decimal(20, 4) NULL,
-              NonRestrictedShares decimal(20, 4) NULL
-              );            
-              CREATE UNIQUE INDEX IX_QT_DailyQuote2 ON QT_DailyQuote2 (TradingDay DESC, ID);            
-              CREATE INDEX IX_QT_DailyQuote2_ID on QT_DailyQuote2 (ID);
-              CREATE INDEX [IX_QT_DailyQuote2_ID_TradingDay] ON [QT_DailyQuote2]([ID] ,[TradingDay]  DESC);
-              ")    
-  all.days <- queryAndClose.odbc(db.quant(),"select distinct TradingDay from QT_DailyQuote")[[1]]
-  all.days <- all.days[order(-all.days)]
-  
-  subfun <- function(day0){
-    cat(paste(" ",day0))
-    data0 <- dbGetQuery(con,paste("select * from QT_DailyQuote where TradingDay=",day0))
-    dbWriteTable(con, "QT_DailyQuote2", data0, overwrite = FALSE, append=TRUE,row.names = FALSE)
-    gc()    
-  }
-  cat("Function lite.QT_DailyQuote: getting the quote ....\n")
-  l_ply(all.days, subfun, .progress = progress_text(style=3))  
-  dbDisconnect(con)
-}
-
-
-
-
-#' lcfs.update
-#' 
-#' @param begT the begin date of the updating
-#' @param endT the end date of the updating
-#' @export
-#' @examples
-#' lcfs.update("F000008",20130322,20130330,c("EQ000001","EQ000002"))
-lcfs.update <- function(factorID,begT,endT,stockID,
-                        splitNbin="month"){
-  con <- db.local()
-  if(missing(begT)){
-    begT <- dbGetQuery(con,"select min(TradingDay) from QT_FactorScore")[[1]]
-  }
-  if(missing(endT)){
-    endT <- dbGetQuery(con,"select max(TradingDay) from QT_FactorScore")[[1]]
-  }
-  if(missing(stockID)){
-    pool_filt <- "1>0"
-  } else{
-    pool_filt <- paste("ID in",brkQT(stockID))
-  }
-  
-  factorFun <- CT_FactorLists(factorID = factorID)$factorFun
-  factorPar <- CT_FactorLists(factorID = factorID)$factorPar
-  
-  loopT <- rdate2int(trday.get(intdate2r(begT),intdate2r(endT)))
-  loopT.L <- split(loopT,cut(intdate2r(loopT),splitNbin))
-  
-  subfun <- function(Ti){
-    cat(paste(" ",min(Ti),"to",max(Ti)," ...\n"))
-    dates <- paste(Ti,collapse=",")
-    TS <- dbGetQuery(con,paste("select TradingDay as date, ID as stockID from QT_FactorScore where TradingDay in (",dates,") and",pool_filt))
-    TS$date <- intdate2r(TS$date)    
-    TSF <- getRawFactor(TS,factorFun,factorPar)
-    TSF$date <- rdate2int(TSF$date)
-    TSF <- renameCol(TSF,src="factorscore",tgt=factorID)
-    
-    for(Tij in Ti){ # update the factorscore day by day.
-      #     Tij <- Ti[1]
-      # cat(paste(" ",Tij))
-      dbWriteTable(con,"yrf_tmp",TSF[TSF$date==Tij,],overwrite=TRUE,append=FALSE,row.names=FALSE)
-      qr <- paste("UPDATE QT_FactorScore
-                  SET ",factorID,"= (SELECT ",factorID," FROM yrf_tmp WHERE yrf_tmp.stockID =QT_FactorScore.ID) 
-                  WHERE QT_FactorScore.ID = (SELECT stockID FROM yrf_tmp WHERE yrf_tmp.stockID =QT_FactorScore.ID)
-                  and QT_FactorScore.TradingDay =",Tij)
-      res <- dbSendQuery(con,qr)
-      dbClearResult(res)  
-    }   
-    gc()
-  }  
-  
-  cat(paste("Function lcfs.update: updateing factor score of",factorID,".... \n"))
-  plyr::l_ply(loopT.L, subfun, .progress = plyr::progress_text(style=3))   
-  dbDisconnect(con)
-}
-
-
-
-#' lcfs.add
-#' 
-#' add/update a factorscore column in local sqlite table \code{"QT_FactorScore"}. On the same time, correspondingly, add/update a record into table \code{"CT_FactorLists"} and table \code{"CT_TechVars"}.
-#' @param factorFun a character string naming the function to get the factor scores
-#' @param factorPar a character string, containing the parameters of the \code{factorFun}. Note that unlike in \code{\link{getTSF}}, here the factorPar could not be a list, because it need to be written into database.
-#' @param factorDir a integer,should be 1 or -1 (1 for the positive factor,-1 for the negative one). \bold{Note that} the \code{factorDir} here is only used to write a record into table \code{"CT_FactorLists"}, not used when getting \code{TSF}. So that the factorscore in table \code{"QT_FactorScore"} is kept \bold{"raw", without adding the dirrection infomation}.
-#' @param factorID a character string
-#' @param factorName a character string. IF missing, then take a default name by function \code{default.factorName}. 
-#' @param factorType a character string
-#' @param factorDesc a character string
-#' @param splitNbin a character of interval specification(see \code{\link{cut.Date}} for detail). Specify the time interval when looping of getting the \code{TSF} object.
-#' @return Write data into the local sqlite database, returning NULL.
-#' @seealso \code{\link{getTSF}},\code{\link{modelPar.factor}}, \code{\link{lcdb.update.QT_FactorScore}}
-#' @author Ruifei.Yin
-#' @export
-#' @examples
-#' system.time(lcfs.add(factorFun="gf.F_rank_chg",factorPar="lag=60,con_type=\"1,2\"", factorDir=1, factorID="F000999"))
-lcfs.add <- function(factorFun, 
-                     factorPar="", 
-                     factorDir,
-                     factorID,                      
-                     factorName = default.factorName(factorFun,factorPar,factorDir),                      
-                     factorType = "", 
-                     factorDesc = "",
-                     splitNbin = "month"){   
-  if(factorID %in% CT_FactorLists()$factorID) {
-    is_overwrite <- select.list(choices=c("OK","CANCEL"),preselect="CANCEL",title=paste("Warning!\nThe factor",factorID,"has already exist!\nDo you want to overwrite it?"),graphics=FALSE)
-    if(is_overwrite == "CANCEL") return(invisible(NULL))
-  } 
-  con <- db.local()
-  # insert or replace a row to table 'CT_FactorLists' 
-  if(!is.character(factorPar)){
-    stop("The 'factorPar' must be a character!")
-  }
-  qr1 <- paste("replace into CT_FactorLists
-               (factorID, factorName, factorFun, factorPar, factorDir, factorType, factorDesc )
-               values
-               (
-               ",QT(factorID),",
-               ",QT(factorName),",
-               ",QT(factorFun),",
-               ",QT(factorPar),",
-               ",QT(factorDir),",
-               ",QT(factorType),",
-               ",QT(factorDesc),"
-               ) ")
-  dbGetQuery(con,qr1)
-  
-  # insert or replace a row to table 'CT_TechVars'  
-  qr2 <- paste("replace into CT_TechVars
-               (datasrc, secuCate, varName, func, tableName)
-               values
-               (
-               'local',
-               'EQ',
-               ",QT(factorID),",
-               ",QT(factorID),",
-               'QT_FactorScore'
-               ) ")
-  dbGetQuery(con,qr2)
-  
-  # add 1 colume to table 'QT_FactorScore' 
-  tryCatch(dbGetQuery(con,paste("ALTER TABLE QT_FactorScore ADD COLUMN ",factorID,"float(0, 4)")),
-           error=function(e) { print("RS-DBI driver: (error in statement: duplicate column name)") })
-  dbDisconnect(con)
-  
-  # update
-  lcfs.update(factorID = factorID,splitNbin = splitNbin)
-  
-}
-
-
-
-
-
-#' lcdb.update.QT_sus_res
-#' 
-#' @export
-#' @rdname  lcdb.update.QT_sus_res
-#' @examples 
-#' #-- initiate:
-#' lcdb.init.QT_sus_res(19901231,19950630)
-#' #-- update:
-#' dates <- c(seq(as.Date("1998-12-31"),to = Sys.Date(),by = "year"),Sys.Date())
-#' dates <- rdate2int(dates)
-#' for(date in dates){
-#'   cat(paste("updating to ",date,"...\n"))
-#'   lcdb.update.QT_sus_res(endT=date)
-#' }
-#' #-- fix the bugs
-#' bugs <- lcdb.update.QT_sus_res_bugsFinding()
-#' lcdb.update.QT_sus_res(stockID=bugs)
-lcdb.init.QT_sus_res <- function(begT=19901231,endT){
-  con <- db.local()
-  begT_filt <- paste("TradingDay >=",begT)
-  endT_filt <- paste("TradingDay <= ",endT)
-  
-  QTdata <- dbGetQuery(con,paste("select ID, TradingDay, TurnoverVolume from QT_DailyQuote2 where ",begT_filt,"and",endT_filt, "order by ID,TradingDay"))
-  updateDate <- max(QTdata$TradingDay)
-  
-  loops <- unique(QTdata$ID)
-  TB_sus_res <- data.frame()
-  for (ii in 1:length(loops)){
-    # ii <- 1
-    stockID_ <- loops[ii]
-    cat(stockID_) # --
-    QTstock <- dplyr::filter(QTdata,ID==stockID_)
-    QTstock <- dplyr::mutate(QTstock,Vol_lag=lag(TurnoverVolume))
-    QTstock <- dplyr::mutate(QTstock,sus_res=ifelse(TurnoverVolume<1 & Vol_lag>=1, "s",  # - suspend
-                                                    ifelse(Vol_lag<1 & TurnoverVolume>=1, "r", # - resumption 
-                                                           NA))) # - nothing
-    sus <- dplyr::filter(QTstock,sus_res=="s")$TradingDay
-    res <- dplyr::filter(QTstock,sus_res=="r")$TradingDay
-    if(length(sus)+length(res) > 0){
-      if(sus[1] > res[1]){
-        res_lag <- res[1]  # -- res_lag
-        res <- res[-1]
-      } 
-      if(length(sus)>length(res)){
-        res <- c(res,NA)
-      }
-      S_R <- data.frame(stockID=stockID_,sus=sus,res=res,updateDate=updateDate)
-      TB_sus_res <- rbind(TB_sus_res,S_R)
-    }
-  }
-  
-  dbWriteTable(con,"QT_sus_res",TB_sus_res,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbGetQuery(con,"CREATE UNIQUE INDEX [IX_QT_sus_res] ON [QT_sus_res] ([stockID], [sus]);")
-  dbDisconnect(con)
-}
-
-#' @export
-#' @rdname  lcdb.update.QT_sus_res
-lcdb.update.QT_sus_res <- function(endT,stockID){
-  con <- db.local()
-  if(missing(stockID)){
-    begT <- dbGetQuery(con,"select max(updateDate) from QT_sus_res")[[1]]
-  }else{
-    begT <- 19901231
-  }
-  if(missing(endT)){
-    if(missing(stockID)){
-      endT <- 99999999
-    } else {
-      endT <- dbGetQuery(con,"select max(updateDate) from QT_sus_res")[[1]]
-    }
-  }
-  begT_filt <- paste("TradingDay >=",begT)
-  endT_filt <- paste("TradingDay <= ",endT)
-  if(missing(stockID)){
-    pool_filt <- "1>0"
-  } else{
-    pool_filt <- paste("ID in",brkQT(stockID))
-  }
-  
-  if(endT<=begT){
-    stop("Can not update this table in the midst!")
-  }
-  QTdata <- dbGetQuery(con,paste("select ID, TradingDay, TurnoverVolume from QT_DailyQuote2 where ",begT_filt,"and",endT_filt,"and",pool_filt, "order by ID,TradingDay"))
-  updateDate <- max(QTdata$TradingDay)
-  
-  loops <- unique(QTdata$ID)
-  TB_sus_res <- data.frame()
-  for (ii in 1:length(loops)){
-    # ii <- 1
-    stockID_ <- loops[ii]
-    # cat(stockID_) # --
-    QTstock <- dplyr::filter(QTdata,ID==stockID_)
-    QTstock <- dplyr::mutate(QTstock,Vol_lag=lag(TurnoverVolume)) # this step will trim the QTdata of begT just right to avoid the overlapping
-    QTstock <- dplyr::mutate(QTstock,sus_res=ifelse(TurnoverVolume<1 & Vol_lag>=1, "s",  # - suspend
-                                                    ifelse(Vol_lag<1 & TurnoverVolume>=1, "r", # - resumption 
-                                                           NA))) # - nothing
-    sus <- dplyr::filter(QTstock,sus_res=="s")$TradingDay
-    res <- dplyr::filter(QTstock,sus_res=="r")$TradingDay
-    
-    if(length(sus)==0 & length(res) == 0){
-      next
-    } else if(length(sus)==0){ # length(sus)==0 & length(res)==1
-      dbGetQuery(con,paste("UPDATE QT_sus_res 
-                            SET res = ",res,
-                            "WHERE stockID=",QT(stockID_),
-                            "and sus=(select max(sus) from QT_sus_res where stockID=",QT(stockID_),")"))
-    } else if(length(res)==0) {# length(sus)==1 & length(res)==0
-      res <- NA
-      S_R <- data.frame(stockID=stockID_,sus=sus,res=res,updateDate=updateDate)
-      TB_sus_res <- rbind(TB_sus_res,S_R)
-    } else {
-      if(sus[1] > res[1]){
-        res_lag <- res[1]  # -- res_lag
-        dbGetQuery(con,paste("UPDATE QT_sus_res 
-                              SET res = ",res_lag,
-                              "WHERE stockID=",QT(stockID_),
-                              "and sus=(select max(sus) from QT_sus_res where stockID=",QT(stockID_),")"))
-        res <- res[-1]
-      } 
-      if(length(sus)>length(res)){
-        res <- c(res,NA)
-      }
-      S_R <- data.frame(stockID=stockID_,sus=sus,res=res,updateDate=updateDate)
-      TB_sus_res <- rbind(TB_sus_res,S_R)
-    }
-    
-  }
-  
-  if(!missing(stockID)){
-    dbGetQuery(con,paste("delete from QT_sus_res where stockID in",brkQT(loops)))
-  }
-  
-  dbWriteTable(con,"QT_sus_res",TB_sus_res,overwrite=FALSE,append=TRUE,row.names=FALSE)
-  dbDisconnect(con)
-}
-
-#' @export
-#' @rdname  lcdb.update.QT_sus_res
-lcdb.update.QT_sus_res_bugsFinding <- function(){
-  con <- db.local()
-  bugsdata <- dbGetQuery(con,"select * from (select * from QT_sus_res where res is null) a ,
-                         (select stockID as 'ID', max(sus) as 'sus_max' from QT_sus_res group by stockID) m
-                         where a.stockID=m.ID")
-  bugs <- dplyr::filter(bugsdata,sus!=sus_max)$stockID
-  return(bugs)
-}
-
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx =====================
 # ====================  Tinysoft related utility functions ====================
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx =====================
@@ -1641,29 +196,17 @@ memory.load <- function(reload=FALSE){
     # -- the market trading days  
     cat("  Loading the market trading days: '.tradingdays' ... \n")
     qr1 <- "select TradingDate from QT_TradingDay where SecuMarket=83 and IfTradingDay=1"
-    tradingdays <- queryAndClose.dbi(db.local(),qr1)[[1]] 
+    tradingdays <- queryAndClose.dbi(db.local("main"),qr1)[[1]] 
     .tradingdays <<- intdate2r(tradingdays)
-    
-    # -- the stock's untrading days
-    # cat("  Loading the stocks' untrading days: '.QT_UnTradingDay' ... \n")
-    # qr2 <- "select * from QT_UnTradingDay"
-    # if(datasrc=="local"){
-    #   QT_UnTradingDay <- queryAndClose.dbi(db.local(),qr2)
-    # } else if(datasrc=="quant") {
-    #   QT_UnTradingDay <- queryAndClose.odbc(db.quant(),qr2)
-    # }
-    # .QT_UnTradingDay <<- data.table::data.table(transform(QT_UnTradingDay, TradingDay = intdate2r(TradingDay)),key="ID")
     
     # -- the SQLite memory database
     cat("  Loading the SQLite memory database. You can run DBI::dbListTables(.con_memory) to get the loaded table list \n")
-    con_local <- db.local()
+    con_local <- db.local("qt")
     .con_memory <<- dbConnect(DBI::dbDriver("SQLite"), ":memory:")
     # - QT_sus_res
     QT_sus_res <- dbReadTable(con_local,"QT_sus_res")
     dbWriteTable(.con_memory, "QT_sus_res", QT_sus_res)
-    dbGetQuery(.con_memory,"CREATE UNIQUE INDEX [IX_QT_sus_res] ON [QT_sus_res] ([stockID], [sus])")
-    
-    
+    dbExecute(.con_memory,"CREATE UNIQUE INDEX [IX_QT_sus_res] ON [QT_sus_res] ([stockID], [sus])")
     
     dbDisconnect(con_local)
     
@@ -1698,7 +241,7 @@ TS.sus_res <- function(TS,datasrc=defaultDataSRC()){
     re <- dbGetQuery(con,qr)
   } else if(datasrc == "local"){
     TS$date <- rdate2int(TS$date)
-    con <- db.local()
+    con <- db.local("qt")
     qr <- paste(
       "select date,a.stockID,sus,res
       from yrf_tmp as a left join QT_sus_res as b
@@ -1745,7 +288,7 @@ trday.get <- function(begT=as.Date("1990-12-19"),endT=Sys.Date(),
     if(datasrc=="quant"){
       trday <- queryAndClose.odbc(db.quant(),qr)
     } else if(datasrc=="local"){
-      trday <- queryAndClose.dbi(db.local(),qr)
+      trday <- queryAndClose.dbi(db.local("main"),qr)
     }     
     re <- trday[[1]]
     re <- intdate2r(re)
@@ -1757,27 +300,6 @@ trday.get <- function(begT=as.Date("1990-12-19"),endT=Sys.Date(),
   }  
   
   # get the stock's trading days
-  
-  # if(!is.null(stockID)){
-  #   if(datasrc %in% c("quant","local")){
-  #     qr <- paste("select * from QT_UnTradingDay where ID =",QT(stockID))
-  #     if(datasrc=="quant"){
-  #       untrday <- queryAndClose.odbc(db.quant(),qr)
-  #     } else if(datasrc=="local"){
-  #       untrday <- queryAndClose.dbi(db.local(),qr)
-  #     }       
-  #     untrday <- untrday[["TradingDay"]]
-  #     untrday <- intdate2r(untrday)      
-  #   } else if (datasrc=="memory"){
-  #     if(!exists(".QT_UnTradingDay")){
-  #       stop("The object of '.QT_UnTradingDay' is not exist in the memory! Please load it, with 'memory.load()'!")
-  #     }
-  #     untrday <-  .QT_UnTradingDay[stockID,]$TradingDay
-  #   } 
-  #   re <- as.Date(setdiff(re,untrday),origin="1970-01-01")
-  # }    
-  
-  
   if(!is.null(stockID)){
     TS <- expand.grid(date=re, stockID=stockID)
     sus_res <- TS.sus_res(TS,datasrc = datasrc)
@@ -2059,7 +581,7 @@ trday.IPO <- function(stockID,datasrc=defaultDataSRC()){
   if(datasrc=="quant"){
     tmpdat <- queryAndClose.odbc(db.quant(),query=qr)
   } else if(datasrc=="local") {
-    tmpdat <- queryAndClose.dbi(db.local(),query=qr)
+    tmpdat <- queryAndClose.dbi(db.local("main"),query=qr)
   } 
   re <- tmpdat[match(stockID,tmpdat[,2]),1]  
   re <- intdate2r(re)
@@ -2097,7 +619,7 @@ tradeCode2stockID <- function(tradeCode, secuCate=1, IDsrc="local",
   if(datasrc=="quant"){
     tmpdat <- queryAndClose.odbc(db.quant(),query=qr,as.is=1)
   } else if(datasrc=="local") {
-    tmpdat <- queryAndClose.dbi(db.local(),query=qr)
+    tmpdat <- queryAndClose.dbi(db.local("main"),query=qr)
   }  
   
   stockID <- tmpdat[match(tradeCode,tmpdat[,1]),2]    
@@ -2136,7 +658,7 @@ stockID2tradeCode <- function(stockID,IDsrc="local",
   if(datasrc=="quant"){
     tmpdat <- queryAndClose.odbc(db.quant(),query=qr,as.is=1)
   } else if(datasrc=="local") {
-    tmpdat <- queryAndClose.dbi(db.local(),query=qr)
+    tmpdat <- queryAndClose.dbi(db.local("main"),query=qr)
   } 
   
   tradeCode <- tmpdat[match(stockID,tmpdat[,2]),1]  
@@ -2175,7 +697,7 @@ stockID2stockID <- function(stockID, from, to,
   if(datasrc=="quant"){
     tmpdat <- queryAndClose.odbc(db.quant(),query=qr)
   } else if(datasrc=="local") {
-    tmpdat <- queryAndClose.dbi(db.local(),query=qr)
+    tmpdat <- queryAndClose.dbi(db.local("main"),query=qr)
   } 
   
   stockID_to <- tmpdat[match(stockID,tmpdat[,1]),2]
@@ -2195,7 +717,7 @@ stockID2name <- function(stockID,datasrc=defaultDataSRC()){
   if(datasrc=="quant"){
     tmpdat <- queryAndClose.odbc(db.quant(),query=qr)
   } else if(datasrc=="local") {
-    tmpdat <- queryAndClose.dbi(db.local(),query=qr)
+    tmpdat <- queryAndClose.dbi(db.local("main"),query=qr)
   } 
   re <- tmpdat[match(stockID,tmpdat[,2]),1]  
   return(re)  
@@ -2213,7 +735,7 @@ stockName2ID <- function(name, datasrc=defaultDataSRC()){
   if(datasrc=="quant"){
     tmpdat <- queryAndClose.odbc(db.quant(),query=qr)
   } else if(datasrc=="local") {
-    tmpdat <- queryAndClose.dbi(db.local(),query=qr)
+    tmpdat <- queryAndClose.dbi(db.local("main"),query=qr)
   }   
   re <- tmpdat[grep(name, gsub("\\s*","",tmpdat$SecuAbbr)), ]  
   return(re) 
@@ -2229,7 +751,7 @@ SecuMarket <- function(stockID,datasrc=defaultDataSRC()){
   if(datasrc=="quant"){
     tmpdat <- queryAndClose.odbc(db.quant(),query=qr)
   } else if(datasrc=="local") {
-    tmpdat <- queryAndClose.dbi(db.local(),query=qr)
+    tmpdat <- queryAndClose.dbi(db.local("main"),query=qr)
   } 
   re <- tmpdat[match(stockID,tmpdat[,2]),1]  
   return(re)  
@@ -2244,7 +766,7 @@ SecuCategory <- function(stockID,datasrc=defaultDataSRC()){
   if(datasrc=="quant"){
     tmpdat <- queryAndClose.odbc(db.quant(),query=qr)
   } else if(datasrc=="local") {
-    tmpdat <- queryAndClose.dbi(db.local(),query=qr)
+    tmpdat <- queryAndClose.dbi(db.local("main"),query=qr)
   } 
   re <- tmpdat[match(stockID,tmpdat[,2]),1]  
   return(re)  
@@ -2366,7 +888,7 @@ getIndexComp <- function(indexID, endT=Sys.Date(), drop=TRUE, datasrc=defaultDat
       re <- sqlQuery(con,query=qr)
       odbcClose(con)
     } else if (datasrc=="local"){
-      con <- db.local()
+      con <- db.local("main")
       dbWriteTable(con, name="yrf_tmp", value=tmpdat, row.names = FALSE, overwrite = TRUE)
       re <- dbGetQuery(con,qr)
       dbDisconnect(con)
@@ -2441,7 +963,7 @@ getIndexCompWgt <- function(indexID="EI000300",endT,datasrc=defaultDataSRC()){
       re <- sqlQuery(con,query=qr)
       odbcClose(con)
     } else if (datasrc=="local"){
-      con <- db.local()
+      con <- db.local("main")
       re <- dbGetQuery(con,qr)
       dbDisconnect(con)
     } else if (datasrc=="jy"){
@@ -2493,7 +1015,7 @@ getIndexCompWgt <- function(indexID="EI000300",endT,datasrc=defaultDataSRC()){
       re <- sqlQuery(con,query=qr)
       odbcClose(con)
     } else if (datasrc=="local"){
-      con <- db.local()
+      con <- db.local("main")
       dbWriteTable(con, name="yrf_tmp", value=tmpdat, row.names = FALSE, overwrite = TRUE)
       re <- dbGetQuery(con,qr)
       dbDisconnect(con)
@@ -2562,7 +1084,7 @@ getSectorComp <- function(sectorID, endT=Sys.Date(), drop=TRUE, datasrc=defaultD
       re <- sqlQuery(con,query=qr)
       odbcClose(con)
     } else if (datasrc=="local"){
-      con <- db.local()
+      con <- db.local("main")
       dbWriteTable(con, name="yrf_tmp", value=tmpdat, row.names = FALSE, overwrite = TRUE)
       re <- dbGetQuery(con,qr)
       dbDisconnect(con)
@@ -2723,7 +1245,7 @@ getSectorID <- function(TS, stockID, endT=Sys.Date(),
           re <- sqlQuery(con,query=qr)
           odbcClose(con)
         } else if (datasrc=="local"){
-          con <- db.local()
+          con <- db.local("main")
           dbWriteTable(con,name="yrf_tmp",value=TS[,c("date","stockID")],row.names = FALSE,overwrite = TRUE)
           re <- dbGetQuery(con,qr)
           dbDisconnect(con)
@@ -2944,7 +1466,7 @@ defaultSectorAttr <- function(type = c("ind","fct","ind_fct","fct_ind"),
 CT_SystemConst <- function(LB,datasrc=defaultDataSRC()){
   qr <- "select * from CT_SystemConst"
   if(datasrc=="local"){
-    re <- queryAndClose.dbi(db.local(),qr)
+    re <- queryAndClose.dbi(db.local("main"),qr)
   } else if(datasrc=="quant"){
     re <- queryAndClose.odbc(db.quant(),qr)
   } else if(datasrc=="jy"){
@@ -3021,7 +1543,7 @@ CT_industryList <- function(std,level,ID,name,
   
   qr <- "select * from CT_IndustryList"
   if(datasrc=="local"){
-    re <- queryAndClose.dbi(db.local(),qr)
+    re <- queryAndClose.dbi(db.local("main"),qr)
   } else if(datasrc=="quant"){
     re <- queryAndClose.odbc(db.quant(),qr)
   }
@@ -3046,7 +1568,7 @@ CT_industryList <- function(std,level,ID,name,
 #' @export
 CT_TechVars <- function(datasrc,secuCate,tableName,vars){
   # -- Only local database allowed!
-  re <- queryAndClose.dbi(db.local(),"select * from CT_TechVars")
+  re <- queryAndClose.dbi(db.local("main"),"select * from CT_TechVars")
   if(! missing(datasrc)){
     re <- re[re$datasrc==datasrc,]
   }
@@ -3066,7 +1588,7 @@ CT_TechVars <- function(datasrc,secuCate,tableName,vars){
 #' @export
 CT_FactorLists <- function(factorID,factorName,factorType){
   # -- Only local database allowed!
-  re <- queryAndClose.dbi(db.local(),"select * from CT_FactorLists")
+  re <- queryAndClose.dbi(db.local("fs"),"select * from CT_FactorLists")
   if(! missing(factorID)){
     re <- re[re$factorID %in% factorID,]
   }
@@ -3652,7 +2174,7 @@ rptDate.publ <- function(rptTS,rptDate,stockID,datasrc=defaultDataSRC()){
     re <- transform(re,rptDate=intdate2r(rptDate))
   }else if(datasrc=="local"){
     rptTS <- transform(rptTS,rptDate=rdate2int(rptDate))
-    con <- db.local()
+    con <- db.local("main")
     dbWriteTable(con,name="yrf_tmp",value=rptTS,row.names = FALSE,overwrite = TRUE)
     qr <- paste("select a.*,b.PublDate from yrf_tmp a left join LC_RptDate b on a.stockID=b.stockID and a.rptDate=b.EndDate")
     re <- dbGetQuery(con,qr)
@@ -3958,7 +2480,7 @@ getrptDate_newest <- function(TS,stockID,endT=Sys.Date(),freq=c("q","y","h"),
       re <- sqlQuery(con,query=qr)
       odbcClose(con)
     } else if (datasrc=="local"){
-      con <- db.local()
+      con <- db.local("main")
       dbWriteTable(con,name="yrf_tmp",value=TS_new[,c("date","stockID")],row.names = FALSE,overwrite = TRUE)
       re <- dbGetQuery(con,qr)
       dbDisconnect(con)
@@ -4238,7 +2760,7 @@ is_st <- function(TS,
     TS_$is_st <- ifelse(TS_$is_st==1,TRUE,FALSE)
   } else {
     TS_ <- transform(TS,date=rdate2int(date))
-    con <- db.local()
+    con <- db.local("qt")
     RSQLite::dbWriteTable(con,"yrf_tmp",TS_,overwrite=TRUE,row.names=FALSE)
     qr <- "select y.*,q.SecuAbbr 'is_st' from yrf_tmp y
             left join QT_DailyQuote2 q on y.date=q.TradingDay and y.stockID=q.ID"
@@ -4247,15 +2769,61 @@ is_st <- function(TS,
     TS_ <- transform(TS_,date=intdate2r(date),
                      is_st=stringr::str_detect(is_st,'ST'))
   }
-  
-
   if(drop){
     return(TS_$is_st)
   }else{
     return(TS_)
   }
-  
 }
+
+
+
+#' is_delist
+#'
+#' judeg whether stocks to be delisted
+#' @export
+is_delist <- function(TS,nearby=months(2),datelist,stockID, drop,datasrc='jy'){
+  if (missing(TS) && any(missing(stockID),missing(datelist))) {
+    stop("Param TS and combination of stockID and datelist should at least have one!")
+  }
+  if (!missing(TS) && !all(missing(stockID),missing(datelist))) {
+    stop("Param TS and combination of stockID and datelist should only have one!")
+  }
+  if(missing(drop)){
+    drop <- if(missing(TS)) TRUE else FALSE
+  }
+  
+  if (missing(TS)){
+    TS <- expand.grid(date=datelist, stockID=stockID)
+  }
+  
+  check.TS(TS)
+  if(datasrc=='jy'){
+    stocks <- substr(unique(TS$stockID),3,8)
+    
+    #get delist date
+    qr <- paste("SELECT 'EQ'+s.SecuCode 'stockID',convert(varchar,ChangeDate,112) 'delistdate'
+                FROM LC_ListStatus l
+                INNER join SecuMain s on l.InnerCode=s.InnerCode and s.SecuCategory=1
+                where l.ChangeType=4 and l.SecuMarket in (83,90)
+                and s.SecuCode in",brkQT(stocks))
+    re <- queryAndClose.odbc(db.jy(),qr,as.is = TRUE)
+    if(nrow(re)>0){
+      re <- transform(re,delistdate=intdate2r(delistdate))
+      TS <- TS %>% dplyr::left_join(re,by='stockID') %>%
+        dplyr::mutate(tmpdate=trday.offset(date,nearby),delist=ifelse(is.na(delistdate),FALSE,delistdate<=tmpdate)) %>%
+        dplyr::select(-tmpdate,-delistdate)
+    }
+  }
+  
+  if(drop){
+    return(TS$delist)
+  }else{
+    return(TS)
+  }
+}
+
+
 
 
 
@@ -4369,10 +2937,10 @@ TS.getTech <- function(TS,
     re <- sqlQuery(con,query=qr)
     odbcClose(con)
   } else if (datasrc=="local"){
-    con <- db.local()
+    con <- if(tableName =="QT_FactorScore") db.local("fs") else db.local("qt")
     dbWriteTable(con,name="yrf_tmp",value=tmpdat,row.names = FALSE,overwrite = TRUE)
-    if(tableName %in% c("QT_DailyQuote2","QT_FactorScore")){
-      dbGetQuery(con, 'CREATE INDEX [IX_yrf_tmp] ON [yrf_tmp]([date],[stockID]);')
+    if(tableName %in% c("QT_DailyQuote2","QT_DailyQuote","QT_FactorScore")){
+      dbExecute(con, 'CREATE INDEX [IX_yrf_tmp] ON [yrf_tmp]([date],[stockID]);')
     }
     re <- dbGetQuery(con,qr)
     dbDisconnect(con)
@@ -4638,7 +3206,7 @@ getQuote <- function(stocks, begT=as.Date("1990-12-19"), endT=Sys.Date(),
                      melt=FALSE,
                      split = if(length(stocks) > splitNbin) TRUE else FALSE,
                      splitNbin = 300,
-                     tableName = "QT_DailyQuote2",
+                     tableName = "QT_DailyQuote",
                      datasrc=defaultDataSRC()){
   
   begT <- rdate2int(begT)
@@ -4660,7 +3228,7 @@ getQuote <- function(stocks, begT=as.Date("1990-12-19"), endT=Sys.Date(),
     if(datasrc=="quant"){  
       qt <- queryAndClose.odbc(db.quant(),querychar)
     } else if(datasrc=="local"){      
-      qt <- queryAndClose.dbi(db.local(),querychar)
+      qt <- queryAndClose.dbi(db.local("qt"),querychar)
     }
     
     qt$date <- intdate2r(qt$date)
@@ -4729,7 +3297,7 @@ getIndexQuote <- function(stocks,
       con <- db.quant()
       qt <- queryAndClose.odbc(db.quant(),querychar)
     } else if(datasrc=="local"){      
-      qt <- queryAndClose.dbi(db.local(),querychar)
+      qt <- queryAndClose.dbi(db.local("main"),querychar)
     }else if(datasrc=="jy"){
       stocks_char <- paste("(",paste(QT(substr(stocks,3,8)),collapse=","),")",sep="")  
       begT <- intdate2r(begT)
@@ -4859,10 +3427,10 @@ getPeriodrtn <- function(SP, stockID, begT, endT,
       re <- sqlQuery(con,query=qr)
       odbcClose(con)
     } else if (datasrc=="local"){
-      con <- db.local()
+      con <- db.local("qt")
       dbWriteTable(con,name="yrf_tmp",value=tmpdat,row.names = FALSE,overwrite = TRUE)
-      create_idx1 <- dbGetQuery(con, 'CREATE INDEX [IX_yrf_tmp] ON [yrf_tmp]([begT],[stockID]);')
-      create_idx2 <- dbGetQuery(con, 'CREATE INDEX [IX2_yrf_tmp] ON [yrf_tmp]([endT],[stockID]);')
+      dbExecute(con, 'CREATE INDEX [IX_yrf_tmp] ON [yrf_tmp]([begT],[stockID]);')
+      dbExecute(con, 'CREATE INDEX [IX2_yrf_tmp] ON [yrf_tmp]([endT],[stockID]);')
       re <- dbGetQuery(con,qr)
       dbDisconnect(con)
     }  
@@ -4932,7 +3500,7 @@ getPeriodrtn_EI <- function(SP, stockID, begT, endT, drop=FALSE,
       re <- sqlQuery(con,query=qr)
       odbcClose(con)
     } else if (datasrc=="local"){
-      con <- db.local()
+      con <- db.local("main")
       dbWriteTable(con,name="yrf_tmp",value=tmpdat,row.names = FALSE,overwrite = TRUE)
       re <- dbGetQuery(con,qr)
       dbDisconnect(con)
@@ -5117,22 +3685,26 @@ getTradeList <- function(port_ini, port_obj, money_obj, splitN=1, outputstyle = 
 # ===============    gf.xx functions     =========
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
 
-
 #' gf_cap
+#' @param bc_lambda NULL, "auto", or a specific numeric.
 #' @export
 gf_cap <- function(TS,
                    log=FALSE,
+                   bc_lambda = NULL,
                    var=c("mkt_cap","float_cap","free_cap"),
                    na_fill=TRUE,
                    varname="factorscore",
                    datasrc=defaultDataSRC()){
   var <- match.arg(var)
+  # shrink columns, merge back later
+  TS_core <- TS[,c("date","stockID")]
+  # retrieve data
   if(datasrc=="local"){
     if(var=="free_cap"){
-      re <- gf.free_float_sharesMV(re)
+      re <- gf.free_float_sharesMV(TS_core)
       re <- renameCol(re,"factorscore","cap")
     } else {
-      re <- getTech(TS,variables=var)
+      re <- getTech(TS_core,variables=var)
       re <- renameCol(re,var,"cap")
       re$cap <- re$cap/10000  # 100 million
     }
@@ -5143,21 +3715,26 @@ gf_cap <- function(TS,
   if(log){
     re$cap <- log(re$cap)
   }
+  if(!is.null(bc_lambda)){
+    re <- factor_bcPower(re, fname = "cap", lambda = bc_lambda)
+  }
   if(na_fill){
     re[is.na(re$cap),"cap"] <- median(re$cap, na.rm = TRUE)
   }
   re <- renameCol(re,"cap",varname)
+  # merge back
+  re <- merge.x(TS, re, by = c("date","stockID"))
   return(re)
 }
 
 
 #' fl_cap
 #' @export
-fl_cap <- function(log=FALSE,var="mkt_cap",na_fill=TRUE){
+fl_cap <- function(log=FALSE,bc_lambda=NULL,var="mkt_cap",na_fill=TRUE){
   re <- list(
     factorFun = "gf_cap",
-    factorPar = list(log=log, var=var, na_fill=na_fill),
-    factorDir = 1  ,
+    factorPar = list(log=log, bc_lambda=bc_lambda, var=var, na_fill=na_fill),
+    factorDir = 1 ,
     factorRefine = list(
       outlier=list(method = "none", par=NULL, sectorAttr= NULL),
       std=list(method = "none", log=FALSE, sectorAttr=NULL, regLists=NULL),
@@ -5171,6 +3748,7 @@ fl_cap <- function(log=FALSE,var="mkt_cap",na_fill=TRUE){
   return(re)
 }
 
+
 #' gf.free_float_shares
 #' @export
 gf.free_float_shares <- function(TS){
@@ -5182,7 +3760,7 @@ gf.free_float_shares <- function(TS){
   where stockID=b.stockID and date<=b.date
   order by date desc limit 1)"
   
-  con <- db.local()
+  con <- db.local("main")
   TS$date <- rdate2int(TS$date)
   dbWriteTable(con,name="yrf_tmp",value=TS,row.names = FALSE,overwrite = TRUE)
   re <- dbGetQuery(con,qr)

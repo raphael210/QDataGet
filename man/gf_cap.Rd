@@ -4,8 +4,12 @@
 \alias{gf_cap}
 \title{gf_cap}
 \usage{
-gf_cap(TS, log = FALSE, var = c("mkt_cap", "float_cap", "free_cap"),
-  na_fill = TRUE, varname = "factorscore", datasrc = defaultDataSRC())
+gf_cap(TS, log = FALSE, bc_lambda = NULL, var = c("mkt_cap", "float_cap",
+  "free_cap"), na_fill = TRUE, varname = "factorscore",
+  datasrc = defaultDataSRC())
+}
+\arguments{
+\item{bc_lambda}{NULL, "auto", or a specific numeric.}
 }
 \description{
 gf_cap

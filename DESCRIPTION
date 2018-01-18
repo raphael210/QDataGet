@@ -4,7 +4,7 @@ Description:
 Version: 1.0
 Author: Ruifei.yin
 Maintainer: Ruifei.yin <yinruifei@gmail.com>
-Imports: QUtility, RODBC, DBI, RSQLite, dplyr,plyr,reshape2, lubridate, zoo, xts, data.table
+Imports: QUtility, RODBC, DBI, RSQLite, dplyr,plyr,reshape2, lubridate, zoo, xts, data.table, car
 Depends:
     R (>= 2.15.1),
     QUtility

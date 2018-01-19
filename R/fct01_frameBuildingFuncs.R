@@ -992,6 +992,7 @@ setrefinePar <- function(refinePar=refinePar_default(),
                          std_log,
                          std_sectorAttr,
                          std_regLists,
+                         std_reg_glmwgt,
                          na_method,
                          na_sectorAttr,
                          all_sectorAttr){
@@ -1015,6 +1016,9 @@ setrefinePar <- function(refinePar=refinePar_default(),
   }
   if(!missing(std_regLists)){
     refinePar$std$regLists <- std_regLists
+  }
+  if(!missing(std_reg_glmwgt)){
+    refinePar$std$reg_glmwgt <- std_reg_glmwgt
   }
   if(!missing(na_method)){
     refinePar$na$method <- na_method

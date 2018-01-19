@@ -6,7 +6,7 @@
 \usage{
 setrefinePar(refinePar = refinePar_default(), outlier_method, outlier_par,
   outlier_sectorAttr, std_method, std_log, std_sectorAttr, std_regLists,
-  na_method, na_sectorAttr, all_sectorAttr)
+  std_reg_glmwgt, na_method, na_sectorAttr, all_sectorAttr)
 }
 \arguments{
 \item{refinePar}{A refinePar list.}

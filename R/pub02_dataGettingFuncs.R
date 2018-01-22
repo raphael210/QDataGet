@@ -1964,6 +1964,7 @@ rptDate.is <- function(rptDate,freq=c("q","y","h")){
 #' check.rptDate(ymd(c(20100103,20141231,20130630)))
 #' check.rptDate(ymd(c(20100630,20141231,20130930)))
 check.rptDate <- function(rptDate){
+  rptDate <- na.omit(rptDate) # omit the NA
   re <- rptDate.is(rptDate)
   re_all <- all(re)
   if(!re_all) {

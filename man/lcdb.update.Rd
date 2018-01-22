@@ -47,11 +47,11 @@ lcdb.update.LC_IndexComponent()
 
 lcdb.update.LC_IndexComponentsWeight(begT, endT, IndexID)
 
-lcdb.update.QT_IndexQuote(begT, endT, IndexID)
+lcdb.update.QT_IndexQuote(begT, endT, IndexID, datasrc = c("quant", "jy"))
 
 lcdb.update.QT_DailyQuote(begT, endT, stockID)
 
-lcdb.update.QT_DailyQuote2(begT, endT, stockID)
+lcdb.update.QT_DailyQuote2(begT, endT, stockID, loopFreq = "100 year")
 
 lcdb.update.LC_RptDate(begT, endT)
 

@@ -4,7 +4,8 @@
 \alias{fl_cap}
 \title{fl_cap}
 \usage{
-fl_cap(log = FALSE, bc_lambda = NULL, var = "mkt_cap", na_fill = TRUE)
+fl_cap(log = FALSE, bc_lambda = NULL, var = "float_cap", na_fill = TRUE,
+  datasrc = "memory")
 }
 \description{
 fl_cap

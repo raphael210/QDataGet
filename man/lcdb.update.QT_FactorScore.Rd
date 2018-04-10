@@ -4,7 +4,7 @@
 \alias{lcdb.update.QT_FactorScore}
 \title{lcdb.update.QT_FactorScore}
 \usage{
-lcdb.update.QT_FactorScore(begT, endT, stockID, loopFreq = "100 year")
+lcdb.update.QT_FactorScore(begT, endT, stockID, loopFreq = "month")
 }
 \arguments{
 \item{begT}{the begin date of the updating}

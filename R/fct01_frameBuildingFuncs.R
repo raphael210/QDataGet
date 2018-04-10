@@ -464,17 +464,57 @@ getRawMultiFactor <- function(TS,FactorLists,name_suffix=FALSE){
 }
 
 
-getRawMultiFactor_lcfs <- function(TS,FactorIDs,name_suffix=FALSE){
-  
-}
-getMultiFactor_lcfs <- function(){
-  
+#' @rdname getTSF
+#' @export
+#' @examples 
+#' # - 3. get multifactor through lcfs
+#' factorIDs <- c("F000001","F000002","F000005")
+#' # -- 3.1 getMultiFactor_lcfs
+#' mTSF <- getMultiFactor_lcfs(TS,factorIDs,factorRefine = refinePar_default("reg"))
+#' # -- 3.2 getRawMultiFactor_lcfs
+#' mTSF <- getMultiFactor_lcfs(TS,factorIDs,dir_adj=FALSE,factorRefine = NULL)
+getMultiFactor_lcfs <- function(TS, FactorIDs, dir_adj=TRUE, factorRefine = NULL, wgts, fname_out=c("name","ID")){
+  fname_out <- match.arg(fname_out)
+  # ---- raw factor getting
+  check.TS(TS)  
+  tmpdat <- transform(TS[,c("stockID","date")], date = rdate2int(date))
+  tmpdat$PK_ <- 1:NROW(tmpdat)
+  con <- db.local("fs")
+  vars <- paste(FactorIDs, collapse=", ")      
+  qr <- paste("select a.*,",vars,"from yrf_tmp a left join QT_FactorScore b on a.stockID=b.ID and a.date=b.TradingDay")
+  dbWriteTable(con,name="yrf_tmp",value=tmpdat,row.names = FALSE,overwrite = TRUE)
+  dbExecute(con, 'CREATE INDEX [IX_yrf_tmp] ON [yrf_tmp]([date],[stockID]);')
+  re <- dbGetQuery(con,qr)
+  re <- dplyr::arrange(re,PK_)[,FactorIDs,drop=FALSE]
+  factorNames <- if(fname_out=="ID") FactorIDs else factorID2name(FactorIDs)
+  colnames(re) <- factorNames
+  re <- cbind(TS,re)
+  dbDisconnect(con)
+  # ---- dir adjusting & factor refining
+  factorDirs <- CT_FactorLists(FactorIDs)$factorDir
+  for(i in 1:length(factorNames)){
+    re <- renameCol(re,factorNames[i],"factorscore")
+    if(dir_adj){
+      re$factorscore <- re$factorscore*factorDirs[i]
+    }
+    re <- factor_refine(re,refinePar = factorRefine)
+    re <- renameCol(re,"factorscore",factorNames[i])
+  }
+  # ---- get the combi-factor-score
+  if(!missing(wgts)){
+    re <- MultiFactor2CombiFactor(mTSF=re,wgts=wgts,factorNames=factorNames,keep_single_factors="TRUE")
+  }
+  return(re)
 }
 
 #' @rdname getTSF
+#' @aliases getRawFactor_lcfs
 #' @export
-gf_lcfs <- function(TS,factorID){
-  re <- getTech(TS,variables=factorID,tableName="QT_FactorScore",datasrc = "local")
+gf_lcfs <- function(TS,factorID,dir_adj=FALSE,factorRefine = NULL){
+  # re <- getTech(TS,variables=factorID,tableName="QT_FactorScore",datasrc = "local")
+  # re <- renameCol(re,factorID,"factorscore")
+  
+  re <- getMultiFactor_lcfs(TS,factorID,dir_adj=dir_adj,factorRefine = factorRefine,fname_out="ID")
   re <- renameCol(re,factorID,"factorscore")
   return(re)
 }
@@ -565,9 +605,9 @@ TSFs2mTSF <- function(TSFs, factorNames = names(TSFs)){
 #' TSFRs <- mTSF2TSFs(mTSFR)
 mTSF2TSFs <- function(mTSF, factorNames = guess_factorNames(mTSF)){
   all_cols <- colnames(mTSF)
-  if("factorscore" %in% all_cols){
-    stop("There should not be 'factorscore' in the cols of mTSF! Please try to rename it.")
-  }
+  # if("factorscore" %in% all_cols){
+  #   stop("There should not be 'factorscore' in the cols of mTSF! Please try to rename it.")
+  # }
   no_fnames <- setdiff(all_cols,factorNames)
   re <- list()
   for (i in 1:length(factorNames)){
@@ -674,36 +714,42 @@ factor_outlier <- function (TSF, method=c("none","sd","mad","boxplot","percentag
   if(method == "none"){
     return(TSF)
   }
+  # shrink columns (merge back later)
+  TSF_core <- TSF[,intersect(names(TSF), c("date","stockID","factorscore","sector"))]
   # sector splitting
   if(!is.null(sectorAttr)){
-    TSF <- getSectorID(TS = TSF,sectorAttr = sectorAttr, fillNA = TRUE)
-    TSF <- dplyr::group_by(TSF, date, sector)
+    TSF_core <- getSectorID(TS = TSF_core, sectorAttr = sectorAttr, fillNA = TRUE)
+    key=c("date","sector")
   }else{
-    TSF <- dplyr::group_by(TSF, date)
+    key=c("date")
   }
+  TSF_core <- data.table::as.data.table(TSF_core,key=key)
   # sub fun
-  outlier_sub_fun <- function(TSF, method, par){
+  outlier_sub_fun <- function(sf, method, par){
     if(method == "sd"){
-      outlier_u <- mean(TSF$factorscore, na.rm = TRUE) + par * sd(TSF$factorscore, na.rm = TRUE)
-      outlier_l <- mean(TSF$factorscore, na.rm = TRUE) - par * sd(TSF$factorscore, na.rm = TRUE)
+      outlier_u <- mean(sf, na.rm = TRUE) + par * sd(sf, na.rm = TRUE)
+      outlier_l <- mean(sf, na.rm = TRUE) - par * sd(sf, na.rm = TRUE)
     }else if(method == "mad"){
-      outlier_u <- median(TSF$factorscore, na.rm = TRUE) + par * mad(TSF$factorscore, na.rm = TRUE)
-      outlier_l <- median(TSF$factorscore, na.rm = TRUE) - par * mad(TSF$factorscore, na.rm = TRUE)
+      outlier_u <- median(sf, na.rm = TRUE) + par * mad(sf, na.rm = TRUE)
+      outlier_l <- median(sf, na.rm = TRUE) - par * mad(sf, na.rm = TRUE)
     }else if(method == "boxplot"){
-      boxplot_stat <- boxplot.stats(TSF$factorscore, coef = par)[[1]]
+      boxplot_stat <- boxplot.stats(sf, coef = par)[[1]]
       outlier_u <- max(boxplot_stat)
       outlier_l <- min(boxplot_stat)
     }else if(method == "percentage"){
-      outlier_u <- quantile(TSF$factorscore, probs = 1-par/100, na.rm = TRUE)
-      outlier_l <- quantile(TSF$factorscore, probs = 0+par/100, na.rm = TRUE)
+      outlier_u <- quantile(sf, probs = 1-par/100, na.rm = TRUE)
+      outlier_l <- quantile(sf, probs = 0+par/100, na.rm = TRUE)
     }
-    TSF <- transform(TSF,factorscore = ifelse(factorscore > outlier_u, outlier_u,
-                                              ifelse(factorscore < outlier_l, outlier_l, factorscore)))
-    return(TSF)
+    sf <- ifelse(sf > outlier_u, outlier_u,
+                 ifelse(sf < outlier_l, outlier_l, sf))
+    sf <- as.numeric(sf)
+    return(sf)
   }
   # processing
-  TSF <- dplyr::do(TSF, outlier_sub_fun(., method, par))
-  TSF <- as.data.frame(TSF)
+  TSF_core <- TSF_core[,factorscore:=outlier_sub_fun(factorscore,method,par),by=key]
+  # merge back
+  TSF <- TSF[,setdiff(colnames(TSF), "factorscore")]
+  TSF <- merge.x(TSF, TSF_core, by = c("date","stockID"))
   # remove sector column if its not from the input
   if(!identical(sectorAttr, "existing") & !is.null(sectorAttr)){
     TSF <- TSF[,setdiff(colnames(TSF), "sector")]
@@ -718,7 +764,7 @@ factor_outlier <- function (TSF, method=c("none","sd","mad","boxplot","percentag
 #' @param log Logical value. Default FALSE.
 #' @param sectorAttr could be a sectorAttr list or NULL.
 #' @param regLists factorLists. This argument will used when method is reg. The factorscore will be orthogonized by the factors in regLists.
-#' @param reg_glmwgt NULL,"existing","sector","cap"
+#' @param regWgt NULL,"existing","sector","cap"
 #' @export
 #' @author Han.Qian
 #' @examples 
@@ -731,7 +777,7 @@ factor_std <- function(TSF,method=c("none","scale","robustScale","reg"),
                        log=FALSE, 
                        sectorAttr=defaultSectorAttr(),
                        regLists=NULL,
-                       reg_glmwgt=NULL
+                       regWgt=NULL
 ){
   method <- match.arg(method)
   
@@ -747,21 +793,13 @@ factor_std <- function(TSF,method=c("none","scale","robustScale","reg"),
     TSF <- renameCol(TSF, "factorscore", "Y_for_reg")
     
     # shrink columns (merge back later)
-    if(identical(sectorAttr, "existing") & identical(reg_glmwgt, "existing")){
-      TSF_core <- TSF[,c("date","stockID","Y_for_reg","sector","glm_wgt")]
-    }else if(identical(sectorAttr, "existing")){
-      TSF_core <- TSF[,c("date","stockID","Y_for_reg","sector")]
-    }else if(identical(reg_glmwgt, "existing")){
-      TSF_core <- TSF[,c("date","stockID","Y_for_reg","glm_wgt")]
-    }else{
-      TSF_core <- TSF[,c("date","stockID","Y_for_reg")]
-    }
+    TSF_core <- TSF[,intersect(names(TSF), c("date","stockID","Y_for_reg","sector","glm_wgt"))]
     
     # get glm_wgt
-    if(!is.null(reg_glmwgt) & !identical(reg_glmwgt, "existing")){
-      if(reg_glmwgt == "sector"){
+    if(!is.null(regWgt) & !identical(regWgt, "existing")){
+      if(regWgt == "sector"){
         if(!identical(sectorAttr, "existing")){
-          TSF_core <- getSectorID(TSF_core, sectorAttr = sectorAttr, fillNA = TRUE) 
+          TSF_core <- getSectorID(TSF_core, sectorAttr = defaultSectorAttr("ind",336), fillNA = TRUE) 
           sectorAttr <- "existing"
         }
         glm_wgt_data <- dplyr::group_by(TSF_core, date, sector)
@@ -769,22 +807,26 @@ factor_std <- function(TSF,method=c("none","scale","robustScale","reg"),
         TSF_core <- merge.x(TSF_core, glm_wgt_data, by = c("date","sector"))
         TSF_core <- as.data.frame(TSF_core)
         
-      }else if(reg_glmwgt == "cap"){
-        TSF_core <- gf_cap(TSF_core, log = TRUE, var = "mkt_cap", varname = "glm_wgt")
+      }else if(regWgt == "cap"){ # to be modified!
+        TSF_core <- getSectorID(TSF_core, sectorAttr = defaultSectorAttr("fct",fct_std = list(fl_cap(var = "float_cap")),fct_level = 6), fillNA = TRUE) 
+        glm_wgt_data <- dplyr::group_by(TSF_core, date, sector)
+        glm_wgt_data <- dplyr::summarise(glm_wgt_data, glm_wgt = 1/var(Y_for_reg, na.rm = TRUE))
+        TSF_core <- merge.x(TSF_core, glm_wgt_data, by = c("date","sector"))
+        TSF_core <- as.data.frame(TSF_core)
       }else{
         stop("The glm_wgt could not be identified.")
       }
     }
     
     # glm_wgt checking
-    if(!is.null(reg_glmwgt)){
+    if(!is.null(regWgt)){
       if(any(is.infinite(TSF_core$glm_wgt))){
         TSF_core$glm_wgt[is.infinite(TSF_core$glm_wgt)] <- NA
       }
       if(any(is.na(TSF_core$glm_wgt))){
         TSF_core <- dplyr::group_by(TSF_core, date)
-        TSF_core2 <- dplyr::mutate(TSF_core, 
-                                   glm_wgt = ifelse(is.na(glm_wgt), yes = median(glm_wgt, na.rm = TRUE), no = glm_wgt))
+        TSF_core <- dplyr::mutate(TSF_core,
+                                  glm_wgt = ifelse(is.na(glm_wgt), yes = median(glm_wgt, na.rm = TRUE), no = glm_wgt))
         TSF_core <- as.data.frame(TSF_core)
       }
     }
@@ -796,7 +838,7 @@ factor_std <- function(TSF,method=c("none","scale","robustScale","reg"),
     }
     
     # orthogon
-    if(is.null(reg_glmwgt)){
+    if(is.null(regWgt)){
       TSF_core <- factor_orthogon_single(TSF_core, y = "Y_for_reg", sectorAttr = sectorAttr, regType = "lm")
     }else{
       TSF_core <- factor_orthogon_single(TSF_core, y = "Y_for_reg", sectorAttr = sectorAttr, regType = "glm")
@@ -809,41 +851,49 @@ factor_std <- function(TSF,method=c("none","scale","robustScale","reg"),
     TSF <- merge.x(TSF, TSF_core, by = c("date","stockID"))
     
     # scale to N(0,1) 
-    if(is.null(reg_glmwgt)){ # by date*sector
-      TSF <- factor_std(TSF, method = "robustScale", sectorAttr = sectorAttr)
-    } else { # by date
-      TSF <- factor_std(TSF, method = "robustScale", sectorAttr = NULL)
-    }
+    # if(is.null(regWgt)){ # by date*sector
+    #   TSF <- factor_std(TSF, method = "robustScale", sectorAttr = sectorAttr)
+    # } else { # by date
+    #   TSF <- factor_std(TSF, method = "robustScale", sectorAttr = NULL)
+    # }
+    TSF <- factor_std(TSF, method = "robustScale", sectorAttr = sectorAttr)
     
     # output
     return(TSF)
     
   }else{ # scale part
+    # shrink columns (merge back later)
+    TSF_core <- TSF[,intersect(names(TSF), c("date","stockID","factorscore","sector"))]
     # sector splitting
     if(!is.null(sectorAttr)){
-      TSF <- getSectorID(TS = TSF, sectorAttr = sectorAttr, fillNA = TRUE, ungroup=10)
-      TSF <- dplyr::group_by(TSF, date, sector)
+      TSF_core <- getSectorID(TS = TSF_core, sectorAttr = sectorAttr, fillNA = TRUE, ungroup=10)
+      key=c("date","sector")
     }else{
-      TSF <- dplyr::group_by(TSF, date)
+      key=c("date")
     }
+    TSF_core <- data.table::as.data.table(TSF_core,key=key)
     # sub fun
-    std_sub_fun <- function(TSF, method){
+    std_sub_fun <- function(sf, method){
       if(method == "scale"){
-        TSF$factorscore <- as.numeric(scale(TSF$factorscore))
+        sf <- as.numeric(scale(sf))
       }else if(method == "robustScale"){
-        median_ <- median(TSF$factorscore, na.rm = TRUE)
-        sd_ <- sd(TSF$factorscore, na.rm = TRUE)
+        median_ <- median(sf, na.rm = TRUE)
+        sd_ <- sd(sf, na.rm = TRUE)
         if(is.na(sd_) | sd_ == 0){
-          TSF$factorscore <- NA
+          sf <- as.numeric(NA)
         }else{
-          TSF$factorscore <- (TSF$factorscore - median_)/sd_
+          sf <- (sf - median_)/sd_
         }
       }
-      return(TSF)
+      return(sf)
     }
     # processing 
-    TSF <- dplyr::do(TSF, std_sub_fun(., method))
-    TSF <- as.data.frame(TSF)
+    TSF_core <- TSF_core[,factorscore:=std_sub_fun(factorscore,method),by=key]
+    
+    # merge back
+    TSF <- TSF[,setdiff(colnames(TSF), "factorscore")]
+    TSF <- merge.x(TSF, TSF_core, by = c("date","stockID"))
+    
     # remove sector column if its not from the input
     if(!identical(sectorAttr, "existing") & !is.null(sectorAttr)){
       TSF <- TSF[,setdiff(colnames(TSF), "sector")]
@@ -869,41 +919,45 @@ factor_std <- function(TSF,method=c("none","scale","robustScale","reg"),
 #' TS <- getTS(RebDates,'EI000300')
 #' TSF <- gf.NP_YOY(TS)
 #' TSF <- factor_na(TSF, method = "median")
-factor_na <- function (TSF, method=c("none","mean","median"), 
+factor_na <- function (TSF, method=c("none","mean","median"),
                        sectorAttr=defaultSectorAttr()) {
   method <- match.arg(method)
   # direct return
   if(method == "none"){
     return(TSF)
   }
+  # shrink columns (merge back later)
+  TSF_core <- TSF[,intersect(names(TSF), c("date","stockID","factorscore","sector"))]
   # sector splitting
   if(!is.null(sectorAttr)){
-    TSF <- getSectorID(TS = TSF,sectorAttr = sectorAttr, fillNA = TRUE)
-    TSF <- dplyr::group_by(TSF, date, sector)
+    TSF_core <- getSectorID(TS = TSF_core, sectorAttr = sectorAttr, fillNA = TRUE)
+    key=c("date","sector")
   }else{
-    TSF <- dplyr::group_by(TSF, date)
+    key=c("date")
   }
+  TSF_core <- data.table::as.data.table(TSF_core,key=key)
   # sub fun
-  na_sub_fun <- function(TSF, method){
+  na_sub_fun <- function(sf, method){
+    # browser()
     if(method == "mean"){
-      ind_na_ <- is.na(TSF$factorscore)
-      mean_ <- mean(TSF$factorscore, na.rm = TRUE)
-      TSF[ind_na_,"factorscore"] <- mean_
+      ind_na_ <- is.na(sf)
+      mean_ <- mean(sf, na.rm = TRUE)
+      sf[ind_na_] <- mean_
     }else if(method == "median"){
-      ind_na_ <- is.na(TSF$factorscore)
-      median_ <- median(TSF$factorscore, na.rm = TRUE)
-      TSF[ind_na_,"factorscore"] <- median_
+      ind_na_ <- is.na(sf)
+      median_ <- median(sf, na.rm = TRUE)
+      sf[ind_na_] <- median_
     }
-    return(TSF)
+    return(sf)
   }
   # batch processing
-  TSF <- dplyr::do(TSF, na_sub_fun(., method))
-  if(sum(is.na(TSF$factorscore))>0){ # If sector is too small, ungroup it.
-    TSF <- as.data.frame(TSF)
-    TSF <- dplyr::group_by(TSF, date)
-    TSF <- dplyr::do(TSF, na_sub_fun(., method))
+  TSF_core <- TSF_core[,factorscore:= na_sub_fun(factorscore,method),by=key]
+  if(sum(is.na(TSF_core$factorscore))>0){ # If sector is too small, ungroup it.
+    TSF_core <- TSF_core[,factorscore:= na_sub_fun(factorscore,method),by=c("date")]
   }
-  TSF <- as.data.frame(TSF)
+  # merge back
+  TSF <- TSF[,setdiff(colnames(TSF), "factorscore")]
+  TSF <- merge.x(TSF, TSF_core, by = c("date","stockID"))
   # remove sector column if its not from the input
   if(!identical(sectorAttr, "existing") & !is.null(sectorAttr)){
     TSF <- TSF[,setdiff(colnames(TSF), "sector")]
@@ -915,16 +969,16 @@ factor_na <- function (TSF, method=c("none","mean","median"),
 
 #' refinePar_default
 #' 
-#' @param type Could be "none", "reg", "scale"
+#' @param type Could be "none","scale","scale_sec","reg","reg_glm_sec","reg_glm_cap"
 #' @param sectorAttr could be a sectorAttr list, or NULL(means no grouping by sector).
 #' @param log TRUE or FALSE
 #' @param regLists a \bold{factorLists}
 #' @export
 #' @author Han.Qian
-refinePar_default <- function(type=c("none","scale","reg","reg_glm"), 
-                              sectorAttr=NULL,
+refinePar_default <- function(type=c("none","scale","scale_sec","reg","reg_glm_sec","reg_glm_cap"), 
+                              sectorAttr=defaultSectorAttr("ind"),
                               log=FALSE,
-                              regLists=list(fl_cap(bc_lambda = "auto"))
+                              regLists=list(fl_cap(log = TRUE,var="float_cap",datasrc = "memory"))
                               ){
   type <- match.arg(type)
   if(type=="none"){
@@ -944,6 +998,17 @@ refinePar_default <- function(type=c("none","scale","reg","reg_glm"),
                             sectorAttr= NULL),
                std=list(method = "robustScale",
                         log=log, 
+                        sectorAttr=NULL,
+                        regLists=NULL),
+               na=list(method = "median", 
+                       sectorAttr=sectorAttr)
+    )
+  }else if(type=="scale_sec"){
+    re <- list(outlier=list(method = "boxplot",
+                            par=1.5,
+                            sectorAttr= NULL),
+               std=list(method = "robustScale",
+                        log=log, 
                         sectorAttr=sectorAttr,
                         regLists=NULL),
                na=list(method = "median", 
@@ -957,11 +1022,11 @@ refinePar_default <- function(type=c("none","scale","reg","reg_glm"),
                         log=log, 
                         sectorAttr=sectorAttr,
                         regLists=regLists,
-                        reg_glmwgt=NULL),
+                        regWgt=NULL),
                na=list(method = "median", 
                        sectorAttr=sectorAttr)
     )
-  }else if(type=="reg_glm"){
+  }else if(type=="reg_glm_sec"){
     re <- list(outlier=list(method = "boxplot",
                             par=1.5,
                             sectorAttr= NULL),
@@ -969,10 +1034,22 @@ refinePar_default <- function(type=c("none","scale","reg","reg_glm"),
                         log=log, 
                         sectorAttr=sectorAttr,
                         regLists=regLists,
-                        reg_glmwgt="sector"),
+                        regWgt="sector"),
                na=list(method = "median", 
                        sectorAttr=sectorAttr)
                )
+  }else if(type=="reg_glm_cap"){
+    re <- list(outlier=list(method = "boxplot",
+                            par=1.5,
+                            sectorAttr= NULL),
+               std=list(method = "reg",
+                        log=log, 
+                        sectorAttr=sectorAttr,
+                        regLists=regLists,
+                        regWgt="cap"),
+               na=list(method = "median", 
+                       sectorAttr=sectorAttr)
+    )
   }
   return(re)
 }
@@ -992,7 +1069,7 @@ setrefinePar <- function(refinePar=refinePar_default(),
                          std_log,
                          std_sectorAttr,
                          std_regLists,
-                         std_reg_glmwgt,
+                         std_regWgt,
                          na_method,
                          na_sectorAttr,
                          all_sectorAttr){
@@ -1017,8 +1094,8 @@ setrefinePar <- function(refinePar=refinePar_default(),
   if(!missing(std_regLists)){
     refinePar$std$regLists <- std_regLists
   }
-  if(!missing(std_reg_glmwgt)){
-    refinePar$std$reg_glmwgt <- std_reg_glmwgt
+  if(!missing(std_regWgt)){
+    refinePar$std$regWgt <- std_regWgt
   }
   if(!missing(na_method)){
     refinePar$na$method <- na_method
@@ -1067,7 +1144,7 @@ factor_refine <- function(TSF, refinePar=refinePar_default(),drop_sector=TRUE){
                     log = refinePar$std$log,
                     sectorAttr = refinePar$std$sectorAttr,
                     regLists = refinePar$std$regLists,
-                    reg_glmwgt = refinePar$std$reg_glmwgt)
+                    regWgt = refinePar$std$regWgt)
   
   TSF <- factor_na(TSF,
                    method = refinePar$na$method,

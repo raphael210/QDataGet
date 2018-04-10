@@ -3,7 +3,9 @@
 \name{getTSF}
 \alias{getTSF}
 \alias{getRawFactor}
+\alias{getMultiFactor_lcfs}
 \alias{gf_lcfs}
+\alias{getRawFactor_lcfs}
 \title{getTSF}
 \usage{
 getTSF(TS, factorFun, factorPar = list(), factorDir = 1,
@@ -11,7 +13,10 @@ getTSF(TS, factorFun, factorPar = list(), factorDir = 1,
 
 getRawFactor(TS, factorFun, factorPar, FactorList)
 
-gf_lcfs(TS, factorID)
+getMultiFactor_lcfs(TS, FactorIDs, dir_adj = TRUE, factorRefine = NULL,
+  wgts, fname_out = c("name", "ID"))
+
+gf_lcfs(TS, factorID, dir_adj = FALSE, factorRefine = NULL)
 }
 \arguments{
 \item{TS}{a \bold{TS} or \bold{TSR} objectobject(See detail in \code{\link{getTS}} and  \code{\link{getTSR}})}
@@ -77,6 +82,12 @@ TSF2 <- getTSF(TS,"gf.foo","2,3")
 TSF2 <- getTSF(TS,"gf.bar","20,\\"IF00\\"")
 # -- get 'raw' factorscore
 TSF_raw <- getRawFactor(TS,"gf.pct_chg_per","20")
+# - 3. get multifactor through lcfs
+factorIDs <- c("F000001","F000002","F000005")
+# -- 3.1 getMultiFactor_lcfs
+mTSF <- getMultiFactor_lcfs(TS,factorIDs,factorRefine = refinePar_default("reg"))
+# -- 3.2 getRawMultiFactor_lcfs
+mTSF <- getMultiFactor_lcfs(TS,factorIDs,dir_adj=FALSE,factorRefine = NULL)
 }
 \seealso{
 Other frame building functions: \code{\link{getRebDates}},

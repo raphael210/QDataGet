@@ -6,7 +6,7 @@
 \usage{
 factor_std(TSF, method = c("none", "scale", "robustScale", "reg"),
   log = FALSE, sectorAttr = defaultSectorAttr(), regLists = NULL,
-  reg_glmwgt = NULL)
+  regWgt = NULL)
 }
 \arguments{
 \item{method}{Currently supporting four types : none, scale, robustScale, reg.}
@@ -17,7 +17,7 @@ factor_std(TSF, method = c("none", "scale", "robustScale", "reg"),
 
 \item{regLists}{factorLists. This argument will used when method is reg. The factorscore will be orthogonized by the factors in regLists.}
 
-\item{reg_glmwgt}{NULL,"existing","sector","cap"}
+\item{regWgt}{NULL,"existing","sector","cap"}
 }
 \description{
 factor_std

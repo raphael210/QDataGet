@@ -177,6 +177,7 @@ lcdb.update <- function(){
   lcdb.update.LC_RptDate()               ;  cat("lcdb.update.LC_RptDate()... Done \n");
   lcdb.update.LC_PerformanceGrowth()     ;  cat("lcdb.update.LC_PerformanceGrowth()... Done \n");
   lcdb.update.QT_FreeShares()            ;  cat("lcdb.update.QT_FreeShares()... Done \n");
+  lcdb.update.QT_Size()                  ;  cat("lcdb.update.QT_Size()... Done \n");
   lcdb.update.QT_FactorScore()           ;  cat("lcdb.update.QT_FactorScore()... Done \n");
 }
 
@@ -592,40 +593,52 @@ lcdb.fix.swindustry <- function(){
   l.SecondIndustryCode 'Code2',l.SecondIndustryName 'Name2',l.ThirdIndustryCode 'Code3',
   l.ThirdIndustryName 'Name3',convert(varchar, l.InfoPublDate, 112) 'InDate',
   convert(varchar, l.CancelDate, 112) 'OutDate',l.InfoSource,l.Standard,l.Industry,
-  l.IfPerformed 'Flag',convert(float,l.XGRQ) 'UpdateTime'
+  l.IfPerformed 'Flag',convert(float,l.XGRQ) 'UpdateTime',
+  convert(varchar, s.ListedDate, 112) 'IPODate'
   FROM LC_ExgIndustry l,SecuMain s
   where l.CompanyCode=s.CompanyCode and s.SecuCategory=1
-  and s.SecuMarket in(83,90) and l.Standard in(9,24)"
+  and s.SecuMarket in(83,90) and l.Standard in(9,24)
+  order by l.Standard,l.InfoPublDate"
   re <- queryAndClose.odbc(db.jy(),qr,as.is = TRUE)
-  re <- re[substr(re$stockID,1,3) %in% c('EQ6','EQ3','EQ0'),]
-  re <- re[ifelse(is.na(re$OutDate),TRUE,re$OutDate!=re$InDate),] # remove indate==outdate wrong data
-  re <- transform(re,InDate=as.integer(InDate),
-                  OutDate=as.integer(OutDate),
-                  UpdateTime=as.double(UpdateTime))
+  re <- re %>% filter(substr(stockID,1,3) %in% c('EQ6','EQ3','EQ0'),!is.na(IPODate)) %>% 
+    mutate(InDate=as.integer(InDate),OutDate=as.integer(OutDate),UpdateTime=as.double(UpdateTime),IPODate=as.integer(IPODate))
   
-  sw24use <- re[(re$InDate>=20140101) & (re$Standard==24),]
-  sw9use <- re[(re$InDate<20140101) & (re$Standard==9),]
+  #use standard 24 data directly
+  sw24use <- re %>% filter(Standard==24) %>% dplyr::select(-IPODate)
+  
+  #use standard 9 data before standard 24 published date
+  sw9use <- re %>% filter(Standard==9,InDate<20140101,IPODate<20140101)
   sw9use[is.na(sw9use$OutDate) | sw9use$OutDate>20140101,'OutDate'] <- 20140101
-  sw9use[,'Flag'] <- 2
-  sw9use <- dplyr::rename(sw9use,OldCode1=Code1,OldName1=Name1,OldCode2=Code2,
-                          OldName2=Name2,OldCode3=Code3,OldName3=Name3)
+  sw9use <- sw9use %>% mutate(Flag=2,unlistDate=trday.unlist(stockID)) %>% mutate(unlistDate=rdate2int(unlistDate))
+  sw9use <- sw9use[is.na(sw9use$unlistDate) | sw9use$InDate<sw9use$unlistDate,] # remove Indate> unlistdate
+  
+  # remove outdate> unlistdate
+  sw9use <- sw9use %>% mutate(OutDate=ifelse(!is.na(sw9use$unlistDate) & sw9use$OutDate>sw9use$unlistDate,unlistDate,OutDate)) %>% 
+    dplyr::select(-IPODate,-unlistDate) %>% 
+    dplyr::rename(OldCode1=Code1,OldName1=Name1,OldCode2=Code2,OldName2=Name2,OldCode3=Code3,OldName3=Name3)
   
   #convert old industry to new industry
   sw24tmp <- sw24use[sw24use$InDate==20140101,c("stockID","Code1","Name1","Code2","Name2","Code3","Name3")]
   sw9part1 <- sw9use[sw9use$OutDate==20140101,]
   sw9part1 <- dplyr::left_join(sw9part1,sw24tmp,by='stockID')
-  hashtable <- unique(sw9part1[,c("Code1","Name1","Code2","Name2","Code3","Name3","OldCode1","OldName1","OldCode2","OldName2","OldCode3","OldName3")])
-  hashtable <- na.omit(hashtable)
-  hashtable <- plyr::ddply(hashtable,~OldName3,plyr::mutate,n=length(OldName3))
-  hashtable <- hashtable[hashtable$n==1,c("Code1","Name1","Code2","Name2","Code3","Name3","OldCode1","OldName1","OldCode2","OldName2","OldCode3","OldName3")]
+  
+  #get industry match table
+  indmatch <- unique(sw9part1[,c("Code1","Name1","Code2","Name2","Code3","Name3","OldCode1","OldName1","OldCode2","OldName2","OldCode3","OldName3")])
+  indmatch <- plyr::ddply(indmatch,~OldName3,plyr::mutate,n=length(OldName3))
+  indmatch <- indmatch[indmatch$n==1,c("Code1","Name1","Code2","Name2","Code3","Name3","OldCode1","OldName1","OldCode2","OldName2","OldCode3","OldName3")]
   sw9part1 <- sw9part1[,colnames(sw24use)]
   
   sw9part2 <- sw9use[sw9use$OutDate<20140101,]
-  sw9part2 <- dplyr::left_join(sw9part2,hashtable,by=c("OldCode1","OldName1",
-                                                       "OldCode2","OldName2",
-                                                       "OldCode3","OldName3"))
-  sw9part2 <- sw9part2[,colnames(sw24use)]
-  sw9use <- rbind(sw9part1,sw9part2)
+  sw9part2 <- dplyr::left_join(sw9part2,indmatch,by=c("OldCode1","OldName1",
+                                                      "OldCode2","OldName2",
+                                                      "OldCode3","OldName3"))
+  sw9part3 <- sw9part2 %>% filter(is.na(Code1)) %>% dplyr::select(-Code1,-Name1,-Code2,-Name2,-Code3,-Name3)
+  sw9part2 <- sw9part2[!is.na(sw9part2$Code1),colnames(sw24use)]
+  
+  sw9part3 <- dplyr::left_join(sw9part3,sw24tmp,by='stockID')
+  sw9part3 <- sw9part3[,colnames(sw24use)]
+  
+  sw9use <- rbind(sw9part1,sw9part2,sw9part3)
   
   #fill na to zonghe industry
   zhcn <- unique(sw24use[sw24use$Code1==510000,'Name1'])
@@ -703,6 +716,7 @@ lcdb.fix.swindustry <- function(){
   dbDisconnect(con)
   # return('Done!')
 }
+
 
 
 
@@ -1084,7 +1098,97 @@ lcdb.update.QT_sus_res_bugsFinding <- function(){
   return(bugs)
 }
 
+# --------------------  ~~ QT_sus_res ----------------
+#' @export
+lcdb.init.QT_Size <- function(){
+  con <- db.local("qt")
+  if(dbExistsTable(con,"QT_Size")){
+    dbRemoveTable(con,"QT_Size")
+  }
+  cat("lcdb.init QT_Size ... \n");
+  dbExecute(con,'CREATE TABLE "QT_Size" (
+            "date" INTEGER,
+            "stockID" TEXT,
+            "mkt_cap" REAL,
+            "float_cap" REAL,
+            "free_cap" REAL
+  );')
+  dbExecute(con,'CREATE UNIQUE INDEX [IX_QT_size] ON [QT_Size] ([date], [stockID]);')
+  dbDisconnect(con)
+}
 
+#' @export
+lcdb.update.QT_Size <- function(begT, endT){
+  
+  # RebDates
+  if(missing(begT)){
+    begT <- queryAndClose.dbi(db.local("qt"),"select max(date) from QT_Size")[[1]]
+    begT <- intdate2r(begT)
+    if(is.na(begT)){ # EMPTY TABLE
+      begT <- queryAndClose.dbi(db.local("main"),"select min(date) from QT_FreeShares")[[1]]
+      begT <- intdate2r(begT)
+    }
+  }
+  
+  if(missing(endT)){
+    endT <- queryAndClose.dbi(db.local("main"),"select max(date) from QT_FreeShares")[[1]]
+    endT <- intdate2r(endT)
+  }
+  
+  if(begT >= endT){
+    return("Done.")
+  }else{
+    # checking the connection of the date sequence
+    rebdates <- getRebDates(begT, endT, rebFreq = "week")
+    rebdates_index <- cut.Date2(rebdates, breaks = "week")
+    if(rebdates_index[1] == rebdates_index[2]){
+      rebdates <- rebdates[-1]
+    }
+    
+    # get TS (A shares)
+    # divide into groups
+    yearlist <- lubridate::year(rebdates)
+    yearlist_unique <- unique(yearlist)
+    for(i in 1:length(yearlist_unique)){
+      year_ <- yearlist_unique[i]
+      cat(year_, "\n")
+      rebdates_ <- rebdates[yearlist == year_]
+      rebdates_qr <- paste0("(",paste(rdate2int(rebdates_), collapse = ","),")")
+      ts_ <- queryAndClose.dbi(db.local("qt"),
+                               paste0("SELECT TradingDay, ID from QT_DailyQuote
+                                      WHERE TradingDay in ", rebdates_qr))
+      if(i == 1L){
+        ts <- ts_
+      }else{
+        ts <- rbind(ts, ts_)
+      }
+    }
+    colnames(ts) <- c("date","stockID")
+    ts <- dplyr::arrange(ts, date, stockID)
+    ts$date <- intdate2r(ts$date)
+    
+    # get GF_CAP
+    tsf <- gf_cap(ts,log=FALSE,bc_lambda = NULL,
+                  var="mkt_cap",na_fill=FALSE,varname="mkt_cap",
+                  datasrc="local")
+    tsf <- gf_cap(tsf,log=FALSE,bc_lambda = NULL,
+                  var="float_cap",na_fill=FALSE,varname="float_cap",
+                  datasrc="local")
+    tsf <- gf_cap(tsf,log=FALSE,bc_lambda = NULL,
+                  var="free_cap",na_fill=FALSE,varname="free_cap",
+                  datasrc="local")
+    
+    # output
+    tsf$date <- rdate2int(tsf$date)
+    min(rebdates)
+    
+    con <- db.local("qt")
+    dbExecute(con,paste("delete from QT_Size where date >=", rdate2int(begT),"and  date <=", rdate2int(endT)))
+    dbWriteTable(con,'QT_Size',tsf,overwrite=FALSE,append=TRUE,row.names=FALSE)
+    dbDisconnect(con)
+    return("Done.")
+  }
+}
 
 # --------------------  ~~ FactorScore ----------------
 
@@ -1104,7 +1208,7 @@ lcdb.update.QT_sus_res_bugsFinding <- function(){
 #' lcdb.update.QT_FactorScore(20130322,20130330,c("EQ000001","EQ000002")) 
 #' # update factors on certin time, of certain stocks
 #' lcdb.update.QT_FactorScore(20130322,20130330,c("EQ000001","EQ000002"))
-lcdb.update.QT_FactorScore <- function(begT,endT,stockID,loopFreq="100 year"){
+lcdb.update.QT_FactorScore <- function(begT,endT,stockID,loopFreq="month"){
   con_qt <- db.local("qt")
   con_fs <- db.local("fs")
   
@@ -1289,7 +1393,8 @@ lcfs.add <- function(factorFun,
     is_overwrite <- select.list(choices=c("OK","CANCEL"),preselect="CANCEL",title=paste("Warning!\nThe factor",factorID,"has already exist!\nDo you want to overwrite it?"),graphics=FALSE)
     if(is_overwrite == "CANCEL") return(invisible(NULL))
   } 
-  con <- db.local("fs")
+  con_fs <- db.local("fs")
+  con_main <- db.local("main")
   # insert or replace a row to table 'CT_FactorLists' 
   if(!is.character(factorPar)){
     stop("The 'factorPar' must be a character!")
@@ -1306,7 +1411,7 @@ lcfs.add <- function(factorFun,
                ",QT(factorType),",
                ",QT(factorDesc),"
                ) ")
-  dbExecute(con,qr1)
+  dbExecute(con_fs,qr1)
   
   # insert or replace a row to table 'CT_TechVars'  
   qr2 <- paste("replace into CT_TechVars
@@ -1319,12 +1424,14 @@ lcfs.add <- function(factorFun,
                ",QT(factorID),",
                'QT_FactorScore'
                ) ")
-  dbExecute(con,qr2)
+  dbExecute(con_main,qr2)
   
   # add 1 colume to table 'QT_FactorScore' 
-  tryCatch(dbExecute(con,paste("ALTER TABLE QT_FactorScore ADD COLUMN ",factorID,"float(0, 4)")),
+  tryCatch(dbExecute(con_fs,paste("ALTER TABLE QT_FactorScore ADD COLUMN ",factorID,"float(0, 4)")),
            error=function(e) { print("RS-DBI driver: (error in statement: duplicate column name)") })
-  dbDisconnect(con)
+  
+  dbDisconnect(con_fs)
+  dbDisconnect(con_main)
   
   # update
   lcfs.update(factorID = factorID,splitNbin = splitNbin)
@@ -1483,7 +1590,7 @@ lcdb.init.CT_TechVars <- function(filename="D:/sqlitedb/CT_TechVars.csv"){
 #' lcdb.export2csv("main","QT_FreeShares")
 #' lcdb.export2csv("fs","CT_FactorLists")
 #' # 2. build 3 empty sqlite files: qt.db, fs.db, main.db
-#' # 3. initialize 3 db files:
+#' # 3. initialize 3 database files, in proper order:
 #' lcdb.init_qt()
 #' lcdb.init_main()
 #' lcdb.init_fs()
@@ -1696,13 +1803,16 @@ lcdb.init_main <- function(begT=19900101,endT=99990101){
 lcdb.init_qt <- function(){
   lcdb.init.QT_DailyQuote()
   lcdb.init.QT_DailyQuote2()
-    # QT_sus_res
+  # QT_sus_res
   lcdb.init.QT_sus_res()
   bugs <- lcdb.update.QT_sus_res_bugsFinding()
   if(length(bugs)>0){
     cat("\n QT_sus_res_bugsFinding:", bugs)
     lcdb.update.QT_sus_res(stockID=bugs)
   }
+  # QT_Size
+  lcdb.init.QT_Size()
+  lcdb.update.QT_Size()
 }
 
 #' @export
@@ -1795,6 +1905,8 @@ lcdb.init.QT_DailyQuote2 <- function(begT=19900101,endT=99990101){
   plyr::l_ply(all.days, subfun, .progress = plyr::progress_text(style=3))  
   dbDisconnect(con)
 }
+
+
 
 # --------------------  ~~ fs ----------------
 #' @export

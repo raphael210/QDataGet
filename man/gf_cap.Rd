@@ -4,13 +4,17 @@
 \alias{gf_cap}
 \title{gf_cap}
 \usage{
-gf_cap(TS, log = FALSE, bc_lambda = NULL, var = c("mkt_cap", "float_cap",
+gf_cap(TS, log = FALSE, bc_lambda = NULL, var = c("float_cap", "mkt_cap",
   "free_cap"), na_fill = TRUE, varname = "factorscore",
-  datasrc = defaultDataSRC())
+  datasrc = "memory")
 }
 \arguments{
 \item{bc_lambda}{NULL, "auto", or a specific numeric.}
 }
 \description{
 gf_cap
+}
+\examples{
+system.time(re <- gf_cap(ts,datasrc = "local"))
+system.time(re2 <- gf_cap(ts,datasrc = "memory"))
 }

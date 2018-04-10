@@ -8,7 +8,7 @@
 \usage{
 getSectorID(TS, stockID, endT = Sys.Date(),
   sectorAttr = defaultSectorAttr(), ret = c("ID", "name"), drop = FALSE,
-  fillNA = FALSE, ungroup = NULL, datasrc = defaultDataSRC())
+  fillNA = FALSE, ungroup = NULL, datasrc = "memory")
 
 gf_sector(TS, sectorAttr)
 
@@ -56,6 +56,8 @@ test <- getSectorID(TS, sectorAttr= defaultSectorAttr("ind_fct",ind_std = c(336,
 test <- getSectorID(TS, sectorAttr= defaultSectorAttr("fct",fct_std = buildFactorLists_lcfs(c("F000001","F000006"),factorRefine = refinePar_default("none",NULL)),fct_level = 5))
 factorList1 <- buildFactorList(factorFun = "gf_cap",factorRefine=refinePar_default("scale",NULL))
 test2 <- getSectorID(TS, sectorAttr= list(std=list(factorList1,33),level=list(5,1)))
+# - speed compares (20 VS. 200)
+microbenchmark::microbenchmark(re <- getSectorID(TS,datasrc="memory"),re1 <- getSectorID(TS,datasrc = "local"),times = 10)
 }
 \author{
 Ruifei.Yin

@@ -4,13 +4,17 @@
 \alias{TS.sus_res}
 \title{TS.sus_res}
 \usage{
-TS.sus_res(TS, datasrc = defaultDataSRC())
+TS.sus_res(TS, datasrc = "memory")
 }
 \value{
 a data.frame with cols: "sus" and "res"
 }
 \description{
 get the suspension and resumption data
+}
+\examples{
+TS <- getTS(getRebDates(as.Date("2007-01-01"),as.Date("2016-01-01"),rebFreq = "week"),indexID = "EI000300")
+microbenchmark::microbenchmark(re <- TS.sus_res(TS,datasrc="memory"),re1 <- TS.sus_res(TS,datasrc = "local"),times = 10)  # 100 VS. 3000
 }
 \author{
 Ruifei.yin

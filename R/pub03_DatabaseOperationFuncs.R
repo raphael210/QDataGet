@@ -1200,7 +1200,7 @@ lcdb.update.QT_Size <- function(begT, endT){
 #' @param endT the end date of the updating
 #' @param stockID a vector of stockID
 #' @export
-#' @seealso \link{\code{lcfs.update}}
+#' @seealso \code{\link{lcfs.update}}
 #' @examples
 #' # update factors on certain time
 #' lcdb.update.QT_FactorScore(20130322,20130330)
@@ -1302,7 +1302,7 @@ lcdb.update.QT_FactorScore <- function(begT,endT,stockID,loopFreq="month"){
 #' @param endT the end date of the updating
 #' @param stockID a vector of stockID
 #' @export
-#' @seealso \link{\code{lcdb.update.QT_FactorScore}}, \link{\code{lcfs.add}} 
+#' @seealso \code{\link{lcdb.update.QT_FactorScore}}, \code{\link{lcfs.add}}
 #' @examples
 #' # update a factorscore on all the time, of all the stocks
 #' lcfs.update("F000008")

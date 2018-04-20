@@ -29,5 +29,5 @@ lcfs.update("F000008",20130322,20130330,c("EQ000001","EQ000002"))
 lcfs.update("F000008",20130322,20130330,c("EQ000001","EQ000002"))
 }
 \seealso{
-\link{\code{lcdb.update.QT_FactorScore}}, \link{\code{lcfs.add}}
+\code{\link{lcdb.update.QT_FactorScore}}, \code{\link{lcfs.add}}
 }

@@ -1157,23 +1157,26 @@ plateID2name <- function(plateID){
 #' @examples 
 #' sctID <- getSectorID(stockID = "EQ000001",drop=TRUE)
 #' sectorID2indexID(sctID)
-sectorID2indexID <- function(sectorID){
-  tmpdat2 <- queryAndClose.odbc(db.jy(),
-                                "select A.*, B.SecuCode
-                                from JYDB.dbo.LC_CorrIndexIndustry A,
-                                JYDB.dbo.SecuMain B
-                                where A.IndexCode = B.InnerCode")
-  tmpdat2 <- subset(tmpdat2, IndustryStandard == 24 )
-  tmpdat2 <- subset(tmpdat2, substr(SecuCode,1,3) == "801")
-  tmpdat2 <- tmpdat2[,c("IndustryCode", "SecuCode")]
-  tmpdat2 <- renameCol(tmpdat2, "IndustryCode", "sector")
-  tmpdat2$sector <- paste0("ES33",tmpdat2$sector)
-  # output
-  sectorID_df <- data.frame("sector" = sectorID)
-  re <- merge.x(sectorID_df, tmpdat2, by = "sector")
-  re$SecuCode <- paste0("EI",re$SecuCode)
-  return(re$SecuCode)
+sectorID2indexID <- function(sectorID,std=24){
+  qr <-paste("select A.IndustryCode 'sector',B.SecuCode
+             from LC_CorrIndexIndustry A,SecuMain B
+             where A.IndexCode = B.InnerCode and A.IndexState in (1,2) and A.IndustryStandard=",std)
+  tmpdat <- queryAndClose.odbc(db.jy(),qr,stringsAsFactors =FALSE)
+  if(std==24){
+    tmpdat$sector <- paste0("ES33",tmpdat$sector)
+  }else if(std==9){
+    tmpdat$sector <- paste0("ES09",tmpdat$sector)
+  }else if(std==3){
+    tmpdat$sector <- paste0("ES03",tmpdat$sector)
+  }
+  
+  re <- tmpdat[match(sectorID,tmpdat[,1]),2]  
+  if(std %in% c(9,24)){
+    re <- paste0("EI",re)
+  }
+  return(re)
 }
+
 
 #' stockID2indexID
 #' @export

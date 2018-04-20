@@ -127,7 +127,6 @@ getTS <- function(RebDates,indexID="EI000300",stocks=NULL,rm=NULL){
 #' TSF <- getTSF(TS,factorFun,factorPar)
 #' TSFR <-  getTSR(TSF)
 getTSR <- function(TS, dure=NULL, date_end_pad){ 
-  cat(paste("Function getTSR: getting the periodrtn ....\n"))
   check.TS(TS)
   # ---- Add the end date (and the decayed dates)
   date <- unique(TS$date)
@@ -263,7 +262,7 @@ getTSF <- function(TS,factorFun,factorPar=list(),factorDir=1,
     factorRefine <- FactorList$factorRefine
   }
   if(! factorDir %in% c(1L,-1L)) stop("unsupported \"factorDir\" argument!")
-  cat(paste("Function getTSF: getting the factorscore ....\n"))
+  # cat(paste("Function getTSF: getting the factorscore ....\n"))
   check.TS(TS)
   
   subFun <- function(TS){

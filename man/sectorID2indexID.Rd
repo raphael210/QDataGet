@@ -4,7 +4,7 @@
 \alias{sectorID2indexID}
 \title{sectorID2indexID}
 \usage{
-sectorID2indexID(sectorID)
+sectorID2indexID(sectorID, std = 24)
 }
 \description{
 sectorID2indexID

@@ -16,7 +16,7 @@ getMultiFactorbyTSFs(TSFs, wgts, factorNames = names(TSFs))
 getRawMultiFactor(TS, FactorLists, name_suffix = FALSE)
 
 MultiFactor2CombiFactor(mTSF, wgts, factorNames = guess_factorNames(mTSF),
-  na_deal = c("ignore", "rm"), keep_single_factors = TRUE)
+  na_deal = c("ignore", "rm"), rescale = TRUE, keep_single_factors = TRUE)
 
 TSFs2mTSF(TSFs, factorNames = names(TSFs))
 
@@ -30,6 +30,10 @@ mTSF2TSFs(mTSF, factorNames = guess_factorNames(mTSF))
 \item{TSFs}{a \bold{TSFs} object. see /code{/link{Model.TSFs}}}
 
 \item{mTSF}{a dataframe of 'TS & MultiFactors'}
+
+\item{rescale}{logic. if rescale the combifactor to mean 0 and std 1.}
+
+\item{keep_single_factors}{logical. if keep the single factors in the result?}
 }
 \value{
 \code{getMultiFactor} return a \bold{mTSF} object including cols of all the single-factor-scores, and (if param \code{wgts} not missing) the \bold{raw} combined-factor-score .

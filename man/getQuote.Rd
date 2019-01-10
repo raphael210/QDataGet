@@ -10,8 +10,7 @@
 getQuote(stocks, begT = as.Date("1990-12-19"), endT = Sys.Date(),
   variables = select.list(CT_TechVars(datasrc = datasrc, secuCate = "EQ",
   tableName = tableName)[["varName"]], graphics = TRUE, multiple = TRUE),
-  melt = FALSE, split = if (length(stocks) > splitNbin) TRUE else FALSE,
-  splitNbin = 300, tableName = "QT_DailyQuote",
+  melt = FALSE, split, splitNbin = "year", tableName = "QT_DailyQuote",
   datasrc = defaultDataSRC())
 
 getIndexQuote(stocks, begT = as.Date("1990-12-19"), endT = Sys.Date(),
@@ -29,6 +28,10 @@ getIndexQuote(stocks, begT = as.Date("1990-12-19"), endT = Sys.Date(),
 \item{variables}{a vector of charactor. Call funtion \code{CT_TechVars(secuCate="EQ")} to get all available variables of equity, funtion \code{CT_TechVars(secuCate="EI")} of equity index, and funtion \code{CT_TechVars(secuCate="IF")} of index future.}
 
 \item{melt}{a logical. If FALSE(default), the style of result is "stockID+date~variable";If TRUE, the quote data will be melted(see the examples for details).}
+
+\item{split}{logical}
+
+\item{splitNbin}{an interval specification, one of "day", "week", "month", "quarter" and "year", optionally preceded by an integer and a space, or followed by "s". See \code{\link{cut.Date}} for detail.}
 
 \item{tableName}{character string, giving the table name from which get data.}
 }

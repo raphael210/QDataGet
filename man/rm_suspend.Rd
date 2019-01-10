@@ -7,8 +7,6 @@
 rm_suspend(TS, nearby = 1L, datasrc = defaultDataSRC())
 }
 \arguments{
-\item{TS}{}
-
 \item{nearby}{a integer vector. default is 1L, which means remove the suspending of the next tradingday. see detail in \code{\link{trday.nearby}}.}
 }
 \description{

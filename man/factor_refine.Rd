@@ -3,11 +3,14 @@
 \name{factor_refine}
 \alias{factor_refine}
 \alias{factor_refine_MF}
+\alias{MF.factor_refine}
 \title{factor_refine}
 \usage{
 factor_refine(TSF, refinePar = refinePar_default(), drop_sector = TRUE)
 
 factor_refine_MF(TSF, refinePar_lists, refinePar_names)
+
+MF.factor_refine(mTSF, refinePar = refinePar_default(), drop_sector = TRUE)
 }
 \arguments{
 \item{refinePar}{A refinePar list. Created by refinePar_default. Modified by setrefinePar.}
@@ -20,11 +23,11 @@ factor_refine_MF(TSF, refinePar_lists, refinePar_names)
 factor_refine
 }
 \examples{
-rawTSF <- gf.NP_YOY(TS, src = "fin")
 refinePar_lists <- list(refinePar_default(type = "none"),
                         refinePar_default(type = "reg"),
                         refinePar_default(type = "scale"))
-factor_refine_MF(rawTSF, refinePar_lists)
+mTSFR <- factor_refine_MF(rawTSFR, refinePar_lists)
+MF.chart.Ngroup.spread(mTSFR)
 }
 \author{
 Han.Qian

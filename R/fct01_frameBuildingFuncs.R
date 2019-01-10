@@ -2,6 +2,236 @@
 
 
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
+# --------------------  buildFactorList(s) ------------
+# ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
+
+#' buildFactorList
+#' 
+#' @rdname buildFactorList
+#' @return buildFactorList return a object of \bold{FactorList}, a list of parametres of factor setting
+#' @export
+#' @examples
+#' # -- set modelPar.factor by a factorlist
+#' FactorList <- buildFactorList(factorFun="gf.pct_chg_per",factorPar=list(N=20))
+#' modelPar <- modelPar.factor(modelPar,FactorList=FactorList)
+buildFactorList <- function(factorFun = "gf_demo" ,
+                            factorPar  = list() ,
+                            factorDir  = 1 ,
+                            factorRefine  = refinePar_default("none") ,
+                            factorName = default.factorName(factorFun,factorPar,factorDir), 
+                            factorID ="" ,
+                            factorType = ""  ,
+                            factorDesc = "" ){
+  re <-list(factorFun  = factorFun ,
+            factorPar   = factorPar  ,  
+            factorDir   = factorDir  ,
+            factorRefine   = factorRefine  ,   
+            factorName  = factorName ,  
+            factorID  = factorID,
+            factorType  = factorType,
+            factorDesc = factorDesc)   
+  return(re)
+}
+
+#' @rdname buildFactorList
+#' @param factorID a character string of factorID, available in table \code{CT_FactorLists()} .
+#' @return buildFactorList_lcfs get a object of \bold{FactorList} through "lcfs". See more detail in \code{\link{buildFactorLists_lcfs}}. 
+#' @export
+#' @examples
+#' # -- build a factorlist through "lcfs"
+#' FactorList2 <- buildFactorList_lcfs(factorID="F000001")
+buildFactorList_lcfs <- function(factorID, factorRefine  = refinePar_default("none")
+){
+  re <- buildFactorList(factorFun = "gf_lcfs",
+                        factorPar = list(factorID),
+                        factorDir = CT_FactorLists(factorID=factorID)$factorDir,
+                        factorRefine = factorRefine,
+                        factorName = CT_FactorLists(factorID=factorID)$factorName,
+                        factorID = factorID,
+                        factorType = CT_FactorLists(factorID=factorID)$factorType,
+                        factorDesc = CT_FactorLists(factorID=factorID)$factorDesc
+  )
+  return(re)
+}
+
+#' buildFactorLists
+#' 
+#' get a list of \bold{FactorList}, which is offen used in "multi-factor model builbing" or in "multifactor comparison".
+#' @param ... one or more FactorList. See more detail in \code{\link{buildFactorList}}.
+#' @note In function \code{buildFactorLists}, the settings of factorRefine will be changed samely by the given arguments, if they are not missing. 
+#' @return a list of \bold{FactorList}
+#' @export
+#' @examples
+#' FactorLists <- buildFactorLists(
+#'   buildFactorList(factorFun="gf.pct_chg_per",
+#'                   factorPar=list(N=60),
+#'                   factorDir=-1),
+#'   buildFactorList(factorFun="gf.float_cap",
+#'                   factorPar=list(),
+#'                   factorDir=-1),
+#'   buildFactorList(factorFun="gf.PE_ttm",
+#'                   factorPar=list(),
+#'                   factorDir=-1)
+#' )
+#' # - change the factor-refining method.
+#' FactorLists2 <- buildFactorLists(
+#'   buildFactorList(factorFun="gf.pct_chg_per",
+#'                   factorPar=list(N=60),
+#'                   factorDir=-1),
+#'   buildFactorList(factorFun="gf.float_cap",
+#'                   factorPar=list(),
+#'                   factorDir=-1),
+#'   buildFactorList(factorFun="gf.PE_ttm",
+#'                   factorPar=list(),
+#'                   factorDir=-1),
+#'   factorRefine = refinePar_default()
+#' )
+buildFactorLists <- function(... , factorRefine){
+  re <- list(...)
+  if(!missing(factorRefine)){
+    re <- lapply(re,function(x){x$factorRefine <- factorRefine;return(x)})
+  }
+  return(re)
+}
+
+
+
+#' @rdname buildFactorLists
+#' @param factorIDs a character vector of factorID, available in table \code{CT_FactorLists()} .
+#' @note function \code{buildFactorLists_lcfs} give a simply and direct way to build a \bold{list of factorlist} through "lcfs", given a vector of factorID. Here, the settings of factorRefine will be set samely by the given arguments, and the other settings will be get through "lcfs" (\code{CT_FactorLists()}). See also \code{\link{buildFactorList_lcfs}}.
+#' @export
+#' @examples
+#' # - through lcfs
+#' factorIDs <- c("F000001","F000002","F000005")
+#' FactorLists3 <- buildFactorLists_lcfs(factorIDs)
+buildFactorLists_lcfs <- function(factorIDs, factorRefine = refinePar_default("none")){
+  re <- lapply(factorIDs, buildFactorList_lcfs, 
+               factorRefine=factorRefine)
+  return(re)
+}
+
+
+
+
+#' @rdname buildFactorList
+#' @export
+buildFactorList_combi <- function(factorLists, wgts, 
+                                  factorDir  = 1 ,
+                                  factorRefine  = refinePar_default("none"),
+                                  factorName = "combi_factor",
+                                  factorID ="",
+                                  factorType ="",
+                                  factorDesc =""
+){
+  re <-list(factorFun="getMultiFactor",
+            factorPar=list(factorLists,wgts),  
+            factorDir   = factorDir  ,
+            factorRefine   = factorRefine  ,
+            factorName  = factorName ,  
+            factorID  = factorID,
+            factorType  = factorType,
+            factorDesc = factorDesc)   
+  return(re)
+}
+
+
+
+setFactorListsRefinePar <- function(factorlists, factorRefine){
+  re <- lapply(factorlists,function(x){x$factorRefine <- factorRefine;return(x)})
+  return(re)
+}
+
+
+
+#' fl2tbl
+#' 
+#' turn factorlist or factorlists to 2-D table.
+#' 
+#' @param fl FactorList
+#' @param fls FactorLists
+#' @return a 2-D table with elements of list class.
+#' @export fl2tbl
+#' @examples 
+#' fl <- buildFactorList(factorFun="gf.pct_chg_per",factorPar=list(N=20,M="test"))
+#' fls <- c(buildFactorLists_lcfs(c("F000001","F000003","F000008","F000009")),list(fl))
+#' re1 <- fl2tbl(fl)
+#' re2 <- fls2tbl(fls)
+fl2tbl <- function(fl){
+  nm <- names(fl)
+  re <- t(tibble::tibble(fl))
+  colnames(re) <- nm
+  rownames(re) <- NULL
+  return(re)
+}
+#' @export
+#' @rdname fl2tbl
+fls2tbl <- function(fls){
+  fname <- sapply(fls,"[[","factorName")
+  names(fls) <- fname
+  colname <- names(fls[[1]])
+  tb <- t(tibble::as_tibble(fls))
+  colnames(tb) <- colname
+  return(tb)
+}
+
+
+
+
+
+
+
+
+
+#' default.factorName
+#' 
+#' @examples
+#' factorFun = "gf.pct_chg_per"
+#' default.factorName(factorFun,"2,3")
+#' default.factorName(factorFun,"2,3",-1)
+#' default.factorName(factorFun,list(N=60,M=30))
+#' default.factorName(factorFun,"20,\"IF00\"")
+#' default.factorName(factorFun,"lag=20,id=\"IF00\"")
+default.factorName <- function (factorFun, factorPar, factorDir) {
+  f.fun <- substring(factorFun,4)
+  if(is.list(factorPar)){
+    f.par <- paste(factorPar,collapse="_")
+  } else if(is.character(factorPar)){
+    factorPar <- gsub("\\w*=","",factorPar)
+    f.par <- gsub("\'","",gsub("\"","",gsub(",","_",factorPar)))
+  } else {
+    stop("The factorPar must be a list or a character string!")
+  }
+  factorName <- if(f.par != "") paste(f.fun,f.par,sep="_") else f.fun
+  f.dir <- if(missing(factorDir) || factorDir==1L) "" else "_"
+  factorName <- paste(factorName,f.dir,sep="")
+  return(factorName)
+}
+
+
+#' A demo function of factor-getting 
+#' 
+#' You can get different result by adjusting the param \code{rho}.
+#' 
+#' @param rho a numeric. the desired correlation between Periodrtn and factorscore. See \code{\link{[QUtilily]getBiCop}}
+#' @return a TSF object
+#' @export
+#' @author Ruifei.Yin
+gf_demo <- function(TS,rho=0, dure=NULL, date_end_pad){
+  check.TS(TS)
+  rows <- dim(TS)[1]
+  rtn <- getTSR(TS, dure = dure, date_end_pad = date_end_pad)$periodrtn
+  na.len <- length(rtn[is.na(rtn)])
+  na.replace <- rnorm(na.len)
+  rtn[is.na(rtn)] <- na.replace
+  factorscore <- getBiCop(n=rows, rho=rho, x=rtn, drop.x=TRUE)  
+  TSF <- cbind(TS,data.frame(factorscore=factorscore))
+  return(TSF)
+}
+
+
+
+
+# ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
 # --------------------  get RebDates,TS,TSR,TSF,TSFR object ------------
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
 
@@ -148,7 +378,7 @@ getTSR <- function(TS, dure=NULL, date_end_pad){
 
 #' getTSR_decay
 #' 
-#' @param prdLists
+#' @param prdLists a list of periods
 #' @return a \bold{TSR} including the decayed period rtns
 #' @export
 getTSR_decay <- function(TS, prd_lists = list(w1=lubridate::weeks(1),
@@ -179,7 +409,7 @@ getTSR_decay <- function(TS, prd_lists = list(w1=lubridate::weeks(1),
   } 
   TS <- merge.x(TS,merging,by="date")   
   if(TRUE){ # --- add prdrtns
-    cat("Getting the decayed rtn ....\n")
+    message("Getting the decayed rtn ....")
     pb_ <- txtProgressBar(min=0,max=length(prd_lists),initial=0,style=3)
     for(ii in 1:length(prd_lists)){   
       SP <- TS[,c("stockID","date",paste("endT_",prd_names[ii],sep=""))]
@@ -206,7 +436,6 @@ getTSR_decay <- function(TS, prd_lists = list(w1=lubridate::weeks(1),
 #' @param factorPar either a list or a character string, containing the parameters of the \code{factorFun}. If a character string, parameters are seprated by commas and the character parameters must quoted by  "\""s, see examples for details.
 #' @param factorDir a integer,should be 1 or -1 (1 for the positive factor,-1 for the negative one).
 #' @param factorRefine a list.
-#' @param factorList
 #' @param splitbin a integer or a charactor string of 'year','month',...
 #' @return given a \bold{TS} object,return a \bold{TSF} object,a dataframe containing cols:
 #'   \itemize{
@@ -262,7 +491,6 @@ getTSF <- function(TS,factorFun,factorPar=list(),factorDir=1,
     factorRefine <- FactorList$factorRefine
   }
   if(! factorDir %in% c(1L,-1L)) stop("unsupported \"factorDir\" argument!")
-  # cat(paste("Function getTSF: getting the factorscore ....\n"))
   check.TS(TS)
   
   subFun <- function(TS){
@@ -290,7 +518,7 @@ getTSF <- function(TS,factorFun,factorPar=list(),factorDir=1,
     stop("unsupported \"splitbin\" argument!")
   }
   if(length(levels(idx))>1){
-    cat(paste('Possibly dealing with a big data. The process is splited to ',length(levels(idx)),'groups.\n'))
+    message(paste('Possibly dealing with a big data. The process is splited to ',length(levels(idx)),'groups.'))
   }
   TS_ <- data.frame(idx,TS)
   TS_ <- dplyr::group_by(TS_,idx)
@@ -341,7 +569,6 @@ getRawFactor <- function (TS,factorFun,factorPar,FactorList) {
 #' get multiFactors
 #' 
 #' get multiple single-factor-scores and the combined-factor-score.#' 
-#' @param TS
 #' @param FactorLists a list, with elements of FactorList(See detail in \code{\link{buildFactorList}}).
 #' @param wgts a numeric vector with the same length of FactorLists(if the sum of wgts not equals to 1, the wgts will be rescaled to sum 1). If 'eq', \code{wgts <- rep(1/length(FactorLists),length(FactorLists))} ;If missing, then only return all the single-factor-scores, without the combined-factor-score.
 #' @return  \code{getMultiFactor} return a \bold{mTSF} object including cols of all the single-factor-scores, and (if param \code{wgts} not missing) the \bold{raw} combined-factor-score .
@@ -387,7 +614,7 @@ getMultiFactor <- function(TS,FactorLists,wgts,silence=FALSE){
     factorDir <- FactorLists[[i]]$factorDir
     factorRefine <- FactorLists[[i]]$factorRefine
     if(!silence){
-      cat(paste("Function getMultiFactor: getting the score of factor",factorName,"....\n"))
+      message(paste("Function getMultiFactor: getting the score of factor",factorName,"...."))
     }
     # ---- get the raw factorscore
     TSF <- getRawFactor(TS,factorFun,factorPar) 
@@ -406,7 +633,7 @@ getMultiFactor <- function(TS,FactorLists,wgts,silence=FALSE){
   # ---- get the combi-factor-score
   factorNames <- sapply(FactorLists,"[[","factorName")
   if(!missing(wgts)){
-    re <- MultiFactor2CombiFactor(mTSF=re,wgts=wgts,factorNames=factorNames,keep_single_factors="TRUE")
+    re <- MultiFactor2CombiFactor(mTSF=re,wgts=wgts,factorNames=factorNames,rescale=TRUE,keep_single_factors="TRUE")
   }
   
   return(re)
@@ -431,7 +658,7 @@ getMultiFactorbyTSFs <- function(TSFs,wgts,
   
   # ---- get the combi-factor-score(weighted sum of all the single-factor-scores)
   if(!missing(wgts)){
-    re <- MultiFactor2CombiFactor(mTSF=re,wgts=wgts,factorNames=factorNames,keep_single_factors="TRUE")
+    re <- MultiFactor2CombiFactor(mTSF=re,wgts=wgts,factorNames=factorNames,rescale=TRUE,keep_single_factors="TRUE")
   }
   
   return(re)
@@ -445,7 +672,7 @@ getRawMultiFactor <- function(TS,FactorLists,name_suffix=FALSE){
     factorFun <- FactorLists[[i]]$factorFun
     factorPar <- FactorLists[[i]]$factorPar
     factorName <- FactorLists[[i]]$factorName
-    cat(paste("Function getMultiFactor: getting the score of factor",factorName,"....\n"))
+    message(paste("Function getMultiFactor: getting the score of factor",factorName,"...."))
     # ---- get the raw factorscore
     TSF <- getRawFactor(TS,factorFun,factorPar) 
     # ---- merge
@@ -478,32 +705,59 @@ getMultiFactor_lcfs <- function(TS, FactorIDs, dir_adj=TRUE, factorRefine = NULL
   check.TS(TS)  
   tmpdat <- transform(TS[,c("stockID","date")], date = rdate2int(date))
   tmpdat$PK_ <- 1:NROW(tmpdat)
-  con <- db.local("fs")
-  vars <- paste(FactorIDs, collapse=", ")      
-  qr <- paste("select a.*,",vars,"from yrf_tmp a left join QT_FactorScore b on a.stockID=b.ID and a.date=b.TradingDay")
-  dbWriteTable(con,name="yrf_tmp",value=tmpdat,row.names = FALSE,overwrite = TRUE)
-  dbExecute(con, 'CREATE INDEX [IX_yrf_tmp] ON [yrf_tmp]([date],[stockID]);')
-  re <- dbGetQuery(con,qr)
-  re <- dplyr::arrange(re,PK_)[,FactorIDs,drop=FALSE]
-  factorNames <- if(fname_out=="ID") FactorIDs else factorID2name(FactorIDs)
-  colnames(re) <- factorNames
-  re <- cbind(TS,re)
-  dbDisconnect(con)
+  # factor IDs splitting
+  FactorIDs_a <- FactorIDs[substr(FactorIDs,1,1) == "F"]
+  FactorIDs_r <- FactorIDs[substr(FactorIDs,1,1) == "R"]
+  #
+  re_union <- TS
+  factorNames_union <- c()
+  # ALPHA
+  if(length(FactorIDs_a)>0){
+    con <- db.local("fs")
+    vars <- paste(FactorIDs_a, collapse=", ")      
+    qr <- paste("select a.*,",vars,"from temp_table a left join QT_FactorScore b on a.stockID=b.ID and a.date=b.TradingDay")
+    dbWriteTable(con,name="temp_table",value=tmpdat,row.names = FALSE,overwrite = TRUE)
+    dbExecute(con, 'CREATE INDEX [IX_temp_table] ON [temp_table]([date],[stockID]);')
+    re <- dbGetQuery(con,qr)
+    re <- dplyr::arrange(re,PK_)[,FactorIDs_a,drop=FALSE]
+    factorNames <- if(fname_out=="ID") FactorIDs_a else factorID2name(FactorIDs_a)
+    colnames(re) <- factorNames
+    dbDisconnect(con)
+    #
+    factorNames_union <- c(factorNames_union, factorNames)
+    re_union <- cbind(re_union,re)
+  }
+  # RISK
+  if(length(FactorIDs_r)>0){
+    con <- db.local("fs_r")
+    vars <- paste(FactorIDs_r, collapse=", ")      
+    qr <- paste("select a.*,",vars,"from temp_table a left join QT_FactorScore_R b on a.stockID=b.ID and a.date=b.TradingDay")
+    dbWriteTable(con,name="temp_table",value=tmpdat,row.names = FALSE,overwrite = TRUE)
+    dbExecute(con, 'CREATE INDEX [IX_temp_table] ON [temp_table]([date],[stockID]);')
+    re <- dbGetQuery(con,qr)
+    re <- dplyr::arrange(re,PK_)[,FactorIDs_r,drop=FALSE]
+    factorNames <- if(fname_out=="ID") FactorIDs_r else factorID2name(FactorIDs_r)
+    colnames(re) <- factorNames
+    dbDisconnect(con)
+    #
+    factorNames_union <- c(factorNames_union, factorNames)
+    re_union <- cbind(re_union,re)
+  }
   # ---- dir adjusting & factor refining
   factorDirs <- CT_FactorLists(FactorIDs)$factorDir
-  for(i in 1:length(factorNames)){
-    re <- renameCol(re,factorNames[i],"factorscore")
+  for(i in 1:length(factorNames_union)){
+    re_union <- renameCol(re_union,factorNames_union[i],"factorscore")
     if(dir_adj){
-      re$factorscore <- re$factorscore*factorDirs[i]
+      re_union$factorscore <- re_union$factorscore*factorDirs[i]
     }
-    re <- factor_refine(re,refinePar = factorRefine)
-    re <- renameCol(re,"factorscore",factorNames[i])
+    re_union <- factor_refine(re_union,refinePar = factorRefine)
+    re_union <- renameCol(re_union,"factorscore",factorNames_union[i])
   }
   # ---- get the combi-factor-score
   if(!missing(wgts)){
-    re <- MultiFactor2CombiFactor(mTSF=re,wgts=wgts,factorNames=factorNames,keep_single_factors="TRUE")
+    re_union <- MultiFactor2CombiFactor(mTSF=re_union,wgts=wgts,factorNames=factorNames_union,keep_single_factors="TRUE")
   }
-  return(re)
+  return(re_union)
 }
 
 #' @rdname getTSF
@@ -520,13 +774,14 @@ gf_lcfs <- function(TS,factorID,dir_adj=FALSE,factorRefine = NULL){
 
 #' @rdname getMultiFactor
 #' @param mTSF a dataframe of 'TS & MultiFactors'
-#' @param factorNames
-#' @param keep_single_factors
+#' @param keep_single_factors logical. if keep the single factors in the result?
+#' @param rescale logic. if rescale the combifactor to mean 0 and std 1.
 #' @export
 MultiFactor2CombiFactor <- function(mTSF,
                                     wgts,
                                     factorNames = guess_factorNames(mTSF),
                                     na_deal=c("ignore","rm"),
+                                    rescale=TRUE,
                                     keep_single_factors=TRUE){
   na_deal <- match.arg(na_deal)
   # ---- get the combi-factor-score(weighted sum of all the single-factor-scores)
@@ -549,13 +804,15 @@ MultiFactor2CombiFactor <- function(mTSF,
     M <- ncol(TSF_mat)
     wgts_mat <- kronecker(matrix(1,N,1),t(wgts))
     wgts_mat <- wgts_mat*(!is_na)
-    wgts_mat <- wgts_mat/kronecker(matrix(1,1,M),rowSums(wgts_mat))
+    
+    wgt_rowsum <- rowSums(wgts_mat)
+    wgt_rowsum[wgt_rowsum==0] <- NA	# if all the factorscores are NA, the sumScore would be NA as well.
+    wgts_mat <- wgts_mat/kronecker(matrix(1,1,M),wgt_rowsum)
+    
     TSF_mat[is_na] <- 0
     sumScore <- rowSums(TSF_mat*wgts_mat)
-  } else if(na_deal=="rm"){ # return NA when any factorscore is NA.
+  } else if(na_deal=="rm"){ # if any of the factorscores is NA, the sumScore would be NA.
     sumScore <- TSF_mat %*% wgts
-  } else {
-    stop("uncorrect value of param 'na_deal'!")
   }
   
   if(keep_single_factors){
@@ -563,9 +820,16 @@ MultiFactor2CombiFactor <- function(mTSF,
   } else {
     re <- cbind(dplyr::select(mTSF,-one_of(factorNames)),factorscore=sumScore)
   }
+  if(rescale){
+    re <- factor_std(re,method = "scale",sectorAttr = NULL)
+  }
   return(re)
 }
 
+
+# ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
+# --------------------  TSF manufacture & transformation ------------
+# ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
 
 
 
@@ -620,6 +884,117 @@ mTSF2TSFs <- function(mTSF, factorNames = guess_factorNames(mTSF)){
 }
 
 
+
+
+
+#' TSF2TSFs_byfactor
+#'
+#' split a TSF or a TSFR into TSFs or TSFRs by factor,such as size,vol...
+#' @author Andrew Dow
+#' @param ftype support size,trading volume,trading amount,industry,important index's component(000300.SH,000905.SH,000852.SH) and date.
+#' @param N split into N group,default value is 5.
+#' @param includeTSF whether add raw \code{TSF} to \code{TSFs} list,default value is \code{TRUE}.
+#' @examples
+#' #####split by size into 3 group####
+#' TSFs <- TSF2TSFs_byfactor(tsf,N=3)
+#'
+#' #####split by itself into 3 group####
+#' TSFs <- TSF2TSFs_byfactor(tsf,ftype='self',N=3)
+#'
+#' #####split by trading volumn of last 20 days ####
+#' TSFRs <- TSF2TSFs_byfactor(tsfr,ftype='vol')
+#'
+#' #####split by sector ####
+#' TSFRs <- TSF2TSFs_byfactor(tsfr,ftype='sector')
+#' TSFRs <- TSF2TSFs_byfactor(tsfr,ftype='sector',sectorAttr=defaultSectorAttr('fct')) #self defined sector
+#'
+#' #####split by date ####
+#' TSFRs <- TSF2TSFs_byfactor(tsfr,ftype='date',freq='2 years')
+#'
+#' @export
+TSF2TSFs_byfactor <- function(TSF,ftype=c('size','self','vol','amt','sector','indexcomp','date','findate'),N=5,freq='year',
+                              includeTSF=TRUE,sectorAttr=defaultSectorAttr()){
+  ftype <- match.arg(ftype)
+  
+  if(ftype=='size'){
+    tsf <- gf_cap(TSF[,c('date','stockID')],var = 'mkt_cap')
+  }else if(ftype=='self'){
+    tsf <- TSF[,c('date','stockID','factorscore')]
+  }else if(ftype=='vol'){
+    tsf <- TS.getTech_ts(TSF[,c('date','stockID')],"StockVolSum2(20)",'factorscore')
+  }else if(ftype=='amt'){
+    tsf <- TS.getTech_ts(TSF[,c('date','stockID')],"StockAmountSum2(20)",'factorscore')
+  }else if(ftype=='sector'){
+    tsf <- getSectorID(TSF[,c('date','stockID')],sectorAttr=sectorAttr,fillNA = TRUE)
+    if(is.numeric(sectorAttr$std)){
+      tsf$sector <- sectorID2name(tsf$sector)
+    }
+    colnames(tsf) <- c('date','stockID','group')
+  }else if(ftype=='indexcomp'){
+    suppressWarnings(tsf <- transform(TSF[,c('date','stockID')],hs300=is_component(TSF[,c('date','stockID')],sectorID = "EI000300",drop = TRUE),
+                                      zz500=is_component(TSF[,c('date','stockID')],sectorID = "EI000905",drop = TRUE),
+                                      zz1000=is_component(TSF[,c('date','stockID')],sectorID = "EI000852",drop = TRUE),
+                                      other=0))
+    tsf <- transform(tsf,num=hs300*1000+zz500*100+zz1000*10+other)
+    tsf <- transform(tsf,group=ifelse(num>=1000,'hs300',
+                                      ifelse(num>=100,'zz500',
+                                             ifelse(num>=10,'zz1000','other'))))
+    tsf <- tsf[,c('date','stockID','group')]
+  }else if(ftype=='date'){
+    tsf <- TSF[,c('date','stockID')]
+    tsf$group <- cut.Date2(tsf$date,freq)
+    tsf$group <- rdate2int(as.Date(tsf$group))
+  }else if(ftype=='findate'){
+    tsf <- TSF[,c('date','stockID')]
+    tsf <- transform(tsf,group=ifelse(lubridate::month(date) %in% c(1,2,3),'mon2_4',
+                                      ifelse(lubridate::month(date) %in% c(4,5,6),'mon5_7',
+                                             ifelse(lubridate::month(date) %in% c(7,8,9),'mon8_10','mon11_1'))))
+    tsf$group <- as.character(tsf$group)
+  }
+  
+  if(any(is.na(tsf$factorscore))){
+    tsf <- factor_na(tsf,method = 'median',sectorAttr = NULL)
+  }
+  
+  if(!(ftype %in% c('sector','indexcomp','date','findate'))){
+    tsf <- data.table::as.data.table(tsf)
+    tsf <- tsf[order(date,-factorscore)][
+      ,`:=`(ran=rank(-factorscore),len=.N),by=date][
+        ,group:=floor((ran-1)*N/len+1)][
+          ,`:=`(ran=NULL,len=NULL,factorscore=NULL,group=paste('G',group,sep=''))]
+  }
+  tsfr <- data.table::as.data.table(TSF)
+  mTSF <- merge.x(tsfr,tsf)
+  
+  TSFs <- split(mTSF,f=mTSF$group)
+  TSFs <- lapply(TSFs, function(x) { x["group"] <- NULL; x })
+  if(includeTSF){
+    TSFs[['Gall']] <- TSF
+  }
+  return(TSFs)
+}
+
+
+
+#' TS_split
+#' 
+#' split TS to lists, which are usually TSFs, TSFRs
+#' @param by a vector, with the same length of TS
+#' @return a list is TS
+#' @export
+#' @examples 
+#' tsfr <- getSectorID(tsfr,sectorAttr = defaultSectorAttr("ind",336))
+#' TSFRs1 <- TS_split(tsfr,by=tsfr$sector)
+#' MC.chart.IC(tsfrs1)
+#' TSFRs2 <- TS_split(tsfr,by=cut.Date2(tsfr$date,breaks = "2 year"))
+#' MC.chart.IC(tsfrs2)
+TS_split <- function(TS,by){
+  re <- data.table::as.data.table(TS)
+  re <- split(re,f=by)
+  return(re)
+}
+
+
 #' TS_filter
 #' 
 #' sample or filter the TS by date.
@@ -649,6 +1024,41 @@ TS_filter <- function(TS, begT, endT, sample_N){
   return(TS)
 }
 
+
+#' TSF_nextF
+#'
+#' \code{TSF_nextF} turn \code{TSF} into \code{TSFR} by lead date and factorscore one period.
+#' @return a \bold{TSFR}, in which the 'periodrtn' is the 'next_factorscore'.
+#' @export
+#' @examples
+#' tsfr <- TSF_nextF(tsf)
+#' # --- deal with the 'rptTSF'
+#' rptTS <- getrptTS(as.Date("2011-12-31"),as.Date("2015-12-31"),freq = "q",univ = "EI000300")
+#' rptTSF <- rptTS.getFin_windR(rptTS ,field = "np_belongto_parcomsh",varname = "factorscore")
+#' TSF <- renameCol(rptTSF,"rptDate","date")
+#' TSFR <- TSF_nextF(TSF)
+#' # --- analysing
+#' chart.IC(TSFR)
+#' chart.Ngroup.overall(TSFR)
+TSF_nextF <- function(TSF){
+  TSF <- TSF[,c("date","stockID","factorscore")]
+  
+  datedf <- data.frame(date=unique(TSF$date))
+  datedf <- datedf %>% dplyr::mutate(date_end=dplyr::lead(date)) %>%
+    dplyr::filter(!is.na(date_end))
+  
+  TSF2 <- TSF %>% dplyr::select(date,stockID) %>%
+    dplyr::inner_join(datedf,by='date')
+  TSF2 <- TSF2 %>% dplyr::left_join(TSF,by=c("date_end"="date","stockID")) %>%
+    dplyr::rename(periodrtn=factorscore)
+  
+  TSF <- TSF %>% dplyr::left_join(TSF2,by=c('date','stockID')) %>%
+    as.data.frame()
+  return(TSF)
+}
+
+
+
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
 # --------------------  factor refining functions ------------
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
@@ -669,17 +1079,17 @@ factor_bcPower <- function(TSF,lambda="auto",out_type=c("factor","lambda","both"
     return(TSF)
   }else{
     check.colnames(TSF, c("date",fname))
-    TSF <- renameCol(TSF, fname, "mazi_tmp_column")
+    TSF <- renameCol(TSF, fname, ".tmp_column")
     mdata <- dplyr::group_by(TSF, date)
     subfun <- function(TSF){
-      lambda <- (car::powerTransform(TSF$mazi_tmp_column))$lambda
+      lambda <- (car::powerTransform(TSF$.tmp_column))$lambda
       TSF$lambda <- lambda
-      TSF$mazi_tmp_column <- car::bcPower(TSF$mazi_tmp_column, lambda)
+      TSF$mazi_tmp_column <- car::bcPower(TSF$.tmp_column, lambda)
       return(TSF)
     }
     mdata <- dplyr::do(mdata, subfun(.))
     mdata <- as.data.frame(mdata)
-    mdata <- renameCol(mdata, "mazi_tmp_column", fname)
+    mdata <- renameCol(mdata, ".tmp_column", fname)
     if(out_type == "factor"){
       # drop lambda
       mdata$lambda <- NULL
@@ -707,7 +1117,7 @@ factor_bcPower <- function(TSF,lambda="auto",out_type=c("factor","lambda","both"
 #' TSF <- gf.NP_YOY(TS)
 #' TSF <- factor_outlier(TSF, method = "mad", par = 1.5)
 factor_outlier <- function (TSF, method=c("none","sd","mad","boxplot","percentage"), par,
-                            sectorAttr=defaultSectorAttr()) {
+                            sectorAttr=NULL) {
   method <- match.arg(method)
   # direct return
   if(method == "none"){
@@ -772,9 +1182,9 @@ factor_outlier <- function (TSF, method=c("none","sd","mad","boxplot","percentag
 #' TSF <- gf.NP_YOY(TS)
 #' regLists <- buildFactorLists(buildFactorList(factorFun = 'gf.PE_ttm',factorDir = -1,factorRefine=refinePar_default("scale")))
 #' TSF <- factor_std(TSF, method = "reg", log = FALSE, regLists = regLists)
-factor_std <- function(TSF,method=c("none","scale","robustScale","reg"),
+factor_std <- function(TSF,method=c("none","scale","robustScale","reg","scale_barra_simple","scale_barra_sec"),
                        log=FALSE, 
-                       sectorAttr=defaultSectorAttr(),
+                       sectorAttr=NULL,
                        regLists=NULL,
                        regWgt=NULL
 ){
@@ -795,19 +1205,15 @@ factor_std <- function(TSF,method=c("none","scale","robustScale","reg"),
     TSF_core <- TSF[,intersect(names(TSF), c("date","stockID","Y_for_reg","sector","glm_wgt"))]
     
     # get glm_wgt
-    if(!is.null(regWgt) & !identical(regWgt, "existing")){
+    if(!is.null(regWgt)){
       if(regWgt == "sector"){
-        if(!identical(sectorAttr, "existing")){
-          TSF_core <- getSectorID(TSF_core, sectorAttr = defaultSectorAttr("ind",336), fillNA = TRUE) 
-          sectorAttr <- "existing"
-        }
+        TSF_core <- getSectorID(TSF_core, sectorAttr = defaultSectorAttr("ind",33), fillNA = TRUE) # to be modified!
         glm_wgt_data <- dplyr::group_by(TSF_core, date, sector)
         glm_wgt_data <- dplyr::summarise(glm_wgt_data, glm_wgt = 1/var(Y_for_reg, na.rm = TRUE))
         TSF_core <- merge.x(TSF_core, glm_wgt_data, by = c("date","sector"))
         TSF_core <- as.data.frame(TSF_core)
-        
       }else if(regWgt == "cap"){ # to be modified!
-        TSF_core <- getSectorID(TSF_core, sectorAttr = defaultSectorAttr("fct",fct_std = list(fl_cap(var = "float_cap")),fct_level = 6), fillNA = TRUE) 
+        TSF_core <- getSectorID(TSF_core, sectorAttr = defaultSectorAttr("fct",fct_std = list(fl_cap(var = "float_cap")),fct_level = 20), fillNA = TRUE) 
         glm_wgt_data <- dplyr::group_by(TSF_core, date, sector)
         glm_wgt_data <- dplyr::summarise(glm_wgt_data, glm_wgt = 1/var(Y_for_reg, na.rm = TRUE))
         TSF_core <- merge.x(TSF_core, glm_wgt_data, by = c("date","sector"))
@@ -861,6 +1267,7 @@ factor_std <- function(TSF,method=c("none","scale","robustScale","reg"),
     return(TSF)
     
   }else{ # scale part
+    
     # shrink columns (merge back later)
     TSF_core <- TSF[,intersect(names(TSF), c("date","stockID","factorscore","sector"))]
     # sector splitting
@@ -870,24 +1277,61 @@ factor_std <- function(TSF,method=c("none","scale","robustScale","reg"),
     }else{
       key=c("date")
     }
-    TSF_core <- data.table::as.data.table(TSF_core,key=key)
-    # sub fun
-    std_sub_fun <- function(sf, method){
-      if(method == "scale"){
-        sf <- as.numeric(scale(sf))
-      }else if(method == "robustScale"){
-        median_ <- median(sf, na.rm = TRUE)
-        sd_ <- sd(sf, na.rm = TRUE)
-        if(is.na(sd_) | sd_ == 0){
-          sf <- as.numeric(NA)
-        }else{
-          sf <- (sf - median_)/sd_
+    
+    
+    
+    
+    if(method == "scale_barra_sec"){
+      TSF_core <- gf_cap(TSF_core, var = "free_cap", varname = "ffv")
+      TSF_core <- data.table::as.data.table(TSF_core)
+      TSF_core <- TSF_core[, sd := sd(factorscore, na.rm = TRUE), by = date]
+      TSF_core <- TSF_core[, miu := sum(ffv * factorscore, na.rm = TRUE)/sum(ffv, na.rm = TRUE), 
+                           by = .(date, sector)]
+      TSF_core <- TSF_core[, factorscore := (factorscore - miu)/sd, 
+                           by = .(date, sector)]
+      TSF_core <- TSF_core[,sd := NULL,]
+      TSF_core <- TSF_core[,miu := NULL,]
+      TSF_core <- as.data.frame(TSF_core)
+    }else if(method == "scale_barra_simple"){
+      TSF_core <- gf_cap(TSF_core, var = "free_cap", varname = "ffv")
+      TSF_core <- data.table::as.data.table(TSF_core)
+      TSF_core <- TSF_core[, sd := sd(factorscore, na.rm = TRUE), by = date]
+      TSF_core <- TSF_core[, miu := sum(ffv * factorscore, na.rm = TRUE)/sum(ffv, na.rm = TRUE), by = date]
+      TSF_core <- TSF_core[, factorscore := (factorscore - miu)/sd, by = date]
+      TSF_core <- TSF_core[,sd := NULL,]
+      TSF_core <- TSF_core[,miu := NULL,]
+      TSF_core <- as.data.frame(TSF_core)
+    } else {
+      
+      
+      
+      
+      
+      
+      
+      TSF_core <- data.table::as.data.table(TSF_core,key=key)
+      # sub fun
+      std_sub_fun <- function(sf, method){
+        if(method == "scale"){
+          sf <- as.numeric(scale(sf))
+        }else if(method == "robustScale"){
+          median_ <- median(sf, na.rm = TRUE)
+          sd_ <- sd(sf, na.rm = TRUE)
+          if(is.na(sd_) | sd_ == 0){
+            sf <- as.numeric(NA)
+          }else{
+            sf <- (sf - median_)/sd_
+          }
         }
+        return(sf)
       }
-      return(sf)
+      # processing 
+      TSF_core <- TSF_core[,factorscore:=std_sub_fun(factorscore,method),by=key]
+      
     }
-    # processing 
-    TSF_core <- TSF_core[,factorscore:=std_sub_fun(factorscore,method),by=key]
+    
+    
+    
     
     # merge back
     TSF <- TSF[,setdiff(colnames(TSF), "factorscore")]
@@ -919,7 +1363,7 @@ factor_std <- function(TSF,method=c("none","scale","robustScale","reg"),
 #' TSF <- gf.NP_YOY(TS)
 #' TSF <- factor_na(TSF, method = "median")
 factor_na <- function (TSF, method=c("none","mean","median"),
-                       sectorAttr=defaultSectorAttr()) {
+                       sectorAttr=NULL) {
   method <- match.arg(method)
   # direct return
   if(method == "none"){
@@ -1159,11 +1603,11 @@ factor_refine <- function(TSF, refinePar=refinePar_default(),drop_sector=TRUE){
 #' @rdname factor_refine
 #' @export
 #' @examples 
-#' rawTSF <- gf.NP_YOY(TS, src = "fin")
 #' refinePar_lists <- list(refinePar_default(type = "none"),
 #'                         refinePar_default(type = "reg"),
 #'                         refinePar_default(type = "scale"))
-#' factor_refine_MF(rawTSF, refinePar_lists)
+#' mTSFR <- factor_refine_MF(rawTSFR, refinePar_lists)
+#' MF.chart.Ngroup.spread(mTSFR)
 factor_refine_MF <- function(TSF, refinePar_lists, refinePar_names){
   # ARGUMENTS CHECKING
   loop_length <- length(refinePar_lists)
@@ -1193,6 +1637,15 @@ factor_refine_MF <- function(TSF, refinePar_lists, refinePar_names){
 }
 
 
+#' @rdname factor_refine
+#' @export
+MF.factor_refine <- function(mTSF,refinePar=refinePar_default(),drop_sector=TRUE){
+  TSFs <- mTSF2TSFs(mTSF)
+  TSFs_refine <- plyr::llply(TSFs,factor_refine,refinePar=refinePar,drop_sector=drop_sector)
+  mTSF_refine <- TSFs2mTSF(TSFs_refine)
+  return(mTSF_refine)
+}
+
 
 
 
@@ -1201,9 +1654,7 @@ factor_refine_MF <- function(TSF, refinePar_lists, refinePar_names){
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
 #' remove suspension stock from TS
 #'
-#' @param TS 
 #' @param nearby a integer vector. default is 1L, which means remove the suspending of the next tradingday. see detail in \code{\link{trday.nearby}}.
-#' @param datasrc
 #' @examples
 #' RebDates <- getRebDates(as.Date('2013-03-17'),as.Date('2016-04-17'),'month')
 #' TS <- getTS(RebDates,'EI000985')
@@ -1221,7 +1672,7 @@ rm_suspend <- function(TS,nearby=1L,
 
 #' remove price limits
 #' 
-#' @param nearby
+#' @param nearby a integer vector. default is 1L, which means remove the price_limited stocks of the next tradingday.
 #' @param lim a vector of length 2.
 #' @param priceType "close" or "open".
 #' @examples
@@ -1231,7 +1682,7 @@ rm_suspend <- function(TS,nearby=1L,
 #' re1 <- rm_priceLimit(TS,nearby=-1:1)
 #' re2 <- rm_priceLimit(TS,lim=c(-Inf,10)) # remove limit-up
 #' @export
-rm_priceLimit <- function(TS,nearby=1,lim=c(-10, 10),priceType=c("close","open"),
+rm_priceLimit <- function(TS,nearby=1L,lim=c(-10, 10),priceType=c("close","open"),
                           datasrc=defaultDataSRC()){
   TS_ <- is_priceLimit(TS=TS,nearby = nearby,lim = lim, datasrc = datasrc)
   TS <- TS[!TS_$overlim,]
@@ -1262,6 +1713,10 @@ rm_delist <- function(TS,nearby=months(2),datasrc='jy'){
   TS <- TS[!TS_$delist,]
   return(TS)
 }
+
+
+
+
 
 
 #' is_suspend
@@ -1485,20 +1940,64 @@ is_st <- function(TS,
   } else if(datasrc=="local"){
     TS_ <- transform(TS,date=rdate2int(date))
     con <- db.local("qt")
-    RSQLite::dbWriteTable(con,"yrf_tmp",TS_,overwrite=TRUE,row.names=FALSE)
-    qr <- "select y.*,q.SecuAbbr 'is_st' from yrf_tmp y
-    left join QT_DailyQuote2 q on y.date=q.TradingDay and y.stockID=q.ID"
+    RSQLite::dbWriteTable(con,"temp_table",TS_,overwrite=TRUE,row.names=FALSE)
+    qr <- "select y.*,q.SecuAbbr 'is_st' from temp_table y left join QT_DailyQuote q on y.date=q.TradingDay and y.stockID=q.ID"
     TS_ <- RSQLite::dbGetQuery(con,qr)
     RSQLite::dbDisconnect(con)
     TS_ <- transform(TS_,date=intdate2r(date),
                      is_st=stringr::str_detect(is_st,'ST'))
   }
-  
-  
   if(drop){
     return(TS_$is_st)
   }else{
     return(TS_)
   }
-  
 }
+
+
+
+#' is_delist
+#'
+#' judeg whether stocks to be delisted
+#' @export
+is_delist <- function(TS,nearby=months(2),datelist,stockID, drop,datasrc='jy'){
+  if (missing(TS) && any(missing(stockID),missing(datelist))) {
+    stop("Param TS and combination of stockID and datelist should at least have one!")
+  }
+  if (!missing(TS) && !all(missing(stockID),missing(datelist))) {
+    stop("Param TS and combination of stockID and datelist should only have one!")
+  }
+  if(missing(drop)){
+    drop <- if(missing(TS)) TRUE else FALSE
+  }
+  
+  if (missing(TS)){
+    TS <- expand.grid(date=datelist, stockID=stockID)
+  }
+  
+  check.TS(TS)
+  if(datasrc=='jy'){
+    stocks <- substr(unique(TS$stockID),3,8)
+    
+    #get delist date
+    qr <- paste("SELECT 'EQ'+s.SecuCode 'stockID',convert(varchar,ChangeDate,112) 'delistdate'
+                FROM LC_ListStatus l
+                INNER join SecuMain s on l.InnerCode=s.InnerCode and s.SecuCategory=1
+                where l.ChangeType=4 and l.SecuMarket in (83,90)
+                and s.SecuCode in",brkQT(stocks))
+    re <- queryAndClose.odbc(db.jy(),qr,as.is = TRUE)
+    if(nrow(re)>0){
+      re <- transform(re,delistdate=intdate2r(delistdate))
+      TS <- TS %>% dplyr::left_join(re,by='stockID') %>%
+        dplyr::mutate(tmpdate=trday.offset(date,nearby),delist=ifelse(is.na(delistdate),FALSE,delistdate<=tmpdate)) %>%
+        dplyr::select(-tmpdate,-delistdate)
+    }
+  }
+  
+  if(drop){
+    return(TS$delist)
+  }else{
+    return(TS)
+  }
+}
+

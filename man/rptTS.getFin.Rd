@@ -32,6 +32,9 @@ a dataframe with the same length with rptTS, but added by some other financial i
 \description{
 get financtial indicators via \bold{rptTS} through WindR, or TinySoft.
 }
+\note{
+the funchar param could also be a 'multi_funchar', to get multi-factors. See details in the examples.
+}
 \examples{
 rptTS <- getrptTS(begT=as.Date("2011-02-06"),endT=as.Date("2011-10-23"),stocks=c("EQ000001","EQ000002"))
 # rptTS.getFin_windR

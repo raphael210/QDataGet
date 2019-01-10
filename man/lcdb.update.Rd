@@ -24,7 +24,6 @@
 \alias{database.}
 \alias{lcdb.update.QT_IndexQuote}
 \alias{lcdb.update.QT_DailyQuote}
-\alias{lcdb.update.QT_DailyQuote2}
 \alias{lcdb.update.LC_RptDate}
 \alias{lcdb.update.LC_PerformanceGrowth}
 \alias{lcdb.fix.swindustry}
@@ -49,11 +48,9 @@ lcdb.update.LC_IndexComponentsWeight(begT, endT, IndexID)
 
 lcdb.update.QT_IndexQuote(begT, endT, IndexID, datasrc = c("quant", "jy"))
 
-lcdb.update.QT_DailyQuote(begT, endT, stockID)
+lcdb.update.QT_DailyQuote(begT, endT, stockID, loopFreq = "100 year")
 
-lcdb.update.QT_DailyQuote2(begT, endT, stockID, loopFreq = "100 year")
-
-lcdb.update.LC_RptDate(begT, endT)
+lcdb.update.LC_RptDate(begT, endT, stockID)
 
 lcdb.update.LC_PerformanceGrowth(begT, endT)
 

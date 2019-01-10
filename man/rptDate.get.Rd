@@ -7,6 +7,8 @@
 rptDate.get(begT, endT, freq = c("q", "y", "h"), dir = 0L)
 }
 \arguments{
+\item{freq}{"q","y","h"}
+
 \item{dir}{1L,-1L,or 0L}
 }
 \value{

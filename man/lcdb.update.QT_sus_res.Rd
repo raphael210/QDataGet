@@ -22,7 +22,7 @@ lcdb.init.QT_sus_res(19901231,19950630)
 dates <- c(seq(as.Date("1998-12-31"),to = Sys.Date(),by = "year"),Sys.Date())
 dates <- rdate2int(dates)
 for(date in dates){
-  cat(paste("updating to ",date,"...\\n"))
+  message(paste("updating to ",date,"..."))
   lcdb.update.QT_sus_res(endT=date)
 }
 #-- fix the bugs

@@ -4,8 +4,7 @@
 \alias{factor_na}
 \title{factor_na}
 \usage{
-factor_na(TSF, method = c("none", "mean", "median"),
-  sectorAttr = defaultSectorAttr())
+factor_na(TSF, method = c("none", "mean", "median"), sectorAttr = NULL)
 }
 \arguments{
 \item{method}{Currently support three types : none, mean, median.}

@@ -7,6 +7,9 @@
 calcFinStat(FinSeri, stat = c("mean", "sum", "slope", "slope/mean",
   "slope/growthsd", "sd", "mean/sd"), fname, rm_N)
 }
+\arguments{
+\item{fname}{this function can deal with multifactors. one can select which factors to calculate stat through fname param.}
+}
 \description{
 calcFinStat
 }

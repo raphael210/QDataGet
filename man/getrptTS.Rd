@@ -8,7 +8,11 @@ getrptTS(begT, endT, freq = c("q", "y", "h"), dir = 0, univ, rptDates,
   stocks)
 }
 \arguments{
+\item{freq}{"q","y","h"}
+
 \item{dir}{1L,-1L,or 0L}
+
+\item{univ}{a index or sector ID.}
 }
 \value{
 a \bold{rptTS} object.a dataframe,with cols:

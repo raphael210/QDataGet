@@ -4,7 +4,8 @@
 \alias{CT_FactorLists}
 \title{CT_FactorLists}
 \usage{
-CT_FactorLists(factorID, factorName, factorType)
+CT_FactorLists(factorID, factorName, factorType, type = c("all", "alpha",
+  "risk"))
 }
 \description{
 CT_FactorLists

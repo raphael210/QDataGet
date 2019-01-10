@@ -27,6 +27,10 @@ cast_sector(TSS)
 
 \item{drop}{a logical. Shoud the \code{TS} be exculded in the result?}
 
+\item{fillNA}{logical.}
+
+\item{ungroup}{integer, or NULL.}
+
 \item{TSS}{a dataframe, with cols: date,stockID,and some dummy variables of sectors.}
 }
 \value{

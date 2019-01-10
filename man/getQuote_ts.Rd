@@ -24,6 +24,10 @@ getQuote_ts(stocks, begT, endT, variables, Cycle = "cy_day()", Rate = 0,
 \item{RateDay}{a integer,giving the base date of right adjustment,could be one of 0(the last trading day),-1(the IPO date),or a tinysoft date integer(eg.\code{rdate2ts(as.Date("2010-01-02"))})}
 
 \item{melt}{a logical. If FALSE(default), the style of result is "stockID+date~variable";If TRUE, the quote data will be melted(see the examples for details).}
+
+\item{split}{logical.}
+
+\item{splitNbin}{integer.}
 }
 \value{
 the quote data, a data frame object with cols:stockID,stockName,date(\bold{of class POSIXct}) and the elements the param \code{variable} containing

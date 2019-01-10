@@ -10,7 +10,7 @@
 \usage{
 db.local(dbname = "QTlite", dbpath = "D:/sqlitedb")
 
-db.quant()
+db.quant(uid = "wsread", pwd = "wsread")
 
 db.cs()
 

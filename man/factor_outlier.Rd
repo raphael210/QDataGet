@@ -5,7 +5,7 @@
 \title{factor_outlier}
 \usage{
 factor_outlier(TSF, method = c("none", "sd", "mad", "boxplot", "percentage"),
-  par, sectorAttr = defaultSectorAttr())
+  par, sectorAttr = NULL)
 }
 \arguments{
 \item{method}{Currently support four types : none, sd, mad, boxplot.}

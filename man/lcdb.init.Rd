@@ -8,7 +8,6 @@
 \alias{lcdb.init_main}
 \alias{lcdb.init_qt}
 \alias{lcdb.init.QT_DailyQuote}
-\alias{lcdb.init.QT_DailyQuote2}
 \alias{lcdb.init.CT_FactorLists}
 \alias{lcdb.init.QT_FactorScore}
 \alias{lcdb.init_fs}
@@ -28,13 +27,12 @@ lcdb.init_qt()
 
 lcdb.init.QT_DailyQuote(begT = 19900101, endT = 99990101)
 
-lcdb.init.QT_DailyQuote2(begT = 19900101, endT = 99990101)
+lcdb.init.CT_FactorLists(filename, type = c("alpha", "risk"))
 
-lcdb.init.CT_FactorLists(filename = "D:/sqlitedb/CT_FactorLists.csv")
+lcdb.init.QT_FactorScore(begT = 20050104, endT = 99990101,
+  type = c("alpha", "risk"))
 
-lcdb.init.QT_FactorScore(begT = 20050104, endT = 99990101)
-
-lcdb.init_fs()
+lcdb.init_fs(type = c("alpha", "risk"))
 }
 \description{
 initialize all the tables in sqlitdb

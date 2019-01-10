@@ -4,10 +4,12 @@
 \alias{rm_priceLimit}
 \title{remove price limits}
 \usage{
-rm_priceLimit(TS, nearby = 1, lim = c(-10, 10), priceType = c("close",
+rm_priceLimit(TS, nearby = 1L, lim = c(-10, 10), priceType = c("close",
   "open"), datasrc = defaultDataSRC())
 }
 \arguments{
+\item{nearby}{a integer vector. default is 1L, which means remove the price_limited stocks of the next tradingday.}
+
 \item{lim}{a vector of length 2.}
 
 \item{priceType}{"close" or "open".}

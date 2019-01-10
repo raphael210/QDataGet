@@ -8,6 +8,9 @@ getTSR_decay(TS, prd_lists = list(w1 = lubridate::weeks(1), w2 =
   lubridate::weeks(2), m1 = months(1), m2 = months(2), m3 = months(3), m6 =
   months(6)))
 }
+\arguments{
+\item{prdLists}{a list of periods}
+}
 \value{
 a \bold{TSR} including the decayed period rtns
 }

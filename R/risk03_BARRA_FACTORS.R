@@ -6,6 +6,27 @@
 # fill in methodology ???
 
 
+
+get_rf <- function(rebDates, type = c("fake","real")){
+  
+  type <- match.arg(type)
+  if(type == "fake"){
+    result <- data.frame('date' = rebDates, 'Rf' = 0, stringsAsFactors = FALSE)
+  }else if(type == "real"){
+    mdata <- queryAndClose.dbi(db.local("qt"), "select * from QT_Rf")
+    mdata$date <- intdate2r(mdata$date)
+    mdata <- data.table::as.data.table(mdata)
+    
+    rebDates_dt <- data.table::data.table('date' = rebDates)
+    
+    result <- mdata[rebDates_dt, on = .(date <= date), mult = 'last']
+    result <- as.data.frame(result)
+  }
+  
+  return(result)
+}
+
+
 #### BETA ####
 #' @export
 gr.beta <- function(TS, bmk = "EI000985"){

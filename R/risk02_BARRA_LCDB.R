@@ -392,7 +392,7 @@ TS.get_barra <- function(TS){
     earliest_ts_date <- as.character(trday.nearby(earliest_lcdb_date, by = (h_vra-1)))
     stop(paste("TS too early, not enough data for performing barra, TS should only have date >=",earliest_ts_date))
   }
-    
+  
   qr_1 <- paste("select * from QT_Bias where date >= ",rdate2int(begT0)," and date <=",rdate2int(endT))
   mdata_bias <- queryAndClose.dbi(db.local("fs_r"), qr_1)
   mdata_bias$date <- intdate2r(mdata_bias$date)
@@ -409,7 +409,7 @@ TS.get_barra <- function(TS){
   # get COV and SIGMA
   date_list_ts_char <- paste("(",paste(rdate2int(date_list_ts), collapse = ","),")")
   
-  ts_tmp <- TS
+  ts_tmp <- TS[,c("date","stockID")]
   ts_tmp$date <- rdate2int(ts_tmp$date)
   qr1 <- paste("select b.* from QT_Cov b where date in ", date_list_ts_char)
   qr2 <- "select a.*, b.sigma from temp_table a left join QT_Sigma b on a.date = b.date and a.stockID = b.stockID"
@@ -446,18 +446,23 @@ TS.get_barra <- function(TS){
   
   # GET mTSF
   barra_fls <- barra_fls_default()
-  ts_union <- getIndexComp(indexID = "EI000985", endT = date_list_ts)
+  ts_union <- getIndexComp(indexID = "EI000985", endT = date_list_ts, drop = FALSE)
   mdata_tsf <- getMultiFactor(TS = ts_union, FactorLists = barra_fls)
   mdata_tsf <- gf_sector(mdata_tsf, sectorAttr = defaultSectorAttr("ind"))
-  mTSF <- TS
-  mTSF$c0 <- 1
+  mdata_tsf$sector <- NULL
+  mdata_tsf$c0 <- 1
+  
+  # ordering
+  mTSF <- TS[,c("date","stockID")]
+  mdata_tsf <- mdata_tsf[,c(c("date","stockID"), setdiff(colnames(result_cov), 'date'))]
   mTSF <- merge.x(mTSF, mdata_tsf, by = c("date","stockID"))
   
   # output
-  result_list <- list('mtsf' = mTSF,
+  result_list <- list('mTSF' = mTSF,
                       'fCov' = as.data.frame(result_cov),
                       'sigma' = as.data.frame(result_sigma))
 }
+
 
 
 

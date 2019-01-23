@@ -1649,6 +1649,208 @@ MF.factor_refine <- function(mTSF,refinePar=refinePar_default(),drop_sector=TRUE
 
 
 
+
+
+
+
+# ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
+# --------------------  factor orthogan functions ------------
+# ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
+
+#' @title factor orthogan
+#' @name factor_orthogan_name
+#' @rdname factor_orthogan
+#' @export
+factor_orthogon_single <- function(TSF,y,x,sectorAttr=defaultSectorAttr(),regType=c('lm','glm'),res_adjust=FALSE){
+  regType <- match.arg(regType)
+  cols <- colnames(TSF)
+  fname <- guess_factorNames(TSF,no_factorname="glm_wgt",is_factorname = "factorscore",silence=TRUE)
+  
+  if(length(fname)==1 && is.null(sectorAttr)){
+    stop('NO x variable!')
+  }
+  if(!(y %in% fname)){
+    stop('y not in TSF!')
+  }
+  if(missing(x)){
+    x <- setdiff(fname,y)
+  }
+  if(!is.null(sectorAttr)){
+    TSF <- getSectorID(TSF,sectorAttr = sectorAttr,fillNA = TRUE)
+  }
+  
+  if(is.null(sectorAttr)){
+    resd <- lm_NPeriod(TSF,y,x,lmtype=regType,res_adjust = res_adjust)
+  }else{
+    resd <- lm_NPeriod(TSF,y,x,secIN = TRUE,lmtype=regType,res_adjust = res_adjust)
+  }
+  
+  resd <- resd$resd
+  re <- TSF[,cols]
+  re[,y] <- resd$res
+  return(re)
+}
+
+
+
+#' @rdname factor_orthogan 
+#' @export
+#' @examples 
+#' tb_symm <- factor_orthogon(mtsf,method = "symm")
+#' tb_reg <- factor_orthogon(mtsf,method = "reg")
+#' MF.chart.Fct_corr(mtsf)
+#' MF.chart.Fct_corr(tb_symm)
+#' MF.chart.Fct_corr(tb_reg)
+factor_orthogon <- function(TSF, method = c("symm","reg"),
+                            forder, sectorAttr=NULL, regType=c('lm','glm')){
+  method <- match.arg(method)
+  
+  if(method=="reg"){
+    regType <- match.arg(regType)
+    cols <- colnames(TSF)
+    fname <- guess_factorNames(TSF,is_factorname = NULL,silence=TRUE)
+    if(missing(forder)){
+      forder <- fname
+    }
+    if(is.numeric(forder)){
+      forder <- fname[forder]
+    }
+    if(!is.null(sectorAttr)){
+      TSF <- getSectorID(TSF,sectorAttr = sectorAttr,fillNA = TRUE)
+    }
+    sectorAttr_ <- if(is.null(sectorAttr)) NULL else "existing"
+    if(!is.null(sectorAttr)){ # forder[1]
+      TSF <- factor_orthogon_single(TSF, y = forder[1], x=NULL,sectorAttr = "existing",regType=regType)
+    }
+    for(j in 2:length(forder)){ # forder[2:length]
+      TSF <- factor_orthogon_single(TSF, y = forder[j], x=forder[1:(j-1)],sectorAttr = sectorAttr_,regType=regType)
+    }
+    return(TSF[,cols])
+    
+  } else if(method == "symm"){
+    # one period func
+    subfun <- function(TSF, method = method, fnames, rest_cols){
+      F_mat <- as.matrix(TSF[,fnames])
+      D_sd_mat <- diag(sqrt(diag(cov(F_mat))))
+      
+      N <- nrow(F_mat)
+      M_mat <- t(F_mat) %*% F_mat / N
+      decomposed_result <- eigen(M_mat, symmetric = TRUE)
+      
+      U_mat <- decomposed_result$vectors
+      D_mat <- diag(decomposed_result$values)
+      D_mat_star <- diag((decomposed_result$values)^(-1/2))
+      
+      S_mat <- U_mat %*% D_mat_star %*% t(U_mat) %*% D_sd_mat
+      
+      # output : F_new
+      F_mat_new <- F_mat %*% S_mat
+      F_mat_new <- as.data.frame(F_mat_new)
+      colnames(F_mat_new) <- fnames
+      TSF_new <- cbind(TSF[,rest_cols], F_mat_new)
+      return(TSF_new)
+    }
+    # processing
+    fnames <- guess_factorNames(TSF,is_factorname = NULL,silence=TRUE)
+    fnames <- subset(fnames, substr(fnames, 1, 2) != "ES")
+    rest_cols <- setdiff(colnames(TSF), fnames)
+    TSF <- dplyr::group_by(TSF, date)
+    result <- dplyr::do(.data = TSF, subfun(., method = method, fnames = fnames, rest_cols = rest_cols))
+    # output
+    result <- result[,colnames(TSF)]
+    result <- as.data.frame(result)
+    return(result)
+  }
+}
+#' @rdname factor_orthogan 
+#' @export
+#' @examples 
+#' factor_orthogon_transMat(mtsf)
+factor_orthogon_transMat <- function(TSF){
+  # one period func
+  subfun <- function(TSF, method = method, fnames, rest_cols){
+    F_mat <- as.matrix(TSF[,fnames])
+    D_sd_mat <- diag(sqrt(diag(cov(F_mat))))
+    
+    N <- nrow(F_mat)
+    M_mat <- t(F_mat) %*% F_mat / N
+    decomposed_result <- eigen(M_mat, symmetric = TRUE)
+    
+    U_mat <- decomposed_result$vectors
+    D_mat <- diag(decomposed_result$values)
+    D_mat_star <- diag((decomposed_result$values)^(-1/2))
+    
+    S_mat <- U_mat %*% D_mat_star %*% t(U_mat) %*% D_sd_mat
+    
+    # output : S_mat
+    S_mat <- as.data.frame(S_mat)
+    colnames(S_mat) <- fnames
+    S_mat$sum <- rowSums(S_mat)
+    S_mat$fname <- fnames
+    return(S_mat)
+  }
+  # processing
+  fnames <- guess_factorNames(TSF,is_factorname = NULL,silence=TRUE)
+  fnames <- subset(fnames, substr(fnames, 1, 2) != "ES")
+  rest_cols <- setdiff(colnames(TSF), fnames)
+  TSF <- dplyr::group_by(TSF, date)
+  result <- dplyr::do(.data = TSF, subfun(., method = method, fnames = fnames, rest_cols = rest_cols))
+  # output
+  result <- as.data.frame(result)
+  return(result)
+}
+
+
+
+
+
+# if lmtpye=='glm', data must include 'glm_wgt' column.
+#' lm_NPeriod
+#' @export
+lm_NPeriod <- function(data,y,x,lmtype=c('lm','glm'),secIN=FALSE,res_adjust=FALSE,silence=TRUE){
+  check.colnames(data,c('date','stockID'))
+  lmtype <- match.arg(lmtype)
+  
+  TS <- data[,c('date','stockID')]
+  data <- data[rowSums(is.na(data[,c(x,y),drop=FALSE]))==0,] # remove NA
+  if(!silence && nrow(data)<nrow(TS)){
+    warning("NAs found in x or y part!")
+  }
+  
+  if(secIN){
+    data$sector <- as.factor(data$sector)
+    fml <- formula(paste(y," ~ ", paste(c(x,"sector"), collapse= "+"),"-1",sep=''))
+  }else{
+    fml <- formula(paste(y," ~ ", paste(x, collapse= "+"),sep=''))
+  }
+  
+  if(lmtype=='lm'){
+    models <- data %>% dplyr::group_by(date) %>% dplyr::do(mod = lm(fml, data = . ,na.action = "na.exclude"))
+  }else{
+    check.colnames(data,"glm_wgt")
+    models <- data %>% dplyr::group_by(date) %>% dplyr::do(mod = lm(fml, data = .,weights=glm_wgt ,na.action = "na.exclude"))
+  }
+  
+  rsq <- dplyr::summarise(models,date=date,rsq = summary(mod)$r.squared)
+  coef <- models %>% broom::tidy(mod)
+  resd <- models %>% broom::augment(mod)
+  if(lmtype == "glm" & res_adjust){
+    resd$.resid <- sqrt(resd$X.weights.) * resd$.resid
+  }
+  resd <- cbind(data[,c('date','stockID')],resd[,c('.fitted','.resid')])
+  colnames(resd) <- c('date','stockID','fitted','res')
+  resd <- merge.x(TS,resd,by=c('date','stockID'))
+  
+  rsq <- as.data.frame(rsq)
+  coef <- as.data.frame(coef)
+  resd <- as.data.frame(resd)
+  return(list(rsq=rsq,coef=coef,resd=resd))
+}
+
+
+
+
+
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
 # --------------------  TS removing functions ------------
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
@@ -1690,15 +1892,7 @@ rm_priceLimit <- function(TS,nearby=1L,lim=c(-10, 10),priceType=c("close","open"
 }
 
 
-#' @export
-rm_blacklist <- function(TS){
-  TS_ <- is_blacklist(TS=TS)
-  TS <- TS[!TS_$is_blacklist,]
-}
 
-rm_not_in_whitelist <- function(TS){
-  
-}
 rm_st <- function(TS){
   
 }
@@ -1868,41 +2062,6 @@ is_priceLimit <- function(TS,nearby=0,lim=c(-10, 10), priceType=c("close","open"
 }
 
 
-
-#' @export
-is_blacklist <- function(TS,
-                         datelist,stockID, 
-                         drop,
-                         datasrc=defaultDataSRC()){
-  
-  blklist=c("EQ600061","EQ600886","EQ600216") # temporally
-  
-  if (missing(TS) && any(missing(stockID),missing(datelist))) {
-    stop("Param TS and combination of stockID and datelist should at least have one!")
-  }
-  if (!missing(TS) && !all(missing(stockID),missing(datelist))) {
-    stop("Param TS and combination of stockID and datelist should only have one!")
-  }
-  if(missing(drop)){
-    drop <- if(missing(TS)) TRUE else FALSE
-  }
-  
-  if (missing(TS)){
-    TS <- expand.grid(date=datelist, stockID=stockID)
-  }
-  
-  check.TS(TS)
-  
-  TS$is_blacklist <- TS$stockID %in% blklist
-  
-  
-  if(drop){
-    return(TS$is_blacklist)
-  }else{
-    return(TS)
-  }
-  
-}
 
 #' is_st
 #' 

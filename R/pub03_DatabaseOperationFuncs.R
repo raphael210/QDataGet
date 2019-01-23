@@ -118,26 +118,33 @@ queryAndClose.dbi <- function (db, query, ...) {
 lcdb.updatetime <- function () {
   con_main <- db.local("main")
   con_fs <- db.local("fs")
+  con_fs_r <- db.local("fs_r")
   con_qt <- db.local("qt")
   updatetime <- c(
     dbGetQuery(con_main,"select max(EndDate) from LC_IndexComponentsWeight")[[1]],
     dbGetQuery(con_main,"select max(TradingDay) from QT_IndexQuote")[[1]]        ,
     dbGetQuery(con_qt,"select max(TradingDay) from QT_DailyQuote")[[1]]       ,
     dbGetQuery(con_fs,"select max(TradingDay) from QT_FactorScore")[[1]]       ,
+    dbGetQuery(con_fs_r,"select max(TradingDay) from QT_FactorScore_R")[[1]]       ,
     dbGetQuery(con_main,"select max(PublDate) from LC_RptDate")[[1]]             ,
     dbGetQuery(con_main,"select max(InfoPublDate) from LC_PerformanceGrowth")[[1]],
     dbGetQuery(con_main,"select max(date) from QT_FreeShares")[[1]],
-    dbGetQuery(con_qt,"select max(updateDate) from QT_sus_res")[[1]]
+    dbGetQuery(con_qt,"select max(updateDate) from QT_sus_res")[[1]],
+    dbGetQuery(con_fs_r,"select max(date) from QT_FactorReturn")[[1]],
+    dbGetQuery(con_fs_r,"select max(date)from QT_Cov")[[1]]
   )
   table <- c(
     "LC_IndexComponentsWeight",
     "QT_IndexQuote",
     "QT_DailyQuote",
     "QT_FactorScore",
+    "QT_FactorScore_R",
     "LC_RptDate",
     "LC_PerformanceGrowth",
     "QT_FreeShares",
-    "QT_sus_res"
+    "QT_sus_res",
+    "QT_FactorReturn",
+    "QT_Cov"
   )
   dbDisconnect(con_main)
   dbDisconnect(con_fs)
@@ -1223,7 +1230,7 @@ lcdb.update.QT_FactorScore <- function(begT,endT,stockID,loopFreq="month",type =
   dates <- c(seq(intdate2r(begT), endT ,by = loopFreq), endT)
   dates <- rdate2int(dates)
   for(ii in 1:(length(dates)-1)){
-    message(paste("lcdb.update.",tableName_char,": updating to ",dates[ii+1],"..."))
+    message(paste("lcdb.update.",tableName_char,": updating to ",dates[ii+1],"...",sep = ""))
     begT_filt <- paste("TradingDay >=",dates[ii])
     endT_filt <- paste("TradingDay < ",dates[ii+1])
     TS <- dbGetQuery(con_qt, paste("select TradingDay as date, ID as stockID from QT_DailyQuote where ",begT_filt,"and",endT_filt,"and",pool_filt))
@@ -1240,7 +1247,7 @@ lcdb.update.QT_FactorScore <- function(begT,endT,stockID,loopFreq="month",type =
       factorID <- factorLists[i,"factorID"]
       factorFun <- factorLists[i,"factorFun"]
       factorPar <- factorLists[i,"factorPar"]
-      message("Factor",factorName,"getting ...")
+      message("Factor ",factorName," getting ...")
       subTSF <- getRawFactor(TS=TS,factorFun=factorFun,factorPar=factorPar)
       subTSF <- renameCol(subTSF,src="factorscore",tgt=factorID)
       if(i==1L){

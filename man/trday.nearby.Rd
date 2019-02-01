@@ -5,7 +5,7 @@
 \title{trday.nearby}
 \usage{
 trday.nearby(datelist, by, stockID = NULL, dir = if (by > 0) 1L else -1L,
-  TS, drop)
+  TS, drop = FALSE)
 }
 \arguments{
 \item{datelist}{a vector of class Date}
@@ -14,13 +14,13 @@ trday.nearby(datelist, by, stockID = NULL, dir = if (by > 0) 1L else -1L,
 
 \item{stockID}{a character string or null. If null, the market trading days, other wise the trading days of specific stock.}
 
-\item{dir}{1L or -1L. see \code{\link{trday.nearest}}}
+\item{dir}{1L or -1L. If the result is not trading day, get the nearest trading day, here need the dir param to give a shifting direction. see \code{\link{trday.nearest}}}
 }
 \value{
 a vector of trading days of class Date
 }
 \description{
-get the nearby tradingday by shifting forward or backward.If the argument datelist is not a tradingday,the tradingday nearest by it will be firstly find by function \code{\link{trday.nearest}}.
+get the nearby tradingday by shifting forward or backward.If the argument datelist is not a tradingday,the tradingday nearest by it will be firstly found by function \code{trday.nearest(by=-1)}.
 }
 \examples{
 (datelist <- as.Date(c("2012-07-21","2012-07-22","2012-07-23","2013-01-30")))

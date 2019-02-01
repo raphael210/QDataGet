@@ -4,7 +4,8 @@
 \alias{is_delist}
 \title{is_delist}
 \usage{
-is_delist(TS, nearby = months(2), datelist, stockID, drop, datasrc = "jy")
+is_delist(TS, nearby = months(2), datelist, stockID, drop = FALSE,
+  datasrc = "jy")
 }
 \description{
 judeg whether stocks to be delisted

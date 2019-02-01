@@ -4,11 +4,29 @@
 \alias{get_frtn_res_series}
 \title{THE REGRESSION FUNCTION}
 \usage{
-get_frtn_res_series(ts, ts_union, barra_fls, barra_param)
+get_frtn_res_series(ts_union, barra_fls, barra_param, ts)
+}
+\arguments{
+\item{ts_union}{TS object. Recommanded use.}
+
+\item{barra_fls}{The factorLists object to get regression X variables.}
+
+\item{barra_param}{A list, containing all the parameters in barra risk model. 
+subset_reg flag is contained in the parameter list, default NULL.
+The subset_reg could be a character vector containing many sectorIDs. Regression is done within this subset.}
+
+\item{ts}{TS object. Carefully use. When ts is passed into the function, actually only the rebalance date series would be retrieved. 
+A complete and longer period TS object would be generated inside the function to execute regression.}
 }
 \value{
-A list, including three values, frtn_seri, res_seri, data_bank(mtsfr in fact, it would be passed into functions later to speed up the process.).
+A list, including four values, frtn_seri, res_seri, omega_seri, data_bank(mtsfr in fact).
+omega_seri is the pure factor port, each column is the weight vector of one single pure factor.
 }
 \description{
-The subset_reg switch would not affect the number of observation in output, the res_seri would cover the whole ts.
+Barra regression function. Common usage is showed in examples.
+}
+\examples{
+fls <- barra_fls_default()
+ts_union <- getIndexComp("EI000985", endT = as.Date("2018-01-31"), drop = FALSE)
+get_frtn_res_series(ts_union = ts_union, barra_fls = fls, barra_param = barra_param_default())
 }

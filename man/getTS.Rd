@@ -13,7 +13,7 @@ getTS(RebDates, indexID = "EI000300", stocks = NULL, rm = NULL)
 
 \item{stocks}{a vector of stockIDs}
 
-\item{rm}{could be one or more of "suspend","priceLimit".default is NULL}
+\item{rm}{could be one or more of "suspend","priceLimit","st","blacklist".default is NULL}
 }
 \value{
 a \bold{TS} object. a dataframe,with cols:

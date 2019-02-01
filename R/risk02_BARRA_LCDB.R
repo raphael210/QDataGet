@@ -439,6 +439,7 @@ TS.get_barra <- function(TS){
     mdata_sigma_tmp <- mdata_sigma[date == rebDate_]
     lambda_sigma <- mdata_bias[date == rebDate_, lambda_sigma]
     mdata_sigma_tmp$sigma <- lambda_sigma * mdata_sigma_tmp[,sigma]
+    mdata_sigma_tmp$sigma[is.na(mdata_sigma_tmp$sigma)] <- median(mdata_sigma_tmp$sigma, na.rm = TRUE)  # deal with the NA in sigma
     
     result_cov <- rbind(result_cov, mdata_cov_tmp)
     result_sigma <- rbind(result_sigma, mdata_sigma_tmp)
@@ -464,6 +465,39 @@ TS.get_barra <- function(TS){
 }
 
 
+
+#' get frtn of pure factors
+#' 
+#' @param begT integar.
+#' @param endT integar.
+#' @param result_type fac_only or all, if all, result would contain c0 and sector rtn.
+#' @return daily return xts, ordered by date, each column is a pure factor.
+#' @export
+#' @examples 
+#' ggplot.WealthIndex(getfrtn.pure_alpha())
+#' rtn.summary(getfrtn.pure_alpha(begT = 20180106, endT = 20180605))
+getfrtn.pure_alpha <- function(begT, endT, result_type = c("fac_only", "all")){
+  
+  result_type <- match.arg(result_type)
+  con <- db.local("fs_r")
+  qr <- "select * from QT_FactorReturn where 1>0"
+  if(!missing(begT)){
+    qr <- paste(qr, " and date >= ", begT)
+  }
+  if(!missing(endT)){
+    qr <- paste(qr, " and date <= ", endT)
+  }
+  mdata <- RSQLite::dbGetQuery(con, qr)
+  RSQLite::dbDisconnect(con)
+  mdata$date <- intdate2r( mdata$date )
+  mdata$date_end <- NULL # intdate2r( mdata$date_end )
+  
+  result <- xts::as.xts(mdata[,-1], order.by = mdata[,1])
+  if(result_type == "fac_only"){
+    result <- result[,(substr(colnames(result),1,4) != "ES33") & (colnames(result) != "c0")]
+  }
+  return(result)
+}
 
 
 

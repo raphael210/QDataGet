@@ -5,7 +5,7 @@
 \title{trday.offset}
 \usage{
 trday.offset(datelist, by = months(1), stockID = NULL, dir = if
-  (as.numeric(by) > 0) 1L else -1L, TS, drop)
+  (as.numeric(by) > 0) 1L else -1L, TS, drop = FALSE)
 }
 \arguments{
 \item{datelist}{a vector of class Date}

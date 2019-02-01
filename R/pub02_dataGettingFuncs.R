@@ -338,7 +338,7 @@ trday.get <- function(begT=as.Date("1990-12-19"),endT=Sys.Date(),
 #' trday.is(datelist,stockID="EQ000527")
 #' trday.is(TS=TS)
 trday.is <- function(datelist,stockID=NULL,TS,
-                     drop){
+                     drop=FALSE){
   if(is.null(stockID) & missing(TS)){ # the market tradingday
     mindt <- min(datelist)
     maxdt <- max(datelist)
@@ -352,9 +352,6 @@ trday.is <- function(datelist,stockID=NULL,TS,
   }
   if (!missing(TS) && !all(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should only have one!")
-  }
-  if(missing(drop)){
-    drop <- if(missing(TS)) TRUE else FALSE
   }
   
   if (missing(TS)){
@@ -391,7 +388,7 @@ trday.is <- function(datelist,stockID=NULL,TS,
 #' trday.nearest(datelist, dir = 1)
 #' trday.nearest(datelist, dir = 1, stockID="EQ000527")
 trday.nearest <- function(datelist, dir=-1L, stockID=NULL, TS,
-                          drop){ 
+                          drop=FALSE){ 
   if(is.null(stockID) & missing(TS)){ # the market tradingday
     tradingdays <- trday.get(endT=Sys.Date()+365, stockID=NULL)
     if(dir == -1L){
@@ -410,9 +407,6 @@ trday.nearest <- function(datelist, dir=-1L, stockID=NULL, TS,
   }
   if (!missing(TS) && !all(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should only have one!")
-  }
-  if(missing(drop)){
-    drop <- if(missing(TS)) TRUE else FALSE
   }
   
   if (missing(TS)){
@@ -445,11 +439,11 @@ trday.nearest <- function(datelist, dir=-1L, stockID=NULL, TS,
 
 #' trday.nearby
 #' 
-#' get the nearby tradingday by shifting forward or backward.If the argument datelist is not a tradingday,the tradingday nearest by it will be firstly find by function \code{\link{trday.nearest}}.
+#' get the nearby tradingday by shifting forward or backward.If the argument datelist is not a tradingday,the tradingday nearest by it will be firstly found by function \code{trday.nearest(by=-1)}.
 #' @param datelist a vector of class Date
 #' @param by a integer giving the lagging days.If negetive,get the earlyer tradingday,if positive,get the later tradingday. 
 #' @param stockID a character string or null. If null, the market trading days, other wise the trading days of specific stock.
-#' @param dir 1L or -1L. see \code{\link{trday.nearest}}
+#' @param dir 1L or -1L. If the result is not trading day, get the nearest trading day, here need the dir param to give a shifting direction. see \code{\link{trday.nearest}}
 #' @return a vector of trading days of class Date
 #' @export
 #' @author Ruifei.Yin
@@ -461,7 +455,7 @@ trday.nearest <- function(datelist, dir=-1L, stockID=NULL, TS,
 trday.nearby <- function(datelist,by, stockID=NULL,
                          dir=if(by>0) 1L else -1L,
                          TS,
-                         drop){
+                         drop=FALSE){
   if(is.null(stockID) & missing(TS)){ # the market tradingday
     trdingday.all <- trday.get(endT=Sys.Date()+365, stockID=NULL)   
     trdlist <- trdingday.all[findInterval(datelist, trdingday.all)] # get the nearest tradingday
@@ -476,9 +470,6 @@ trday.nearby <- function(datelist,by, stockID=NULL,
   }
   if (!missing(TS) && !all(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should only have one!")
-  }
-  if(missing(drop)){
-    drop <- if(missing(TS)) TRUE else FALSE
   }
   
   if (missing(TS)){
@@ -496,6 +487,9 @@ trday.nearby <- function(datelist,by, stockID=NULL,
   }
   return(re)
 }
+
+
+
 
 
 #' trday.offset 
@@ -517,7 +511,7 @@ trday.nearby <- function(datelist,by, stockID=NULL,
 trday.offset <- function(datelist,by=months(1),stockID=NULL,
                          dir=if(as.numeric(by)>0) 1L else -1L, 
                          TS,
-                         drop){
+                         drop=FALSE){
   if(is.null(stockID) & missing(TS)){ # the market tradingday
     if (any(c(by@.Data, by@minute, by@hour, by@day) != 0)){
       re <- datelist + by
@@ -534,9 +528,6 @@ trday.offset <- function(datelist,by=months(1),stockID=NULL,
   if (!missing(TS) && !all(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should only have one!")
   }
-  if(missing(drop)){
-    drop <- if(missing(TS)) TRUE else FALSE
-  }
   
   if (missing(TS)){
     TS <- expand.grid(date=datelist, stockID=stockID)
@@ -550,6 +541,57 @@ trday.offset <- function(datelist,by=months(1),stockID=NULL,
     re <- offset
   } else {
     re <- cbind(TS,offset)
+  }
+  return(re)
+}
+
+
+
+
+#' trday.last
+#' 
+#' get the last tradingday. If datelist is tradingday, return trday.nearby(by=-1), else, return trday.nearest(dir=-1)
+#' @export
+#' @examples
+#' (datelist <- seq(from=as.Date("2013-01-21"),to=as.Date("2013-01-30"),by="day"))
+#' trday.is(datelist)
+#' # -- compare the following three output:
+#' trday.last(datelist)
+#' trday.nearest(datelist,dir=-1)
+#' trday.nearby(datelist,by=-1)
+#' # -- return TS
+#' stockID=c("EQ000527","EQ000001")
+#' trday.last(datelist = datelist,stockID=stockID)
+trday.last <- function(datelist,stockID=NULL,TS,drop=FALSE){
+  if(is.null(stockID) & missing(TS)){ # the market tradingday
+    re <- datelist
+    istrday <- trday.is(datelist = datelist, stockID = NULL)
+    re[istrday] <- trday.nearby(datelist = datelist[istrday], by=-1, stockID=NULL)
+    re[!istrday] <- trday.nearest(datelist = datelist[!istrday], dir=-1, stockID=NULL)
+    return(re)
+  } 
+  
+  if (missing(TS) && any(missing(stockID),missing(datelist))) {
+    stop("Param TS and combination of stockID and datelist should at least have one!")
+  }
+  if (!missing(TS) && !all(missing(stockID),missing(datelist))) {
+    stop("Param TS and combination of stockID and datelist should only have one!")
+  }
+  
+  if (missing(TS)){
+    TS <- expand.grid(date=datelist, stockID=stockID)
+  }
+  
+  istrday <- trday.is(TS=TS,drop=TRUE)
+  TS_istrday <- trday.nearby(TS = TS[istrday,], by = -1)
+  TS_notrday <- trday.nearest(TS = TS[!istrday,], dir  = -1)
+  re <- rbind(renameCol(TS_istrday,"nearby","last"), renameCol(TS_notrday,"nearest","last"))
+  re <- merge.x(TS,re,by=c("date","stockID"))
+  
+  if(drop){
+    re <- re$last
+  }else {
+    re <- re
   }
   return(re)
 }
@@ -614,6 +656,7 @@ trday.unlist <- function(stockID,datasrc="jy"){
   
   return(re)  
 }
+
 
 
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
@@ -3060,7 +3103,7 @@ getIndexQuote <- function(stocks,
     } else if(datasrc=="local"){      
       qt <- queryAndClose.dbi(db.local("main"),querychar)
     }else if(datasrc=="jy"){
-      stocks_char <- paste("(",paste(QT(substr(stocks,3,8)),collapse=","),")",sep="")  
+      stocks_char <- brkQT(substring(stocks,3)) 
       begT <- intdate2r(begT)
       endT <- intdate2r(endT)
       querychar <- paste("SELECT 'EI'+s.SecuCode 'stockID',CONVERT(varchar,TradingDay,112) 'date',",

@@ -5,7 +5,7 @@
 \title{is_priceLimit}
 \usage{
 is_priceLimit(TS, nearby = 0, lim = c(-10, 10), priceType = c("close",
-  "open"), datelist, stockID, drop, datasrc = defaultDataSRC())
+  "open"), datelist, stockID, drop = FALSE, datasrc = defaultDataSRC())
 }
 \arguments{
 \item{nearby}{a integer vector. 0 means today, 1 means next tradingday. default is 0L. see detail in \code{\link{trday.nearby}}.}

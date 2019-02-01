@@ -30,10 +30,23 @@ barra_param_default <- function(){
 
 #' THE REGRESSION FUNCTION
 #' 
-#' @description The subset_reg switch would not affect the number of observation in output, the res_seri would cover the whole ts.
-#' @return A list, including three values, frtn_seri, res_seri, data_bank(mtsfr in fact, it would be passed into functions later to speed up the process.).
+
+#' @param ts_union TS object. Recommanded use.
+#' @param barra_fls The factorLists object to get regression X variables. 
+#' @param barra_param A list, containing all the parameters in barra risk model. 
+#' subset_reg flag is contained in the parameter list, default NULL.
+#' The subset_reg could be a character vector containing many sectorIDs. Regression is done within this subset.
+#' @param ts TS object. Carefully use. When ts is passed into the function, actually only the rebalance date series would be retrieved. 
+#' A complete and longer period TS object would be generated inside the function to execute regression.
+#' @description Barra regression function. Common usage is showed in examples.
+#' @return A list, including four values, frtn_seri, res_seri, omega_seri, data_bank(mtsfr in fact).
+#' omega_seri is the pure factor port, each column is the weight vector of one single pure factor.
 #' @export
-get_frtn_res_series <- function(ts, ts_union, barra_fls, barra_param){
+#' @examples 
+#' fls <- barra_fls_default()
+#' ts_union <- getIndexComp("EI000985", endT = as.Date("2018-01-31"), drop = FALSE)
+#' get_frtn_res_series(ts_union = ts_union, barra_fls = fls, barra_param = barra_param_default())
+get_frtn_res_series <- function(ts_union, barra_fls, barra_param, ts){
   # args : get maximum training window
   h_vra <- barra_param$cov_param$h_vra
   h_cov <- barra_param$cov_param$h_cov
@@ -69,7 +82,7 @@ get_frtn_res_series <- function(ts, ts_union, barra_fls, barra_param){
   }else{
     stop("ts input error")
   }
-
+  
   # subset reg flag
   subset_reg <- barra_param$reg_param$subset_reg
   if(!is.null(subset_reg)){
@@ -96,7 +109,7 @@ get_frtn_res_series <- function(ts, ts_union, barra_fls, barra_param){
   # get r
   
   mdata_rtn <- getQuote(stocks = unique(mtsf$stockID), begT = min(mtsf$date), endT = trday.nearby(max(mtsf$date), 1), 
-           'pct_chg',tableName = 'QT_DailyQuote',datasrc = 'quant',split = FALSE)
+                        'pct_chg',tableName = 'QT_DailyQuote',datasrc = 'quant',split = FALSE)
   colnames(mdata_rtn) <- c("stockID","date_end","pct_chg")
   mdata_rtn$date <- trday.nearby(mdata_rtn$date_end, by = -1)
   mdata_rtn <- data.table::as.data.table(mdata_rtn)
@@ -107,7 +120,7 @@ get_frtn_res_series <- function(ts, ts_union, barra_fls, barra_param){
   mtsfr[pct_chg > 0.11,  pct_chg := 0]
   mtsfr[pct_chg < -0.11,  pct_chg := 0]
   mtsfr[is.na(date_end), date_end := trday.nearby(date, by = 1)]
- 
+  
   ### rock'n'roll
   datelist <- sort(unique(mtsfr$date))
   for( i in 1:length(datelist)){
@@ -117,25 +130,30 @@ get_frtn_res_series <- function(ts, ts_union, barra_fls, barra_param){
     date_end_i <- unique(mtsfr_i$date_end)
     if(length(date_end_i) > 1) stop("code error 7190811745")
     reg_result <- reg_mazi(mtsfr_i = mtsfr_i, y = "pct_chg", fnames = fnames, subset_reg = subset_reg)
-    frtn_df <- cbind('date' = date_i, 'date_end' = date_end_i, reg_result$frtn)
-    res_df <- cbind('date' = date_i, 'date_end' = date_end_i, reg_result$res)
-
+    frtn_dt <- cbind('date' = date_i, 'date_end' = date_end_i, reg_result$frtn)
+    res_dt <- cbind('date' = date_i, 'date_end' = date_end_i, reg_result$res)
+    omega_dt <- cbind('date' = date_i, 'date_end' = date_end_i, reg_result$omega)
+    
     if(i == 1L){
-      result_frtn <- frtn_df
-      result_res <- res_df
+      result_frtn <- frtn_dt
+      result_res <- res_dt
+      result_omega <- omega_dt
     }else{
-      result_frtn <- rbind(result_frtn, frtn_df)
-      result_res <- rbind(result_res, res_df)
+      result_frtn <- rbind(result_frtn, frtn_dt)
+      result_res <- rbind(result_res, res_dt)
+      result_omega <- rbind(result_omega, omega_dt)
     }
-
+    
   }
   # to do ...
   # industry not match along time ?
   result_list <- list("frtn_seri" = result_frtn,
                       "res_seri" = result_res,
+                      "omega_seri" = result_omega,
                       "data_bank" = mtsfr)
   return(result_list)
 }
+
 
 #' regressing function for barra
 #'
@@ -145,7 +163,7 @@ get_frtn_res_series <- function(ts, ts_union, barra_fls, barra_param){
 #' @param subset_reg If not null, the column in mtsfr_i should include 'subset_reg_flag' to indicate the subset to regress.
 #' @return A list, including three values, frtn, res, est_rtn(estimated values).
 reg_mazi <- function(mtsfr_i, y, fnames, subset_reg = NULL){
- 
+  
   # mtsfr_i SHOULD BE DATA TABLE
   # mtsfr_i SHOULD WENT THROUGH  GF_CAP, GF_SECTOR
   if(!is.null(subset_reg)){
@@ -174,7 +192,7 @@ reg_mazi <- function(mtsfr_i, y, fnames, subset_reg = NULL){
   # R3
   R_mat <- Matrix::bdiag(list(1,sec_diag_mat,fac_diag_mat))
   R <- as.matrix(R_mat)
-    
+  
   # X exposure
   # sec_expo
   x_mat_sec <- mtsfr_train_i[,sec_names, with = FALSE]
@@ -182,15 +200,18 @@ reg_mazi <- function(mtsfr_i, y, fnames, subset_reg = NULL){
   x_mat_fac <- mtsfr_train_i[,fnames, with = FALSE]
   x_mat <- cbind(1, x_mat_sec, x_mat_fac)
   X <- as.matrix(x_mat)
-    
+  
   # V wgt
   V <- diag(sqrt(mtsfr_train_i$ffv))
-    
+  
   # get omega
   comp_mat <- t(R) %*% t(X) %*% V %*% X %*% R
   comp_mat_inv <- solve(comp_mat) 
   omega <- R %*% comp_mat_inv %*% t(R) %*% t(X) %*% V
-    
+  omega_dt <- data.table::as.data.table(t(omega))
+  omega_dt <- cbind('stockID' = mtsfr_train_i$stockID, omega_dt)
+  colnames(omega_dt) <- c("stockID","c0",sec_names, fnames)
+  
   # frtn
   frtn <- omega %*% (mtsfr_train_i[,get(y),])
   frtn_dt <- data.table::as.data.table(t(frtn))
@@ -215,9 +236,11 @@ reg_mazi <- function(mtsfr_i, y, fnames, subset_reg = NULL){
   # output
   result_list <- list("frtn" = frtn_dt,
                       "res" = res_dt,
-                      "est_rtn"  = est_rtn_dt)
+                      "est_rtn"  = est_rtn_dt,
+                      "omega" = omega_dt)
   return(result_list)
 }
+
 
 
 

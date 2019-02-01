@@ -4,7 +4,7 @@
 \alias{is_st}
 \title{is_st}
 \usage{
-is_st(TS, datelist, stockID, drop, datasrc = defaultDataSRC())
+is_st(TS, datelist, stockID, drop = FALSE, datasrc = defaultDataSRC())
 }
 \description{
 is st stock

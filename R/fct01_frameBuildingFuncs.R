@@ -285,7 +285,7 @@ getRebDates <- function(begT,endT,rebFreq="month",shiftby=0, dates=NULL){
 #' @param RebDates a \bold{RebDates} object. a vector,with class of Date,usually the rebalancing dates list
 #' @param indexID a character string. The ID of the index, sector or plate. Could be a single-ID-code(eg. "EI000300","ES09440000",...) or a more complicated express containing some set operations and ID-codes(eg. "setdiff(union(EI000300,EI399006),ES09440000)"). See detail in \code{\link{getComps}}.
 #' @param stocks a vector of stockIDs
-#' @param rm could be one or more of "suspend","priceLimit".default is NULL
+#' @param rm could be one or more of "suspend","priceLimit","st","blacklist".default is NULL
 #' @return a \bold{TS} object. a dataframe,with cols:
 #'   \itemize{
 #'   \item date: the rebalance dates, with \code{Date} class
@@ -313,6 +313,9 @@ getTS <- function(RebDates,indexID="EI000300",stocks=NULL,rm=NULL){
   }
   if("priceLimit" %in% rm){
     TS <- rm_priceLimit(TS, nearby = 1L, lim = c(-Inf,10))
+  }
+  if("st" %in% rm){
+    TS <- rm_st(TS)
   }
   return (TS)
 }
@@ -1891,10 +1894,12 @@ rm_priceLimit <- function(TS,nearby=1L,lim=c(-10, 10),priceType=c("close","open"
   return(TS)
 }
 
-
-
+#' rm_st
+#' @export
 rm_st <- function(TS){
-  
+  TS_ <- is_st(TS=TS)
+  TS <- TS[!TS_$is_st,]
+  return(TS)
 }
 
 
@@ -1908,7 +1913,15 @@ rm_delist <- function(TS,nearby=months(2),datasrc='jy'){
   return(TS)
 }
 
-
+#' rm_delist
+#'
+#' remove delisted stocks
+#' @export
+rm_newlyIPO <- function(TS,nearby=months(-2),datasrc='local'){
+  TS_ <- is_newlyIPO(TS=TS,nearby=nearby,datasrc = datasrc)
+  TS <- TS[!TS_$newlyIPO,]
+  return(TS)
+}
 
 
 
@@ -1925,16 +1938,13 @@ rm_delist <- function(TS,nearby=months(2),datasrc='jy'){
 #' @export
 is_suspend <- function(TS,nearby=0,
                        datelist,stockID, 
-                       drop,
+                       drop=FALSE,
                        datasrc=defaultDataSRC()){
   if (missing(TS) && any(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should at least have one!")
   }
   if (!missing(TS) && !all(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should only have one!")
-  }
-  if(missing(drop)){
-    drop <- if(missing(TS)) TRUE else FALSE
   }
   
   if (missing(TS)){
@@ -1987,7 +1997,7 @@ is_suspend <- function(TS,nearby=0,
 #' @export
 is_priceLimit <- function(TS,nearby=0,lim=c(-10, 10), priceType=c("close","open"),
                           datelist,stockID, 
-                          drop,
+                          drop=FALSE,
                           datasrc=defaultDataSRC()){
   
   if (missing(TS) && any(missing(stockID),missing(datelist))) {
@@ -1995,9 +2005,6 @@ is_priceLimit <- function(TS,nearby=0,lim=c(-10, 10), priceType=c("close","open"
   }
   if (!missing(TS) && !all(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should only have one!")
-  }
-  if(missing(drop)){
-    drop <- if(missing(TS)) TRUE else FALSE
   }
   
   if (missing(TS)){
@@ -2074,16 +2081,13 @@ is_priceLimit <- function(TS,nearby=0,lim=c(-10, 10), priceType=c("close","open"
 #' @export
 is_st <- function(TS,
                   datelist,stockID, 
-                  drop,
+                  drop=FALSE,
                   datasrc=defaultDataSRC()){
   if (missing(TS) && any(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should at least have one!")
   }
   if (!missing(TS) && !all(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should only have one!")
-  }
-  if(missing(drop)){
-    drop <- if(missing(TS)) TRUE else FALSE
   }
   
   if (missing(TS)){
@@ -2100,11 +2104,13 @@ is_st <- function(TS,
     TS_ <- transform(TS,date=rdate2int(date))
     con <- db.local("qt")
     RSQLite::dbWriteTable(con,"temp_table",TS_,overwrite=TRUE,row.names=FALSE)
+    DBI::dbExecute(con,'CREATE INDEX IX_temp_table ON temp_table (stockID,date);')
     qr <- "select y.*,q.SecuAbbr 'is_st' from temp_table y left join QT_DailyQuote q on y.date=q.TradingDay and y.stockID=q.ID"
     TS_ <- RSQLite::dbGetQuery(con,qr)
     RSQLite::dbDisconnect(con)
     TS_ <- transform(TS_,date=intdate2r(date),
                      is_st=stringr::str_detect(is_st,'ST'))
+    TS_ <- transform(TS_,is_st=ifelse(is.na(is_st),FALSE,is_st))
   }
   if(drop){
     return(TS_$is_st)
@@ -2119,15 +2125,12 @@ is_st <- function(TS,
 #'
 #' judeg whether stocks to be delisted
 #' @export
-is_delist <- function(TS,nearby=months(2),datelist,stockID, drop,datasrc='jy'){
+is_delist <- function(TS,nearby=months(2),datelist,stockID, drop=FALSE,datasrc='jy'){
   if (missing(TS) && any(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should at least have one!")
   }
   if (!missing(TS) && !all(missing(stockID),missing(datelist))) {
     stop("Param TS and combination of stockID and datelist should only have one!")
-  }
-  if(missing(drop)){
-    drop <- if(missing(TS)) TRUE else FALSE
   }
   
   if (missing(TS)){
@@ -2159,4 +2162,35 @@ is_delist <- function(TS,nearby=months(2),datelist,stockID, drop,datasrc='jy'){
     return(TS)
   }
 }
+
+
+
+
+#' is_newlyIPO
+#' @export
+is_newlyIPO <- function(TS,nearby=months(-2), datelist,stockID, drop=FALSE,datasrc='local'){
+  if (missing(TS) && any(missing(stockID),missing(datelist))) {
+    stop("Param TS and combination of stockID and datelist should at least have one!")
+  }
+  if (!missing(TS) && !all(missing(stockID),missing(datelist))) {
+    stop("Param TS and combination of stockID and datelist should only have one!")
+  }
+  
+  if (missing(TS)){
+    TS <- expand.grid(date=datelist, stockID=stockID)
+  }
+  
+  check.TS(TS)
+  if(datasrc=='local'){
+    TS <- dplyr::mutate(TS, IPODate=trday.IPO(stockID), newlyIPO = (IPODate > trday.offset(date,by=nearby) | is.na(IPODate)) )
+  }
+  
+  if(drop){
+    return(TS$newlyIPO)
+  }else{
+    return(TS)
+  }
+}
+
+
 

@@ -4,7 +4,7 @@
 \alias{is_suspend}
 \title{is_suspend}
 \usage{
-is_suspend(TS, nearby = 0, datelist, stockID, drop,
+is_suspend(TS, nearby = 0, datelist, stockID, drop = FALSE,
   datasrc = defaultDataSRC())
 }
 \arguments{

@@ -4,7 +4,7 @@
 \alias{trday.is}
 \title{trday.is}
 \usage{
-trday.is(datelist, stockID = NULL, TS, drop)
+trday.is(datelist, stockID = NULL, TS, drop = FALSE)
 }
 \arguments{
 \item{datelist}{a vector of class Date}
